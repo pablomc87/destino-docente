@@ -1,0 +1,72 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; {{ opts.verbose_name_plural|capfirst }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <div class="module filtered" id="changelist">
+    <div class="changelist-form-container">
+      <div id="toolbar">
+        <form id="changelist-search" method="get">
+          <div>
+            <label for="searchbar"><img src="{% static "admin/img/search.svg" %}" alt="Search"></label>
+            <input type="text" size="40" name="q" value="{{ request.GET.q }}" id="searchbar" autofocus>
+            <input type="submit" value="{% translate 'Search' %}">
+          </div>
+        </form>
+      </div>
+      
+      <div class="results">
+        <table id="result_list">
+          <thead>
+            <tr>
+              <th scope="col">
+                <div class="text">
+                  <a href="#">ID</a>
+                </div>
+              </th>
+              <th scope="col">
+                <div class="text">
+                  <a href="#">School</a>
+                </div>
+              </th>
+              <th scope="col">
+                <div class="text">
+                  <a href="#">Study</a>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in school_studies %}
+            <tr class="{% cycle 'row1' 'row2' %}">
+              <td><a href="{% url 'admin:schools_schoolstudy_change' item.composite_key %}">{{ item.composite_key }}</a></td>
+              <td>{{ item.school_name }}</td>
+              <td>{{ item.study_name }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      
+      <p class="paginator">
+        {{ cl.result_count }} {% if cl.result_count == 1 %}item{% else %}items{% endif %}
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %} 

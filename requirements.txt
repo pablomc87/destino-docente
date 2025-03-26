@@ -1,0 +1,8 @@
+Django>=4.2.0
+python-dotenv>=1.0.0
+djangorestframework>=3.14.0
+django-cors-headers>=4.3.0 
+django-health-check>=3.17.0
+requests>=2.31.0
+psycopg2-binary>=2.9.9
+pyngrok>=7.0.0

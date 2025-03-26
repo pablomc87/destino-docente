@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Details</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .school-header {
+            background-color: #f8f9fa;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .school-info {
+            margin-bottom: 2rem;
+        }
+        .school-info h3 {
+            color: #0d6efd;
+            margin-bottom: 1rem;
+        }
+        .school-info p {
+            margin-bottom: 0.5rem;
+        }
+        .back-button {
+            margin-bottom: 1rem;
+        }
+        .study-card {
+            margin-bottom: 1rem;
+            transition: transform 0.2s;
+        }
+        .study-card:hover {
+            transform: translateY(-2px);
+        }
+        .study-degree {
+            color: #0d6efd;
+            font-weight: bold;
+        }
+        .study-family {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        .study-modality {
+            color: #198754;
+            font-size: 0.9rem;
+        }
+        .service-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .service-badge:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .service-badge.transport {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+        .service-badge.comedor {
+            background-color: #f3e5f5;
+            color: #7b1fa2;
+        }
+        .service-badge.internado {
+            background-color: #e8f5e9;
+            color: #388e3c;
+        }
+        .service-badge.other {
+            background-color: #fff3e0;
+            color: #f57c00;
+        }
+    </style>
+</head>
+<body>
+    <div class="school-header">
+        <div class="container">
+            <div class="back-button">
+                <a href="/" class="btn btn-outline-primary">← Back to Search</a>
+            </div>
+            <h1 id="schoolName" class="display-4">Loading...</h1>
+            <p id="schoolLocation" class="lead">Loading...</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="school-info">
+                    <h3>Basic Information</h3>
+                    <p><strong>Type:</strong> <span id="centerType">Loading...</span></p>
+                    <p><strong>Nature:</strong> <span id="nature">Loading...</span></p>
+                    <p><strong>Autonomous Community:</strong> <span id="autonomousCommunity">Loading...</span></p>
+                    <p><strong>Province:</strong> <span id="province">Loading...</span></p>
+                    <p><strong>Municipality:</strong> <span id="municipality">Loading...</span></p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="school-info">
+                    <h3>Contact Information</h3>
+                    <p><strong>Address:</strong> <span id="address">Loading...</span></p>
+                    <p><strong>Postal Code:</strong> <span id="postalCode">Loading...</span></p>
+                    <p><strong>Phone:</strong> <span id="phone">Loading...</span></p>
+                    <p><strong>Email:</strong> <span id="email">Loading...</span></p>
+                    <p><strong>Website:</strong> <span id="website">Loading...</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class="school-info">
+                    <h3>Additional Information</h3>
+                    <p><strong>Is Concerted:</strong> <span id="isConcerted">Loading...</span></p>
+                    <p><strong>Generic Name:</strong> <span id="genericName">Loading...</span></p>
+                    <p><strong>Services:</strong></p>
+                    <ul id="services" class="list-unstyled d-flex flex-wrap gap-2">Loading...</ul>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class="school-info">
+                    <h3>Studies Offered</h3>
+                    <div id="studiesList" class="row">
+                        <div class="col-12">
+                            <p class="text-center">Loading studies...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Get the school ID from the URL path, removing any trailing slashes
+            const schoolId = window.location.pathname.split('/').filter(Boolean).pop();
+            
+            if (!schoolId) {
+                document.getElementById('schoolName').textContent = 'Invalid school ID';
+                document.getElementById('schoolLocation').textContent = 'Please return to the search page';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/schools/${schoolId}/`);
+                if (!response.ok) {
+                    throw new Error('School not found');
+                }
+                const school = await response.json();
+                
+                // Update the page content
+                document.getElementById('schoolName').textContent = school.name;
+                document.getElementById('schoolLocation').textContent = `${school.municipality}, ${school.province}`;
+                document.getElementById('centerType').textContent = school.center_type || 'Not specified';
+                document.getElementById('nature').textContent = school.nature || 'Not specified';
+                document.getElementById('autonomousCommunity').textContent = school.autonomous_community || 'Not specified';
+                document.getElementById('province').textContent = school.province || 'Not specified';
+                document.getElementById('municipality').textContent = school.municipality || 'Not specified';
+                document.getElementById('address').textContent = school.address || 'Not specified';
+                document.getElementById('postalCode').textContent = school.postal_code || 'Not specified';
+                document.getElementById('phone').textContent = school.phone || 'Not specified';
+                document.getElementById('email').textContent = school.email || 'Not specified';
+                document.getElementById('website').textContent = school.website || 'Not specified';
+                document.getElementById('isConcerted').textContent = school.is_concerted || 'Not specified';
+                document.getElementById('genericName').textContent = school.generic_name || 'Not specified';
+                
+                // Display services as badges
+                const servicesElement = document.getElementById('services');
+                if (school.services) {
+                    // Parse the JSON string if it's a string, otherwise use it directly
+                    const services = typeof school.services === 'string' 
+                        ? JSON.parse(school.services.replace(/'/g, '"')) 
+                        : school.services;
+                    
+                    servicesElement.innerHTML = services.map(service => {
+                        let badgeClass = 'service-badge other';
+                        if (service.toLowerCase().includes('transporte')) {
+                            badgeClass = 'service-badge transport';
+                        } else if (service.toLowerCase().includes('comedor')) {
+                            badgeClass = 'service-badge comedor';
+                        } else if (service.toLowerCase().includes('internado')) {
+                            badgeClass = 'service-badge internado';
+                        }
+                        return `<li><span class="${badgeClass}">${service}</span></li>`;
+                    }).join('');
+                } else {
+                    servicesElement.innerHTML = '<li><span class="text-muted">No services specified</span></li>';
+                }
+
+                // Display studies
+                const studiesList = document.getElementById('studiesList');
+                if (school.studies && school.studies.length > 0) {
+                    studiesList.innerHTML = school.studies.map(study => `
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card study-card">
+                                <div class="card-body">
+                                    <h5 class="card-title">${study.name}</h5>
+                                    <p class="study-degree">${study.degree || 'Not specified'}</p>
+                                    <p class="study-family">Family: ${study.family || 'Not specified'}</p>
+                                    <p class="study-modality">Modality: ${study.modality || 'Not specified'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    studiesList.innerHTML = '<div class="col-12"><p class="text-center">No studies information available</p></div>';
+                }
+            } catch (error) {
+                console.error('Error fetching school details:', error);
+                document.getElementById('schoolName').textContent = 'Error loading school details';
+                document.getElementById('schoolLocation').textContent = 'Please try again later';
+            }
+        });
+    </script>
+</body>
+</html> 

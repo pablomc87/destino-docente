@@ -1,0 +1,21 @@
+FROM python:3.11-alpine
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV DEBUG=True
+
+WORKDIR /app
+
+COPY requirements.txt /app/
+
+# Build psycopg2-binary from source -- add required required dependencies
+RUN apk add --virtual .build-deps --no-cache postgresql-dev gcc python3-dev musl-dev && \
+        pip install --no-cache-dir -r requirements.txt && \
+        apk --purge del .build-deps
+
+COPY . /app/
+
+# Make entrypoint script executable
+RUN chmod +x /app/entrypoint-dev.sh
+
+ENTRYPOINT ["sh", "/app/entrypoint-dev.sh"] 
