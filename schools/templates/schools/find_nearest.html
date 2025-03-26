@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Nearest School</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .search-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .result-card {
+            margin-top: 2rem;
+            transition: transform 0.2s;
+        }
+        .result-card:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="search-container">
+            <h1 class="text-center mb-4">Find Nearest School</h1>
+            <form id="searchForm" class="mb-4">
+                <div class="mb-3">
+                    <label for="postal_code" class="form-label">Enter your postal code</label>
+                    <input type="text" class="form-control" id="postal_code" placeholder="e.g., 28001" required>
+                </div>
+                <div class="mb-3">
+                    <label for="province" class="form-label">Province (optional)</label>
+                    <input type="text" class="form-control" id="province" placeholder="e.g., Madrid">
+                </div>
+                <div class="mb-3">
+                    <label for="municipality" class="form-label">Municipality (optional)</label>
+                    <input type="text" class="form-control" id="municipality" placeholder="e.g., Madrid">
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Find Nearest School</button>
+            </form>
+            
+            <div id="result" class="d-none">
+                <div class="card result-card">
+                    <div class="card-body">
+                        <h5 class="card-title" id="schoolName"></h5>
+                        <p class="card-text" id="schoolAddress"></p>
+                        <a href="#" id="schoolLink" class="btn btn-outline-primary">View Details</a>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error" class="alert alert-danger d-none"></div>
+            <div id="loading" class="text-center d-none">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const postal_code = document.getElementById('postal_code').value;
+            const province = document.getElementById('province').value;
+            const municipality = document.getElementById('municipality').value;
+            const resultDiv = document.getElementById('result');
+            const errorDiv = document.getElementById('error');
+            const loadingDiv = document.getElementById('loading');
+            
+            // Show loading, hide other elements
+            loadingDiv.classList.remove('d-none');
+            resultDiv.classList.add('d-none');
+            errorDiv.classList.add('d-none');
+            
+            try {
+                // Build URL with optional parameters
+                const params = new URLSearchParams({ postal_code });
+                if (province) params.append('province', province);
+                if (municipality) params.append('municipality', municipality);
+                
+                const response = await fetch(`/api/schools/nearest/?${params.toString()}`);
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to find nearest school');
+                }
+                
+                const data = await response.json();
+                
+                // Update result card
+                document.getElementById('schoolName').textContent = data.school.name;
+                document.getElementById('schoolAddress').textContent = data.school.address;
+                document.getElementById('schoolLink').href = `/schools/${data.school.id}/`;
+                
+                // Show result
+                resultDiv.classList.remove('d-none');
+                
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('d-none');
+            } finally {
+                loadingDiv.classList.add('d-none');
+            }
+        });
+    </script>
+</body>
+</html> 
