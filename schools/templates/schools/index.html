@@ -1,87 +1,111 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spanish Schools Finder</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .school-card {
-            margin-bottom: 1rem;
-        }
-        .loading {
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="container mt-4">
-        <h1 class="text-center mb-4">Spanish Schools Finder</h1>
-        
-        <!-- Search Form -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">Search Schools</h5>
-                <form id="searchForm">
-                    <div class="mb-3">
-                        <input type="text" class="form-control" id="searchInput" placeholder="Enter school name, municipality, or province...">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Search</button>
-                </form>
+{% extends "schools/base.html" %}
+
+{% block title %}Spanish Schools Finder{% endblock %}
+
+{% block custom_css %}
+.feature-card {
+    height: 100%;
+    transition: all 0.3s;
+    border: 1px solid rgba(0,0,0,0.125);
+}
+.feature-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-color: #0d6efd;
+}
+{% endblock %}
+
+{% block content %}
+<h1 class="text-center mb-4">Spanish Schools Finder</h1>
+
+<!-- Features Section -->
+<div class="row mb-5">
+    <div class="col-md-6 mb-4">
+        <div class="card feature-card">
+            <div class="card-body text-center">
+                <h3 class="card-title">Search Schools</h3>
+                <p class="card-text">Find schools by name, municipality, or province.</p>
+                <a href="#searchSection" class="btn btn-primary">Search Now</a>
             </div>
         </div>
-
-        <!-- Loading Indicator -->
-        <div class="loading text-center">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
-
-        <!-- Results -->
-        <div id="results"></div>
     </div>
+    <div class="col-md-6 mb-4">
+        <div class="card feature-card">
+            <div class="card-body text-center">
+                <h3 class="card-title">Find Nearest Schools</h3>
+                <p class="card-text">Find schools based on your location, region, and preferences.</p>
+                <a href="/find-nearest/" class="btn btn-success">Find Nearest</a>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <script>
-        document.getElementById('searchForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const searchInput = document.getElementById('searchInput');
-            const loading = document.querySelector('.loading');
-            const results = document.getElementById('results');
+<!-- Search Form -->
+<div class="card mb-4" id="searchSection">
+    <div class="card-body">
+        <h5 class="card-title">Search Schools</h5>
+        <form id="searchForm">
+            <div class="mb-3">
+                <input type="text" class="form-control" id="searchInput" placeholder="Enter school name, municipality, or province...">
+            </div>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+    </div>
+</div>
+
+<!-- Loading Indicator -->
+<div class="loading text-center">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+
+<!-- Results -->
+<div id="results"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('searchForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const searchInput = document.getElementById('searchInput');
+        const loading = document.querySelector('.loading');
+        const results = document.getElementById('results');
+        
+        if (!searchInput.value.trim()) return;
+
+        loading.style.display = 'block';
+        results.innerHTML = '';
+
+        try {
+            const response = await fetch(`/api/schools/search/?name=${encodeURIComponent(searchInput.value)}`);
+            const data = await response.json();
             
-            if (!searchInput.value.trim()) return;
-
-            loading.style.display = 'block';
-            results.innerHTML = '';
-
-            try {
-                const response = await fetch(`/api/schools/search/?name=${encodeURIComponent(searchInput.value)}`);
-                const data = await response.json();
-                
-                if (data.length === 0) {
-                    results.innerHTML = '<p class="text-center">No schools found.</p>';
-                } else {
-                    results.innerHTML = data.map(school => `
-                        <div class="card school-card">
-                            <div class="card-body">
-                                <h5 class="card-title">${school.name}</h5>
-                                <p class="card-text">
-                                    <strong>Location:</strong> ${school.municipality}, ${school.province}<br>
-                                    <strong>Autonomous Community:</strong> ${school.autonomous_community}<br>
-                                    <strong>Type:</strong> ${school.center_type}<br>
-                                    <strong>Nature:</strong> ${school.nature}
-                                </p>
+            if (data.length === 0) {
+                results.innerHTML = '<p class="text-center">No schools found.</p>';
+            } else {
+                results.innerHTML = data.map(school => `
+                    <div class="card school-card">
+                        <div class="card-body">
+                            <h5 class="card-title">${school.name}</h5>
+                            <p class="card-text">
+                                <strong>Location:</strong> ${school.municipality}, ${school.province}<br>
+                                <strong>Autonomous Community:</strong> ${school.autonomous_community}<br>
+                                <strong>Type:</strong> ${school.center_type}<br>
+                                <strong>Nature:</strong> ${school.nature}
+                            </p>
+                            <div class="d-flex gap-2">
                                 <a href="/schools/${school.id}/" class="btn btn-sm btn-outline-primary">View Details</a>
+                                <a href="/find-nearest/?preset_school=${school.id}" class="btn btn-sm btn-outline-success">Find Similar Schools Nearby</a>
                             </div>
                         </div>
-                    `).join('');
-                }
-            } catch (error) {
-                results.innerHTML = '<p class="text-center text-danger">Error searching for schools. Please try again.</p>';
-            } finally {
-                loading.style.display = 'none';
+                    </div>
+                `).join('');
             }
-        });
-    </script>
-</body>
-</html> 
+        } catch (error) {
+            results.innerHTML = '<p class="text-center text-danger">Error searching for schools. Please try again.</p>';
+        } finally {
+            loading.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %} 

@@ -1,112 +1,322 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find Nearest School</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .search-container {
-            max-width: 600px;
-            margin: 2rem auto;
-            padding: 2rem;
-            background-color: #f8f9fa;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .result-card {
-            margin-top: 2rem;
-            transition: transform 0.2s;
-        }
-        .result-card:hover {
-            transform: translateY(-2px);
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="search-container">
-            <h1 class="text-center mb-4">Find Nearest School</h1>
-            <form id="searchForm" class="mb-4">
-                <div class="mb-3">
-                    <label for="postal_code" class="form-label">Enter your postal code</label>
-                    <input type="text" class="form-control" id="postal_code" placeholder="e.g., 28001" required>
-                </div>
-                <div class="mb-3">
-                    <label for="province" class="form-label">Province (optional)</label>
-                    <input type="text" class="form-control" id="province" placeholder="e.g., Madrid">
-                </div>
-                <div class="mb-3">
-                    <label for="municipality" class="form-label">Municipality (optional)</label>
-                    <input type="text" class="form-control" id="municipality" placeholder="e.g., Madrid">
-                </div>
-                <button type="submit" class="btn btn-primary w-100">Find Nearest School</button>
-            </form>
-            
-            <div id="result" class="d-none">
-                <div class="card result-card">
-                    <div class="card-body">
-                        <h5 class="card-title" id="schoolName"></h5>
-                        <p class="card-text" id="schoolAddress"></p>
-                        <a href="#" id="schoolLink" class="btn btn-outline-primary">View Details</a>
-                    </div>
-                </div>
-            </div>
+{% extends "schools/base.html" %}
 
-            <div id="error" class="alert alert-danger d-none"></div>
-            <div id="loading" class="text-center d-none">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
+{% block title %}Find Nearest School{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block custom_css %}
+.search-container {
+    max-width: 700px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.result-card {
+    margin-top: 2rem;
+    transition: transform 0.2s;
+}
+.result-card:hover {
+    transform: translateY(-2px);
+}
+.select2-container {
+    width: 100% !important;
+}
+.select2-selection--multiple {
+    min-height: 38px !important;
+}
+{% endblock %}
+
+{% block content %}
+<div class="search-container">
+    <h1 class="text-center mb-4">Find Nearest School</h1>
+    
+    <form id="searchForm" class="mb-4">
+        <div class="mb-3">
+            <label for="address" class="form-label">Your Address</label>
+            <input type="text" class="form-control" id="address" placeholder="Enter your complete address" required>
+        </div>
+        
+        <div class="mb-3">
+            <label for="region" class="form-label">Autonomous Community</label>
+            <select class="form-select" id="region">
+                <option value="" selected>Select an autonomous community</option>
+                <option value="andalucia">Andalucía</option>
+                <option value="aragon">Aragón</option>
+                <option value="asturias">Asturias</option>
+                <option value="baleares">Islas Baleares</option>
+                <option value="canarias">Canarias</option>
+                <option value="cantabria">Cantabria</option>
+                <option value="castilla_la_mancha">Castilla-La Mancha</option>
+                <option value="castilla_y_leon">Castilla y León</option>
+                <option value="cataluna">Cataluña</option>
+                <option value="comunidad_valenciana">Comunidad Valenciana</option>
+                <option value="extremadura">Extremadura</option>
+                <option value="galicia">Galicia</option>
+                <option value="madrid">Madrid</option>
+                <option value="murcia">Murcia</option>
+                <option value="navarra">Navarra</option>
+                <option value="pais_vasco">País Vasco</option>
+                <option value="la_rioja">La Rioja</option>
+                <option value="ceuta">Ceuta</option>
+                <option value="melilla">Melilla</option>
+            </select>
+        </div>
+        
+        <div class="mb-3">
+            <label for="provinces" class="form-label">Provinces</label>
+            <select class="form-select" id="provinces" multiple disabled>
+                <!-- Provinces will be populated based on selected region -->
+            </select>
+            <small class="form-text text-muted">Select one or more provinces from the selected region</small>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">School Ownership Type</label>
+            <div class="btn-group-vertical w-100" role="group">
+                <input type="checkbox" class="btn-check" id="publicCheck" name="school_types" value="public">
+                <label class="btn btn-outline-primary text-start" for="publicCheck">Public</label>
+                
+                <input type="checkbox" class="btn-check" id="privateCheck" name="school_types" value="private">
+                <label class="btn btn-outline-primary text-start" for="privateCheck">Private</label>
+                
+                <input type="checkbox" class="btn-check" id="concertadoCheck" name="school_types" value="concertado">
+                <label class="btn btn-outline-primary text-start" for="concertadoCheck">Concertado</label>
             </div>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Education Levels</label>
+            <div class="btn-group-vertical w-100" role="group">
+                <input type="checkbox" class="btn-check" id="infantilCheck" name="school_types" value="infantil">
+                <label class="btn btn-outline-primary text-start" for="infantilCheck">Infantil (Pre-school)</label>
+                
+                <input type="checkbox" class="btn-check" id="primariaCheck" name="school_types" value="primaria">
+                <label class="btn btn-outline-primary text-start" for="primariaCheck">Primaria (Primary)</label>
+                
+                <input type="checkbox" class="btn-check" id="secundariaCheck" name="school_types" value="secundaria">
+                <label class="btn btn-outline-primary text-start" for="secundariaCheck">Secundaria (Secondary)</label>
+                
+                <input type="checkbox" class="btn-check" id="bachilleratoCheck" name="school_types" value="bachillerato">
+                <label class="btn btn-outline-primary text-start" for="bachilleratoCheck">Bachillerato</label>
+                
+                <input type="checkbox" class="btn-check" id="fpCheck" name="school_types" value="fp">
+                <label class="btn btn-outline-primary text-start" for="fpCheck">Formación Profesional (FP)</label>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-100">Find Nearest School</button>
+    </form>
+    
+    <div id="result" class="d-none">
+        <h3 class="mb-3">Matching Schools:</h3>
+        <div id="schoolResults" class="school-results">
+            <!-- School cards will be added here dynamically -->
         </div>
     </div>
 
-    <script>
-        document.getElementById('searchForm').addEventListener('submit', async function(e) {
+    <div id="error" class="alert alert-danger d-none"></div>
+    <div id="loading" class="text-center d-none">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    // Regional provinces data
+    const provincesData = {
+        andalucia: ['Almería', 'Cádiz', 'Córdoba', 'Granada', 'Huelva', 'Jaén', 'Málaga', 'Sevilla'],
+        aragon: ['Huesca', 'Teruel', 'Zaragoza'],
+        asturias: ['Asturias'],
+        baleares: ['Islas Baleares'],
+        canarias: ['Las Palmas', 'Santa Cruz de Tenerife'],
+        cantabria: ['Cantabria'],
+        castilla_la_mancha: ['Albacete', 'Ciudad Real', 'Cuenca', 'Guadalajara', 'Toledo'],
+        castilla_y_leon: ['Ávila', 'Burgos', 'León', 'Palencia', 'Salamanca', 'Segovia', 'Soria', 'Valladolid', 'Zamora'],
+        cataluna: ['Barcelona', 'Girona', 'Lleida', 'Tarragona'],
+        comunidad_valenciana: ['Alicante', 'Castellón', 'Valencia'],
+        extremadura: ['Badajoz', 'Cáceres'],
+        galicia: ['A Coruña', 'Lugo', 'Ourense', 'Pontevedra'],
+        madrid: ['Madrid'],
+        murcia: ['Murcia'],
+        navarra: ['Navarra'],
+        pais_vasco: ['Álava', 'Guipúzcoa', 'Vizcaya'],
+        la_rioja: ['La Rioja'],
+        ceuta: ['Ceuta'],
+        melilla: ['Melilla'],
+    };
+
+    $(document).ready(function() {
+        // Initialize Select2
+        $('#provinces').select2({
+            placeholder: 'Select provinces',
+            allowClear: true
+        });
+
+        // When region changes, update provinces
+        $('#region').change(function() {
+            const region = $(this).val();
+            const $provinces = $('#provinces');
+            
+            // Clear provinces
+            $provinces.empty();
+            
+            if (region) {
+                // Enable provinces selector
+                $provinces.prop('disabled', false);
+                
+                // Add provinces for selected region
+                provincesData[region].forEach(province => {
+                    $provinces.append(new Option(province, province));
+                });
+            } else {
+                // If no region selected, disable provinces
+                $provinces.prop('disabled', true);
+            }
+            
+            // Trigger change for Select2 to update
+            $provinces.trigger('change');
+        });
+
+        // Form submission
+        $('#searchForm').submit(async function(e) {
             e.preventDefault();
             
-            const postal_code = document.getElementById('postal_code').value;
-            const province = document.getElementById('province').value;
-            const municipality = document.getElementById('municipality').value;
-            const resultDiv = document.getElementById('result');
-            const errorDiv = document.getElementById('error');
-            const loadingDiv = document.getElementById('loading');
+            const address = $('#address').val();
+            const region = $('#region').val();
+            let provinces = $('#provinces').val();
+            
+            // Get school ownership types
+            const ownershipTypes = [];
+            if ($('#publicCheck').is(':checked')) ownershipTypes.push('public');
+            if ($('#privateCheck').is(':checked')) ownershipTypes.push('private');
+            if ($('#concertadoCheck').is(':checked')) ownershipTypes.push('concertado');
+            
+            // Get education levels
+            const educationLevels = [];
+            if ($('#infantilCheck').is(':checked')) educationLevels.push('infantil');
+            if ($('#primariaCheck').is(':checked')) educationLevels.push('primaria');
+            if ($('#secundariaCheck').is(':checked')) educationLevels.push('secundaria');
+            if ($('#bachilleratoCheck').is(':checked')) educationLevels.push('bachillerato');
+            if ($('#fpCheck').is(':checked')) educationLevels.push('fp');
+            
+            // Combine all school_types
+            const school_types = [...ownershipTypes, ...educationLevels];
+            
+            // If a region is selected but no provinces, use all provinces from that region
+            if (region && (!provinces || provinces.length === 0)) {
+                provinces = provincesData[region];
+            }
+            
+            const resultDiv = $('#result');
+            const errorDiv = $('#error');
+            const loadingDiv = $('#loading');
             
             // Show loading, hide other elements
-            loadingDiv.classList.remove('d-none');
-            resultDiv.classList.add('d-none');
-            errorDiv.classList.add('d-none');
+            loadingDiv.removeClass('d-none');
+            resultDiv.addClass('d-none');
+            errorDiv.addClass('d-none');
             
             try {
-                // Build URL with optional parameters
-                const params = new URLSearchParams({ postal_code });
-                if (province) params.append('province', province);
-                if (municipality) params.append('municipality', municipality);
+                // Build URL with parameters
+                const params = new URLSearchParams({ address });
                 
-                const response = await fetch(`/api/schools/nearest/?${params.toString()}`);
+                if (provinces && provinces.length > 0) {
+                    provinces.forEach(province => {
+                        params.append('provinces', province);
+                    });
+                }
+                
+                if (school_types && school_types.length > 0) {
+                    school_types.forEach(type => {
+                        params.append('school_types', type);
+                    });
+                }
+                
+                // Log the request for debugging
+                const requestUrl = `/api/schools/nearest/?${params.toString()}`;
+                console.log('Sending request to:', requestUrl);
+                
+                const response = await fetch(requestUrl);
+                console.log('Response status:', response.status);
+                
                 if (!response.ok) {
-                    const data = await response.json();
-                    throw new Error(data.error || 'Failed to find nearest school');
+                    let errorMessage = 'Failed to find schools';
+                    try {
+                        const data = await response.json();
+                        errorMessage = data.error || errorMessage;
+                    } catch (jsonError) {
+                        console.error('Failed to parse error response:', jsonError);
+                    }
+                    throw new Error(errorMessage);
                 }
                 
                 const data = await response.json();
+                console.log('Received data:', data);
                 
-                // Update result card
-                document.getElementById('schoolName').textContent = data.school.name;
-                document.getElementById('schoolAddress').textContent = data.school.address;
-                document.getElementById('schoolLink').href = `/schools/${data.school.id}/`;
+                // Clear previous results
+                const schoolResultsDiv = $('#schoolResults');
+                schoolResultsDiv.empty();
+                
+                // Display total count
+                schoolResultsDiv.append(`<p class="mb-3">Found ${data.total_count} schools matching your criteria.</p>`);
+                
+                // Update result with all schools
+                if (data.schools && data.schools.length > 0) {
+                    data.schools.forEach(school => {
+                        // Format distance
+                        let distanceText = '';
+                        if (school.distance !== null && school.distance !== undefined) {
+                            distanceText = `<p class="card-text text-success">Distance: ${school.distance.toFixed(2)} km</p>`;
+                        } else {
+                            distanceText = `<p class="card-text text-muted">Distance: Not available</p>`;
+                        }
+
+                        const schoolCard = `
+                            <div class="card result-card mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">${school.name}</h5>
+                                    <p class="card-text">${school.address}, ${school.municipality}, ${school.province}</p>
+                                    <p class="card-text">Type: ${school.nature || 'Not specified'}</p>
+                                    ${distanceText}
+                                    <a href="/schools/${school.id}/" class="btn btn-outline-primary">View Details</a>
+                                </div>
+                            </div>
+                        `;
+                        schoolResultsDiv.append(schoolCard);
+                    });
+
+                    // Add summary about user location if available
+                    if (data.search_criteria && data.search_criteria.user_location) {
+                        const locationInfo = `
+                            <div class="alert alert-info mt-3">
+                                <p><strong>Your location:</strong> ${data.search_criteria.address}</p>
+                                <p>Schools are sorted by distance from your location.</p>
+                            </div>
+                        `;
+                        schoolResultsDiv.append(locationInfo);
+                    }
+                } else {
+                    schoolResultsDiv.append('<p>No schools found matching your criteria.</p>');
+                }
                 
                 // Show result
-                resultDiv.classList.remove('d-none');
+                resultDiv.removeClass('d-none');
                 
             } catch (error) {
-                errorDiv.textContent = error.message;
-                errorDiv.classList.remove('d-none');
+                errorDiv.text(error.message);
+                errorDiv.removeClass('d-none');
             } finally {
-                loadingDiv.classList.add('d-none');
+                loadingDiv.addClass('d-none');
             }
         });
-    </script>
-</body>
-</html> 
+    });
+</script>
+{% endblock %} 
