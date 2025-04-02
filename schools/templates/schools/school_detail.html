@@ -186,6 +186,9 @@
             updateElementText('autonomousCommunity', school.autonomous_community || 'No especificado');
             updateElementText('province', school.province || 'No especificado');
             updateElementText('municipality', school.municipality || 'No especificado');
+            updateElementText('isConcerted', school.is_concerted ? 'Sí' : 'No');
+            updateElementText('genericName', school.generic_name || 'No especificado');
+            updateElementText('services', school.services || 'No especificado');
             
             // Update contact information
             updateElementText('address', school.address || 'No especificado');
