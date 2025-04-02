@@ -12,7 +12,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 from pathlib import Path
-
+import secrets
+import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -21,23 +22,47 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-i41eo@-#voa213qnqkkc3q0yd0skq7$!a907gav65g5&7d+p7b')
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    default=secrets.token_urlsafe(nbytes=64),
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+DEBUG = os.environ.get("ENVIRONMENT") == "development"
 
-# During development, allow all hosts
-ALLOWED_HOSTS = ['*'] if DEBUG else os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0').split(',')
+IS_HEROKU_APP = "DYNO" in os.environ and "CI" not in os.environ
 
+if IS_HEROKU_APP:
+    # On Heroku, it's safe to use a wildcard for `ALLOWED_HOSTS`, since the Heroku router performs
+    # validation of the Host header in the incoming HTTP request. On other platforms you may need to
+    # list the expected hostnames explicitly in production to prevent HTTP Host header attacks. See:
+    # https://docs.djangoproject.com/en/5.1/ref/settings/#std-setting-ALLOWED_HOSTS
+    ALLOWED_HOSTS = ["*"]
+
+    # Redirect all non-HTTPS requests to HTTPS. This requires that:
+    # 1. Your app has a TLS/SSL certificate, which all `*.herokuapp.com` domains do by default.
+    #    When using a custom domain, you must configure one. See:
+    #    https://devcenter.heroku.com/articles/automated-certificate-management
+    # 2. Your app's WSGI web server is configured to use the `X-Forwarded-Proto` headers set by
+    #    the Heroku Router (otherwise you may encounter infinite HTTP 301 redirects). See this
+    #    app's `gunicorn.conf.py` for how this is done when using gunicorn.
+    #
+    # For maximum security, consider enabling HTTP Strict Transport Security (HSTS) headers too:
+    # https://docs.djangoproject.com/en/5.1/ref/middleware/#http-strict-transport-security
+    SECURE_SSL_REDIRECT = True
+else:
+    ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0').split(',')
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
+    "whitenoise.runserver_nostatic",
+
+    # 'django.contrib.admin',
+    # 'django.contrib.auth',
+    # 'django.contrib.contenttypes',
+    # 'django.contrib.sessions',
+    # 'django.contrib.messages',
     'django.contrib.staticfiles',
 
     # Third-party apps
@@ -49,11 +74,12 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    # 'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
+    # 'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # 'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -68,8 +94,8 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+                # 'django.contrib.auth.context_processors.auth',
+                # 'django.contrib.messages.context_processors.messages',
             ],
         },
     },
@@ -81,16 +107,30 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    },
-    'schools_db': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'schools.db',
+if IS_HEROKU_APP:
+    DATABASES = {
+        "default": dj_database_url.config(
+            env="DATABASE_URL",
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=True,
+        ),
+        'schools_db': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'schools.db',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DATABASE_URL'),
+        },
+        'schools_db': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'schools.db',
+        }
+    }
 
 DATABASE_ROUTERS = ['schools.db_router.SchoolDBRouter']
 
@@ -117,9 +157,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-es'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Madrid'
 
 USE_I18N = True
 
@@ -128,10 +168,55 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
-
+STATIC_ROOT = BASE_DIR / "staticfiles"
 STATIC_URL = 'static/'
+
+STORAGES = {
+    # Enable WhiteNoise's GZip and Brotli compression of static assets:
+    # https://whitenoise.readthedocs.io/en/latest/django.html#add-compression-and-caching-support
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+WHITENOISE_KEEP_ONLY_HASHED_FILES = True
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {
+            "format": "[{levelname}] {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+    },
+    # Fallback for anything not configured via `loggers`.
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            # Prevent double logging due to the root logger.
+            "propagate": False,
+        },
+        "django.request": {
+            # Suppress the WARNINGS from any HTTP 4xx responses (in particular for 404s caused by
+            # web crawlers), but still show any ERRORs from HTTP 5xx responses/exceptions.
+            "level": "ERROR",
+        },
+    },
+}
