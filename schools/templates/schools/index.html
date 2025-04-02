@@ -1,6 +1,6 @@
 {% extends "schools/base.html" %}
 
-{% block title %}Spanish Schools Finder{% endblock %}
+{% block title %}Buscador de Centros Educativos{% endblock %}
 
 {% block custom_css %}
 .feature-card {
@@ -15,25 +15,25 @@
 {% endblock %}
 
 {% block content %}
-<h1 class="text-center mb-4">Spanish Schools Finder</h1>
+<h1 class="text-center mb-4">Buscador de Centros Educativos</h1>
 
 <!-- Features Section -->
 <div class="row mb-5">
     <div class="col-md-6 mb-4">
         <div class="card feature-card">
             <div class="card-body text-center">
-                <h3 class="card-title">Search Schools</h3>
-                <p class="card-text">Find schools by name, municipality, or province.</p>
-                <a href="#searchSection" class="btn btn-primary">Search Now</a>
+                <h3 class="card-title">Buscar Centros</h3>
+                <p class="card-text">Encuentra centros por nombre, municipio o provincia.</p>
+                <a href="#searchSection" class="btn btn-primary">Buscar</a>
             </div>
         </div>
     </div>
     <div class="col-md-6 mb-4">
         <div class="card feature-card">
             <div class="card-body text-center">
-                <h3 class="card-title">Find Nearest Schools</h3>
-                <p class="card-text">Find schools based on your location, region, and preferences.</p>
-                <a href="/find-nearest/" class="btn btn-success">Find Nearest</a>
+                <h3 class="card-title">Encuentra Centros Cercanos</h3>
+                <p class="card-text">Encuentra centros según tu ubicación, región y preferencias.</p>
+                <a href="/find-nearest/" class="btn btn-success">Encuentra Cercanos</a>
             </div>
         </div>
     </div>
@@ -42,12 +42,12 @@
 <!-- Search Form -->
 <div class="card mb-4" id="searchSection">
     <div class="card-body">
-        <h5 class="card-title">Search Schools</h5>
+        <h5 class="card-title">Buscar Centros</h5>
         <form id="searchForm">
             <div class="mb-3">
-                <input type="text" class="form-control" id="searchInput" placeholder="Enter school name, municipality, or province...">
+                <input type="text" class="form-control" id="searchInput" placeholder="Introduce nombre del centro, municipio o provincia...">
             </div>
-            <button type="submit" class="btn btn-primary">Search</button>
+            <button type="submit" class="btn btn-primary">Buscar</button>
         </form>
     </div>
 </div>
@@ -55,7 +55,7 @@
 <!-- Loading Indicator -->
 <div class="loading text-center">
     <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
+        <span class="visually-hidden">Cargando...</span>
     </div>
 </div>
 
@@ -81,28 +81,28 @@
             const data = await response.json();
             
             if (data.length === 0) {
-                results.innerHTML = '<p class="text-center">No schools found.</p>';
+                results.innerHTML = '<p class="text-center">No se encontraron centros.</p>';
             } else {
                 results.innerHTML = data.map(school => `
                     <div class="card school-card">
                         <div class="card-body">
                             <h5 class="card-title">${school.name}</h5>
                             <p class="card-text">
-                                <strong>Location:</strong> ${school.municipality}, ${school.province}<br>
-                                <strong>Autonomous Community:</strong> ${school.autonomous_community}<br>
-                                <strong>Type:</strong> ${school.center_type}<br>
-                                <strong>Nature:</strong> ${school.nature}
+                                <strong>Ubicación:</strong> ${school.municipality}, ${school.province}<br>
+                                <strong>Comunidad Autónoma:</strong> ${school.autonomous_community}<br>
+                                <strong>Tipo de centro:</strong> ${school.center_type}<br>
+                                <strong>Titularidad:</strong> ${school.nature}
                             </p>
                             <div class="d-flex gap-2">
-                                <a href="/schools/${school.id}/" class="btn btn-sm btn-outline-primary">View Details</a>
-                                <a href="/find-nearest/?preset_school=${school.id}" class="btn btn-sm btn-outline-success">Find Similar Schools Nearby</a>
+                                <a href="/schools/${school.id}/" class="btn btn-sm btn-outline-primary">Ver Detalles</a>
+                                <a href="/find-nearest/?preset_school=${school.id}" class="btn btn-sm btn-outline-success">Encontrar Centros Similares Cercanos</a>
                             </div>
                         </div>
                     </div>
                 `).join('');
             }
         } catch (error) {
-            results.innerHTML = '<p class="text-center text-danger">Error searching for schools. Please try again.</p>';
+            results.innerHTML = '<p class="text-center text-danger">Error al buscar centros. Por favor, inténtalo de nuevo.</p>';
         } finally {
             loading.style.display = 'none';
         }

@@ -1,6 +1,6 @@
 {% extends "schools/base.html" %}
 
-{% block title %}Find Nearest School{% endblock %}
+{% block title %}Encuentra Centros Cercanos{% endblock %}
 
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -32,18 +32,18 @@
 
 {% block content %}
 <div class="search-container">
-    <h1 class="text-center mb-4">Find Nearest School</h1>
+    <h1 class="text-center mb-4">Encuentra Centros Cercanos</h1>
     
     <form id="searchForm" class="mb-4">
         <div class="mb-3">
-            <label for="address" class="form-label">Your Address</label>
-            <input type="text" class="form-control" id="address" placeholder="Enter your complete address" required>
+            <label for="address" class="form-label">Tu Dirección</label>
+            <input type="text" class="form-control" id="address" placeholder="Introduce tu dirección completa" required>
         </div>
         
         <div class="mb-3">
-            <label for="region" class="form-label">Autonomous Community</label>
+            <label for="region" class="form-label">Comunidad Autónoma</label>
             <select class="form-select" id="region">
-                <option value="" selected>Select an autonomous community</option>
+                <option value="" selected>Selecciona una comunidad autónoma</option>
                 <option value="andalucia">Andalucía</option>
                 <option value="aragon">Aragón</option>
                 <option value="asturias">Asturias</option>
@@ -67,21 +67,21 @@
         </div>
         
         <div class="mb-3">
-            <label for="provinces" class="form-label">Provinces</label>
+            <label for="provinces" class="form-label">Provincias</label>
             <select class="form-select" id="provinces" multiple disabled>
                 <!-- Provinces will be populated based on selected region -->
             </select>
-            <small class="form-text text-muted">Select one or more provinces from the selected region</small>
+            <small class="form-text text-muted">Selecciona una o más provincias de la comunidad seleccionada</small>
         </div>
         
         <div class="mb-3">
-            <label class="form-label">School Ownership Type</label>
+            <label class="form-label">Tipo de Centro</label>
             <div class="btn-group-vertical w-100" role="group">
                 <input type="checkbox" class="btn-check" id="publicCheck" name="school_types" value="public">
-                <label class="btn btn-outline-primary text-start" for="publicCheck">Public</label>
+                <label class="btn btn-outline-primary text-start" for="publicCheck">Público</label>
                 
                 <input type="checkbox" class="btn-check" id="privateCheck" name="school_types" value="private">
-                <label class="btn btn-outline-primary text-start" for="privateCheck">Private</label>
+                <label class="btn btn-outline-primary text-start" for="privateCheck">Privado</label>
                 
                 <input type="checkbox" class="btn-check" id="concertadoCheck" name="school_types" value="concertado">
                 <label class="btn btn-outline-primary text-start" for="concertadoCheck">Concertado</label>
@@ -89,30 +89,30 @@
         </div>
         
         <div class="mb-3">
-            <label class="form-label">Education Levels</label>
+            <label class="form-label">Niveles Educativos</label>
             <div class="btn-group-vertical w-100" role="group">
                 <input type="checkbox" class="btn-check" id="infantilCheck" name="school_types" value="infantil">
-                <label class="btn btn-outline-primary text-start" for="infantilCheck">Infantil (Pre-school)</label>
+                <label class="btn btn-outline-primary text-start" for="infantilCheck">Infantil</label>
                 
                 <input type="checkbox" class="btn-check" id="primariaCheck" name="school_types" value="primaria">
-                <label class="btn btn-outline-primary text-start" for="primariaCheck">Primaria (Primary)</label>
+                <label class="btn btn-outline-primary text-start" for="primariaCheck">Primaria</label>
                 
                 <input type="checkbox" class="btn-check" id="secundariaCheck" name="school_types" value="secundaria">
-                <label class="btn btn-outline-primary text-start" for="secundariaCheck">Secundaria (Secondary)</label>
+                <label class="btn btn-outline-primary text-start" for="secundariaCheck">Secundaria</label>
                 
                 <input type="checkbox" class="btn-check" id="bachilleratoCheck" name="school_types" value="bachillerato">
                 <label class="btn btn-outline-primary text-start" for="bachilleratoCheck">Bachillerato</label>
                 
                 <input type="checkbox" class="btn-check" id="fpCheck" name="school_types" value="fp">
-                <label class="btn btn-outline-primary text-start" for="fpCheck">Formación Profesional (FP)</label>
+                <label class="btn btn-outline-primary text-start" for="fpCheck">Formación Profesional</label>
             </div>
         </div>
         
-        <button type="submit" class="btn btn-primary w-100">Find Nearest School</button>
+        <button type="submit" class="btn btn-primary w-100">Encontrar Centros Cercanos</button>
     </form>
     
     <div id="result" class="d-none">
-        <h3 class="mb-3">Matching Schools:</h3>
+        <h3 class="mb-3">Centros Encontrados:</h3>
         <div id="schoolResults" class="school-results">
             <!-- School cards will be added here dynamically -->
         </div>
@@ -121,7 +121,7 @@
     <div id="error" class="alert alert-danger d-none"></div>
     <div id="loading" class="text-center d-none">
         <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
+            <span class="visually-hidden">Cargando...</span>
         </div>
     </div>
 </div>
@@ -156,7 +156,7 @@
     $(document).ready(function() {
         // Initialize Select2
         $('#provinces').select2({
-            placeholder: 'Select provinces',
+            placeholder: 'Selecciona provincias',
             allowClear: true
         });
 
@@ -248,7 +248,7 @@
                 console.log('Response status:', response.status);
                 
                 if (!response.ok) {
-                    let errorMessage = 'Failed to find schools';
+                    let errorMessage = 'No se pudieron encontrar centros';
                     try {
                         const data = await response.json();
                         errorMessage = data.error || errorMessage;
@@ -266,7 +266,7 @@
                 schoolResultsDiv.empty();
                 
                 // Display total count
-                schoolResultsDiv.append(`<p class="mb-3">Found ${data.total_count} schools matching your criteria.</p>`);
+                schoolResultsDiv.append(`<p class="mb-3">Se encontraron ${data.total_count} centros que coinciden con tus criterios.</p>`);
                 
                 // Update result with all schools
                 if (data.schools && data.schools.length > 0) {
@@ -274,9 +274,9 @@
                         // Format distance
                         let distanceText = '';
                         if (school.distance !== null && school.distance !== undefined) {
-                            distanceText = `<p class="card-text text-success">Distance: ${school.distance.toFixed(2)} km</p>`;
+                            distanceText = `<p class="card-text text-success">Distancia: ${school.distance.toFixed(2)} km</p>`;
                         } else {
-                            distanceText = `<p class="card-text text-muted">Distance: Not available</p>`;
+                            distanceText = `<p class="card-text text-muted">Distancia: No disponible</p>`;
                         }
 
                         const schoolCard = `
@@ -284,9 +284,9 @@
                                 <div class="card-body">
                                     <h5 class="card-title">${school.name}</h5>
                                     <p class="card-text">${school.address}, ${school.municipality}, ${school.province}</p>
-                                    <p class="card-text">Type: ${school.nature || 'Not specified'}</p>
+                                    <p class="card-text">Tipo: ${school.nature || 'No especificado'}</p>
                                     ${distanceText}
-                                    <a href="/schools/${school.id}/" class="btn btn-outline-primary">View Details</a>
+                                    <a href="/schools/${school.id}/" class="btn btn-outline-primary">Ver Detalles</a>
                                 </div>
                             </div>
                         `;
@@ -297,14 +297,14 @@
                     if (data.search_criteria && data.search_criteria.user_location) {
                         const locationInfo = `
                             <div class="alert alert-info mt-3">
-                                <p><strong>Your location:</strong> ${data.search_criteria.address}</p>
-                                <p>Schools are sorted by distance from your location.</p>
+                                <p><strong>Tu ubicación:</strong> ${data.search_criteria.address}</p>
+                                <p>Los centros están ordenados por distancia desde tu ubicación.</p>
                             </div>
                         `;
                         schoolResultsDiv.append(locationInfo);
                     }
                 } else {
-                    schoolResultsDiv.append('<p>No schools found matching your criteria.</p>');
+                    schoolResultsDiv.append('<p>No se encontraron centros que coincidan con tus criterios.</p>');
                 }
                 
                 // Show result
