@@ -138,84 +138,117 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', async function() {
-        // Get the school ID from the URL path, removing any trailing slashes
-        const schoolId = window.location.pathname.split('/').filter(Boolean).pop();
-        
-        if (!schoolId) {
-            document.getElementById('schoolName').textContent = 'Identificador de centro no válido';
-            document.getElementById('schoolLocation').textContent = 'Por favor, regresa a la página de búsqueda';
-            return;
+        // Helper function to safely update element text
+        function updateElementText(elementId, text) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = text;
+            }
         }
-        
+
+        // Helper function to safely update element HTML
+        function updateElementHTML(elementId, html) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = html;
+            }
+        }
+
         try {
+            // Get school ID from URL
+            const pathParts = window.location.pathname.split('/');
+            const schoolId = pathParts[pathParts.length - 2];
+            
+            if (!schoolId) {
+                updateElementText('schoolName', 'ID de centro no válido');
+                updateElementText('schoolLocation', 'Por favor, vuelve a la página de búsqueda');
+                return;
+            }
+
+            // Update find similar button href
+            const findSimilarBtn = document.getElementById('findSimilarBtn');
+            if (findSimilarBtn) {
+                findSimilarBtn.href = `/find-nearest/?preset_school=${schoolId}`;
+            }
+            
             // Fetch school details
             const response = await fetch(`/api/schools/${schoolId}/`);
             if (!response.ok) {
-                throw new Error('School not found');
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
             }
             const school = await response.json();
             
             // Update basic information
-            document.getElementById('schoolName').textContent = school.name;
-            document.getElementById('schoolLocation').textContent = `${school.municipality}, ${school.province}`;
-            document.getElementById('centerType').textContent = school.center_type || 'No especificado';
-            document.getElementById('nature').textContent = school.nature || 'No especificado';
-            document.getElementById('autonomousCommunity').textContent = school.autonomous_community || 'No especificado';
-            document.getElementById('province').textContent = school.province || 'No especificado';
-            document.getElementById('municipality').textContent = school.municipality || 'No especificado';
-            document.getElementById('address').textContent = school.address || 'No especificado';
-            document.getElementById('postalCode').textContent = school.postal_code || 'No especificado';
-            document.getElementById('phone').textContent = school.phone || 'No especificado';
-            document.getElementById('email').textContent = school.email || 'No especificado';
-            document.getElementById('website').textContent = school.website || 'No especificado';
-            document.getElementById('isConcerted').textContent = school.is_concerted ? 'Sí' : 'No';
-            document.getElementById('genericName').textContent = school.generic_name || 'No especificado';
+            updateElementText('schoolName', school.name || 'Nombre no disponible');
+            updateElementText('schoolLocation', `${school.municipality || ''}, ${school.province || ''}`);
+            updateElementText('centerType', school.center_type || 'No especificado');
+            updateElementText('nature', school.nature || 'No especificado');
+            updateElementText('autonomousCommunity', school.autonomous_community || 'No especificado');
+            updateElementText('province', school.province || 'No especificado');
+            updateElementText('municipality', school.municipality || 'No especificado');
             
-            // Display services as badges
-            const servicesElement = document.getElementById('services');
-            if (school.services && school.services.length > 0) {
-                // Parse the JSON string if it's a string, otherwise use it directly
-                const services = typeof school.services === 'string' 
-                    ? JSON.parse(school.services.replace(/'/g, '"')) 
-                    : school.services;
-                
-                servicesElement.innerHTML = services.map(service => {
-                    let badgeClass = 'service-badge other';
-                    if (service.toLowerCase().includes('transporte')) {
-                        badgeClass = 'service-badge transport';
-                    } else if (service.toLowerCase().includes('comedor')) {
-                        badgeClass = 'service-badge comedor';
-                    } else if (service.toLowerCase().includes('internado')) {
-                        badgeClass = 'service-badge internado';
-                    }
-                    return `<li><span class="${badgeClass}">${service}</span></li>`;
-                }).join('');
-            } else {
-                servicesElement.innerHTML = '<li><span class="text-muted">No hay servicios especificados</span></li>';
+            // Update contact information
+            updateElementText('address', school.address || 'No especificado');
+            updateElementText('postalCode', school.postal_code || 'No especificado');
+            updateElementText('phone', school.phone || 'No especificado');
+            updateElementText('email', school.email || 'No especificado');
+            
+            // Update web link
+            const webLink = document.getElementById('web');
+            if (webLink) {
+                if (school.web) {
+                    webLink.href = school.web;
+                    webLink.textContent = school.web;
+                } else {
+                    webLink.textContent = 'No disponible';
+                    webLink.removeAttribute('href');
+                }
             }
-
-            // Display studies
-            const studiesList = document.getElementById('studiesList');
-            if (school.studies && school.studies.length > 0) {
-                studiesList.innerHTML = school.studies.map(study => `
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card study-card">
-                            <div class="card-body">
-                                <h5 class="card-title">${study.name}</h5>
-                                <p class="study-degree">${study.degree || 'No especificado'}</p>
-                                <p class="study-family">Familia: ${study.family || 'No especificado'}</p>
-                                <p class="study-modality">Modalidad: ${study.modality || 'No especificado'}</p>
+            
+            // Update studies
+            const studiesContainer = document.getElementById('studiesList');
+            if (studiesContainer) {
+                if (school.studies && school.studies.length > 0) {
+                    studiesContainer.innerHTML = ''; // Clear existing content
+                    school.studies.forEach(study => {
+                        const studyCard = document.createElement('div');
+                        studyCard.className = 'col-md-6 col-lg-4';
+                        studyCard.innerHTML = `
+                            <div class="card study-card">
+                                <div class="card-body">
+                                    <h5 class="card-title study-degree">${study.name || 'Sin nombre'}</h5>
+                                    ${study.degree ? `<p class="study-family">${study.degree}</p>` : ''}
+                                    ${study.modality ? `<p class="study-modality">${study.modality}</p>` : ''}
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                studiesList.innerHTML = '<div class="col-12"><p class="text-center">No hay información disponible sobre los estudios impartidos.</p></div>';
+                        `;
+                        studiesContainer.appendChild(studyCard);
+                    });
+                } else {
+                    studiesContainer.innerHTML = '<div class="col-12"><p>No hay información disponible sobre los estudios impartidos.</p></div>';
+                }
             }
+            
+            // Update services
+            const servicesContainer = document.getElementById('services');
+            if (servicesContainer) {
+                if (school.services && school.services.length > 0) {
+                    servicesContainer.innerHTML = ''; // Clear existing content
+                    school.services.forEach(service => {
+                        const serviceBadge = document.createElement('span');
+                        serviceBadge.className = `service-badge ${service.type || 'other'}`;
+                        serviceBadge.textContent = service.name || 'Servicio sin nombre';
+                        servicesContainer.appendChild(serviceBadge);
+                    });
+                } else {
+                    servicesContainer.innerHTML = '<p>No hay información disponible sobre los servicios ofrecidos.</p>';
+                }
+            }
+            
         } catch (error) {
             console.error('Error fetching school details:', error);
-            document.getElementById('schoolName').textContent = 'Error al cargar los detalles del centro';
-            document.getElementById('schoolLocation').textContent = 'Por favor, inténtalo de nuevo más tarde';
+            updateElementText('schoolName', 'Error al cargar los detalles del centro');
+            updateElementText('schoolLocation', 'Por favor, inténtalo de nuevo más tarde');
         }
     });
 </script>
