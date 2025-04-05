@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -14,6 +14,22 @@ from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 from functools import lru_cache
 import logging
+import googlemaps
+from django.http import JsonResponse
+from django.views import View
+import json
+from django.core.serializers import serialize
+from django.core.cache import cache
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.core.paginator import Paginator
+from django.db.models import Count
+from django.db.models.functions import Lower
+from django.core.exceptions import ValidationError
+from django.db.models import F, FloatField, ExpressionWrapper
+from django.db.models.functions import Cast
+
+api_key = settings.GOOGLE_MAPS_API_KEY
 
 # Create your views here.
 
@@ -106,19 +122,19 @@ class NearestSchoolView(APIView):
     def get(self, request):
         """Find schools based on user filters and calculate distances."""
         address = request.GET.get('address')
+        latitude = request.GET.get('latitude')
+        longitude = request.GET.get('longitude')
         provinces = request.GET.getlist('provinces')
         school_types = request.GET.getlist('school_types')
         
-        if not address:
-            return Response({'error': 'Address is required'}, status=status.HTTP_400_BAD_REQUEST)
+        if not address or not latitude or not longitude:
+            return Response({'error': 'Address and coordinates are required'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            # Geocode the user's address
-            user_lat, user_lon = geocode_address(address)
-            
-            if not user_lat or not user_lon:
-                return Response({'error': 'Could not geocode your address. Please try a more specific address.'}, 
-                               status=status.HTTP_400_BAD_REQUEST)
+            # Convert coordinates to float
+            user_lat = float(latitude)
+            user_lon = float(longitude)
             
             # Start with all schools
             schools = School.objects.all()
@@ -155,32 +171,25 @@ class NearestSchoolView(APIView):
                         education_conditions |= Q(studies__name__icontains='primaria')
                     if 'secundaria' in education_levels:
                         education_conditions |= (
-                            # Check generic_name
                             Q(generic_name__icontains='secundaria') |
                             Q(generic_name__icontains='ESO') |
                             Q(generic_name__icontains='Educación Secundaria')
                         )
                     if 'bachillerato' in education_levels:
                         education_conditions |= (
-                            # Check studies
                             Q(studies__name__icontains='bachillerato') |
-                            # Check generic_name
                             Q(generic_name__icontains='bachillerato') |
-                            # Check center_type
                             Q(center_type__icontains='bachillerato')
                         )
                     if 'fp' in education_levels:
                         education_conditions |= (
-                            # Check studies
                             Q(studies__name__icontains='formación profesional') | 
                             Q(studies__name__icontains='FP') |
                             Q(studies__degree__icontains='formación profesional') |
                             Q(studies__degree__icontains='FP') |
                             Q(studies__degree__icontains='grado') |
-                            # Check generic_name
                             Q(generic_name__icontains='formación profesional') |
                             Q(generic_name__icontains='FP') |
-                            # Check center_type
                             Q(center_type__icontains='formación profesional') |
                             Q(center_type__icontains='FP') |
                             Q(center_type__icontains='ciclo')
@@ -189,38 +198,88 @@ class NearestSchoolView(APIView):
                     if education_conditions:
                         schools = schools.filter(education_conditions).distinct()
             
-            # Get schools with valid coordinates
+            # Get schools with valid coordinates and calculate distances
             matching_schools = []
-            for school in schools:  # Limit to 100 for performance
-                # Skip schools with missing coordinates
+            for school in schools:
                 if school.latitude is None or school.longitude is None:
                     continue
                 
                 # Calculate distance
                 distance = calculate_distance(user_lat, user_lon, school.latitude, school.longitude)
                 
-                # Add school with distance to results
-                matching_schools.append({
-                    'school': school,
-                    'distance': distance
-                })
+                if distance is not None:
+                    matching_schools.append({
+                        'school': school,
+                        'distance': distance
+                    })
             
-            # Sort by distance
-            matching_schools.sort(key=lambda x: x['distance'] if x['distance'] is not None else float('inf'))
-            
-            # Limit to top 50
-            matching_schools = matching_schools[:50]
+            # Sort by distance and take top 10
+            matching_schools.sort(key=lambda x: x['distance'])
+            matching_schools = matching_schools[:10]
             
             if not matching_schools:
                 return Response({
                     'error': 'No schools with location data found matching your criteria'
                 }, status=status.HTTP_404_NOT_FOUND)
             
+            # Calculate travel times only for the top 10 closest schools
+            gmaps = googlemaps.Client(key=api_key)
+            for entry in matching_schools:
+                school = entry['school']
+                try:
+                    # Walking
+                    walking_result = gmaps.directions(
+                        origin=(user_lat, user_lon),
+                        destination=(school.latitude, school.longitude),
+                        mode="walking"
+                    )
+                    walking_time = walking_result[0]['legs'][0]['duration']['text'] if walking_result else None
+                    
+                    # Driving
+                    driving_result = gmaps.directions(
+                        origin=(user_lat, user_lon),
+                        destination=(school.latitude, school.longitude),
+                        mode="driving"
+                    )
+                    driving_time = driving_result[0]['legs'][0]['duration']['text'] if driving_result else None
+                    
+                    # Bicycling
+                    biking_result = gmaps.directions(
+                        origin=(user_lat, user_lon),
+                        destination=(school.latitude, school.longitude),
+                        mode="bicycling"
+                    )
+                    biking_time = biking_result[0]['legs'][0]['duration']['text'] if biking_result else None
+                    
+                    # Transit
+                    transit_result = gmaps.directions(
+                        origin=(user_lat, user_lon),
+                        destination=(school.latitude, school.longitude),
+                        mode="transit"
+                    )
+                    transit_time = transit_result[0]['legs'][0]['duration']['text'] if transit_result else None
+                    
+                    entry['travel_times'] = {
+                        'walking': walking_time,
+                        'driving': driving_time,
+                        'bicycling': biking_time,
+                        'transit': transit_time
+                    }
+                except Exception as e:
+                    logger.error(f"Error calculating travel times: {str(e)}")
+                    entry['travel_times'] = {
+                        'walking': None,
+                        'driving': None,
+                        'bicycling': None,
+                        'transit': None
+                    }
+            
             # Build response
             school_data = []
             for entry in matching_schools:
                 school_dict = SchoolSerializer(entry['school']).data
                 school_dict['distance'] = entry['distance']
+                school_dict['travel_times'] = entry['travel_times']
                 school_data.append(school_dict)
             
             return Response({

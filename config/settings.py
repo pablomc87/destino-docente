@@ -14,6 +14,11 @@ import os
 from pathlib import Path
 import secrets
 import dj_database_url
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -52,6 +57,9 @@ if IS_HEROKU_APP:
     SECURE_SSL_REDIRECT = True
 else:
     ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0').split(',')
+
+# Google Maps API Key
+GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
 
 # Application definition
 
@@ -96,6 +104,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'config.settings.google_maps_api_key',
             ],
         },
     },
@@ -123,8 +132,8 @@ if IS_HEROKU_APP:
 else:
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DATABASE_URL'),
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         },
         'schools_db': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -220,3 +229,7 @@ LOGGING = {
         },
     },
 }
+
+# Add context processor for Google Maps API key
+def google_maps_api_key(request):
+    return {'google_maps_api_key': GOOGLE_MAPS_API_KEY}

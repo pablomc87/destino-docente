@@ -28,16 +28,46 @@
 .select2-selection--multiple {
     min-height: 38px !important;
 }
+/* Style for the Google Places picker */
+gmpx-place-picker {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+/* Style for travel times */
+.travel-times {
+    border-top: 1px solid #eee;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+}
+.travel-times p {
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+.travel-times i {
+    width: 20px;
+    text-align: center;
+    margin-right: 5px;
+}
 {% endblock %}
 
 {% block content %}
 <div class="search-container">
     <h1 class="text-center mb-4">Encuentra Centros Cercanos</h1>
     
+    <!-- Debug info for API key -->
+    {% if debug %}
+    <div class="alert alert-info">
+        <p>Debug Info:</p>
+        <p>API Key Present: {% if google_maps_api_key %}Yes{% else %}No{% endif %}</p>
+    </div>
+    {% endif %}
+    
     <form id="searchForm" class="mb-4">
         <div class="mb-3">
             <label for="address" class="form-label">Tu Dirección</label>
-            <input type="text" class="form-control" id="address" placeholder="Introduce tu dirección completa" required>
+            <div id="placePickerContainer">
+                <input type="text" id="address" class="form-control" placeholder="Introduce tu dirección completa" required>
+            </div>
         </div>
         
         <div class="mb-3">
@@ -128,194 +158,286 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Add Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places&callback=Function.prototype"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
-    // Regional provinces data
-    const provincesData = {
-        andalucia: ['Almería', 'Cádiz', 'Córdoba', 'Granada', 'Huelva', 'Jaén', 'Málaga', 'Sevilla'],
-        aragon: ['Huesca', 'Teruel', 'Zaragoza'],
-        asturias: ['Asturias'],
-        baleares: ['Islas Baleares'],
-        canarias: ['Las Palmas', 'Santa Cruz de Tenerife'],
-        cantabria: ['Cantabria'],
-        castilla_la_mancha: ['Albacete', 'Ciudad Real', 'Cuenca', 'Guadalajara', 'Toledo'],
-        castilla_y_leon: ['Ávila', 'Burgos', 'León', 'Palencia', 'Salamanca', 'Segovia', 'Soria', 'Valladolid', 'Zamora'],
-        cataluna: ['Barcelona', 'Girona', 'Lleida', 'Tarragona'],
-        comunidad_valenciana: ['Alicante', 'Castellón', 'Valencia'],
-        extremadura: ['Badajoz', 'Cáceres'],
-        galicia: ['A Coruña', 'Lugo', 'Ourense', 'Pontevedra'],
-        madrid: ['Madrid'],
-        murcia: ['Murcia'],
-        navarra: ['Navarra'],
-        pais_vasco: ['Álava', 'Guipúzcoa', 'Vizcaya'],
-        la_rioja: ['La Rioja'],
-        ceuta: ['Ceuta'],
-        melilla: ['Melilla'],
+    // Debug log for API key
+    console.log('Google Maps API Key:', '{{ google_maps_api_key }}');
+    
+    // Initialize Google Maps Place Autocomplete
+    const initializeGoogleMaps = () => {
+        const input = document.getElementById('address');
+        const autocomplete = new google.maps.places.Autocomplete(input, {
+            componentRestrictions: { country: 'es' },
+            fields: ['formatted_address', 'geometry', 'address_components'],
+            types: ['address']
+        });
+
+        // Handle place selection
+        autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (!place) return;
+
+            // Try to automatically fill the region based on the selected place
+            for (const component of place.address_components) {
+                if (component.types.includes('administrative_area_level_1')) {
+                    // This is the autonomous community
+                    const regionSelect = $('#region');
+                    const regionName = component.longName;
+                    
+                    // Find and select the matching region option
+                    regionSelect.find('option').each(function() {
+                        if ($(this).text().includes(regionName)) {
+                            regionSelect.val($(this).val()).trigger('change');
+                            return false; // Break the loop
+                        }
+                    });
+                }
+            }
+        });
+
+        return autocomplete;
     };
 
-    $(document).ready(function() {
-        // Initialize Select2
-        $('#provinces').select2({
-            placeholder: 'Selecciona provincias',
-            allowClear: true
-        });
+    // Wait for the Google Maps API to be loaded
+    window.addEventListener('load', () => {
+        let autocomplete = null;
+        
+        try {
+            autocomplete = initializeGoogleMaps();
+        } catch (error) {
+            console.error('Failed to initialize Google Maps:', error);
+            $('#error').text('Error al inicializar el buscador de direcciones. Por favor, recarga la página.');
+            $('#error').removeClass('d-none');
+        }
+        
+        // Regional provinces data
+        const provincesData = {
+            andalucia: ['Almería', 'Cádiz', 'Córdoba', 'Granada', 'Huelva', 'Jaén', 'Málaga', 'Sevilla'],
+            aragon: ['Huesca', 'Teruel', 'Zaragoza'],
+            asturias: ['Asturias'],
+            baleares: ['Islas Baleares'],
+            canarias: ['Las Palmas', 'Santa Cruz de Tenerife'],
+            cantabria: ['Cantabria'],
+            castilla_la_mancha: ['Albacete', 'Ciudad Real', 'Cuenca', 'Guadalajara', 'Toledo'],
+            castilla_y_leon: ['Ávila', 'Burgos', 'León', 'Palencia', 'Salamanca', 'Segovia', 'Soria', 'Valladolid', 'Zamora'],
+            cataluna: ['Barcelona', 'Girona', 'Lleida', 'Tarragona'],
+            comunidad_valenciana: ['Alicante', 'Castellón', 'Valencia'],
+            extremadura: ['Badajoz', 'Cáceres'],
+            galicia: ['A Coruña', 'Lugo', 'Ourense', 'Pontevedra'],
+            madrid: ['Madrid'],
+            murcia: ['Murcia'],
+            navarra: ['Navarra'],
+            pais_vasco: ['Álava', 'Guipúzcoa', 'Vizcaya'],
+            la_rioja: ['La Rioja'],
+            ceuta: ['Ceuta'],
+            melilla: ['Melilla'],
+        };
 
-        // When region changes, update provinces
-        $('#region').change(function() {
-            const region = $(this).val();
-            const $provinces = $('#provinces');
-            
-            // Clear provinces
-            $provinces.empty();
-            
-            if (region) {
-                // Enable provinces selector
-                $provinces.prop('disabled', false);
-                
-                // Add provinces for selected region
-                provincesData[region].forEach(province => {
-                    $provinces.append(new Option(province, province));
-                });
-            } else {
-                // If no region selected, disable provinces
-                $provinces.prop('disabled', true);
-            }
-            
-            // Trigger change for Select2 to update
-            $provinces.trigger('change');
-        });
+        $(document).ready(function() {
+            // Initialize Select2
+            $('#provinces').select2({
+                placeholder: 'Selecciona provincias',
+                allowClear: true
+            });
 
-        // Form submission
-        $('#searchForm').submit(async function(e) {
-            e.preventDefault();
-            
-            const address = $('#address').val();
-            const region = $('#region').val();
-            let provinces = $('#provinces').val();
-            
-            // Get school ownership types
-            const ownershipTypes = [];
-            if ($('#publicCheck').is(':checked')) ownershipTypes.push('public');
-            if ($('#privateCheck').is(':checked')) ownershipTypes.push('private');
-            if ($('#concertadoCheck').is(':checked')) ownershipTypes.push('concertado');
-            
-            // Get education levels
-            const educationLevels = [];
-            if ($('#infantilCheck').is(':checked')) educationLevels.push('infantil');
-            if ($('#primariaCheck').is(':checked')) educationLevels.push('primaria');
-            if ($('#secundariaCheck').is(':checked')) educationLevels.push('secundaria');
-            if ($('#bachilleratoCheck').is(':checked')) educationLevels.push('bachillerato');
-            if ($('#fpCheck').is(':checked')) educationLevels.push('fp');
-            
-            // Combine all school_types
-            const school_types = [...ownershipTypes, ...educationLevels];
-            
-            // If a region is selected but no provinces, use all provinces from that region
-            if (region && (!provinces || provinces.length === 0)) {
-                provinces = provincesData[region];
-            }
-            
-            const resultDiv = $('#result');
-            const errorDiv = $('#error');
-            const loadingDiv = $('#loading');
-            
-            // Show loading, hide other elements
-            loadingDiv.removeClass('d-none');
-            resultDiv.addClass('d-none');
-            errorDiv.addClass('d-none');
-            
-            try {
-                // Build URL with parameters
-                const params = new URLSearchParams({ address });
+            // When region changes, update provinces
+            $('#region').change(function() {
+                const region = $(this).val();
+                const $provinces = $('#provinces');
                 
-                if (provinces && provinces.length > 0) {
-                    provinces.forEach(province => {
-                        params.append('provinces', province);
+                // Clear provinces
+                $provinces.empty();
+                
+                if (region) {
+                    // Enable provinces selector
+                    $provinces.prop('disabled', false);
+                    
+                    // Add provinces for selected region
+                    provincesData[region].forEach(province => {
+                        $provinces.append(new Option(province, province));
                     });
-                }
-                
-                if (school_types && school_types.length > 0) {
-                    school_types.forEach(type => {
-                        params.append('school_types', type);
-                    });
-                }
-                
-                // Log the request for debugging
-                const requestUrl = `/api/schools/nearest/?${params.toString()}`;
-                console.log('Sending request to:', requestUrl);
-                
-                const response = await fetch(requestUrl);
-                console.log('Response status:', response.status);
-                
-                if (!response.ok) {
-                    let errorMessage = 'No se pudieron encontrar centros';
-                    try {
-                        const data = await response.json();
-                        errorMessage = data.error || errorMessage;
-                    } catch (jsonError) {
-                        console.error('Failed to parse error response:', jsonError);
-                    }
-                    throw new Error(errorMessage);
-                }
-                
-                const data = await response.json();
-                console.log('Received data:', data);
-                
-                // Clear previous results
-                const schoolResultsDiv = $('#schoolResults');
-                schoolResultsDiv.empty();
-                
-                // Display total count
-                schoolResultsDiv.append(`<p class="mb-3">Se encontraron ${data.total_count} centros que coinciden con tus criterios.</p>`);
-                
-                // Update result with all schools
-                if (data.schools && data.schools.length > 0) {
-                    data.schools.forEach(school => {
-                        // Format distance
-                        let distanceText = '';
-                        if (school.distance !== null && school.distance !== undefined) {
-                            distanceText = `<p class="card-text text-success">Distancia: ${school.distance.toFixed(2)} km</p>`;
-                        } else {
-                            distanceText = `<p class="card-text text-muted">Distancia: No disponible</p>`;
-                        }
-
-                        const schoolCard = `
-                            <div class="card result-card mb-3">
-                                <div class="card-body">
-                                    <h5 class="card-title">${school.name}</h5>
-                                    <p class="card-text">${school.address}, ${school.municipality}, ${school.province}</p>
-                                    <p class="card-text">Tipo: ${school.nature || 'No especificado'}</p>
-                                    ${distanceText}
-                                    <a href="/schools/${school.id}/" class="btn btn-outline-primary">Ver Detalles</a>
-                                </div>
-                            </div>
-                        `;
-                        schoolResultsDiv.append(schoolCard);
-                    });
-
-                    // Add summary about user location if available
-                    if (data.search_criteria && data.search_criteria.user_location) {
-                        const locationInfo = `
-                            <div class="alert alert-info mt-3">
-                                <p><strong>Tu ubicación:</strong> ${data.search_criteria.address}</p>
-                                <p>Los centros están ordenados por distancia desde tu ubicación.</p>
-                            </div>
-                        `;
-                        schoolResultsDiv.append(locationInfo);
-                    }
                 } else {
-                    schoolResultsDiv.append('<p>No se encontraron centros que coincidan con tus criterios.</p>');
+                    // If no region selected, disable provinces
+                    $provinces.prop('disabled', true);
                 }
                 
-                // Show result
-                resultDiv.removeClass('d-none');
+                // Trigger change for Select2 to update
+                $provinces.trigger('change');
+            });
+
+            // Form submission
+            $('#searchForm').submit(async function(e) {
+                e.preventDefault();
                 
-            } catch (error) {
-                errorDiv.text(error.message);
-                errorDiv.removeClass('d-none');
-            } finally {
-                loadingDiv.addClass('d-none');
-            }
+                if (!autocomplete) {
+                    $('#error').text('El buscador de direcciones no está disponible. Por favor, recarga la página.');
+                    $('#error').removeClass('d-none');
+                    return;
+                }
+
+                const place = autocomplete.getPlace();
+                if (!place || !place.formatted_address || !place.geometry) {
+                    $('#error').text('Por favor, selecciona una dirección válida.');
+                    $('#error').removeClass('d-none');
+                    return;
+                }
+
+                const address = place.formatted_address;
+                const latitude = place.geometry.location.lat();
+                const longitude = place.geometry.location.lng();
+                const region = $('#region').val();
+                let provinces = $('#provinces').val();
+                
+                // Get school ownership types
+                const ownershipTypes = [];
+                if ($('#publicCheck').is(':checked')) ownershipTypes.push('public');
+                if ($('#privateCheck').is(':checked')) ownershipTypes.push('private');
+                if ($('#concertadoCheck').is(':checked')) ownershipTypes.push('concertado');
+                
+                // Get education levels
+                const educationLevels = [];
+                if ($('#infantilCheck').is(':checked')) educationLevels.push('infantil');
+                if ($('#primariaCheck').is(':checked')) educationLevels.push('primaria');
+                if ($('#secundariaCheck').is(':checked')) educationLevels.push('secundaria');
+                if ($('#bachilleratoCheck').is(':checked')) educationLevels.push('bachillerato');
+                if ($('#fpCheck').is(':checked')) educationLevels.push('fp');
+                
+                // Combine all school_types
+                const school_types = [...ownershipTypes, ...educationLevels];
+                
+                // If a region is selected but no provinces, use all provinces from that region
+                if (region && (!provinces || provinces.length === 0)) {
+                    provinces = provincesData[region];
+                }
+                
+                const resultDiv = $('#result');
+                const errorDiv = $('#error');
+                const loadingDiv = $('#loading');
+                
+                // Show loading, hide other elements
+                loadingDiv.removeClass('d-none');
+                resultDiv.addClass('d-none');
+                errorDiv.addClass('d-none');
+                
+                try {
+                    // Build URL with parameters
+                    const params = new URLSearchParams({ 
+                        address,
+                        latitude,
+                        longitude
+                    });
+                    
+                    if (provinces && provinces.length > 0) {
+                        provinces.forEach(province => {
+                            params.append('provinces', province);
+                        });
+                    }
+                    
+                    if (school_types && school_types.length > 0) {
+                        school_types.forEach(type => {
+                            params.append('school_types', type);
+                        });
+                    }
+                    
+                    // Log the request for debugging
+                    const requestUrl = `/api/schools/nearest/?${params.toString()}`;
+                    console.log('Sending request to:', requestUrl);
+                    
+                    const response = await fetch(requestUrl);
+                    console.log('Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        let errorMessage = 'No se pudieron encontrar centros';
+                        try {
+                            const data = await response.json();
+                            errorMessage = data.error || errorMessage;
+                        } catch (jsonError) {
+                            console.error('Failed to parse error response:', jsonError);
+                        }
+                        throw new Error(errorMessage);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('Received data:', data);
+                    
+                    // Clear previous results
+                    const schoolResultsDiv = $('#schoolResults');
+                    schoolResultsDiv.empty();
+                    
+                    // Display total count
+                    schoolResultsDiv.append(`<p class="mb-3">Se encontraron ${data.total_count} centros que coinciden con tus criterios.</p>`);
+                    
+                    // Update result with all schools
+                    if (data.schools && data.schools.length > 0) {
+                        data.schools.forEach(school => {
+                            // Format distance
+                            let distanceText = '';
+                            if (school.distance !== null && school.distance !== undefined) {
+                                distanceText = `<p class="card-text text-success">Distancia: ${school.distance.toFixed(2)} km</p>`;
+                            } else {
+                                distanceText = `<p class="card-text text-muted">Distancia: No disponible</p>`;
+                            }
+
+                            // Format travel times
+                            let travelTimesHtml = '<div class="travel-times mt-2">';
+                            if (school.travel_times) {
+                                if (school.travel_times.walking) {
+                                    travelTimesHtml += `<p class="card-text"><i class="fas fa-walking"></i> A pie: ${school.travel_times.walking}</p>`;
+                                }
+                                if (school.travel_times.driving) {
+                                    travelTimesHtml += `<p class="card-text"><i class="fas fa-car"></i> En coche: ${school.travel_times.driving}</p>`;
+                                }
+                                if (school.travel_times.bicycling) {
+                                    travelTimesHtml += `<p class="card-text"><i class="fas fa-bicycle"></i> En bici: ${school.travel_times.bicycling}</p>`;
+                                }
+                                if (school.travel_times.transit) {
+                                    travelTimesHtml += `<p class="card-text"><i class="fas fa-bus"></i> En transporte público: ${school.travel_times.transit}</p>`;
+                                }
+                            }
+                            travelTimesHtml += '</div>';
+
+                            const schoolCard = `
+                                <div class="card result-card mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${school.name}</h5>
+                                        <p class="card-text">${school.address}, ${school.municipality}, ${school.province}</p>
+                                        <p class="card-text">Tipo: ${school.nature || 'No especificado'}</p>
+                                        ${distanceText}
+                                        ${travelTimesHtml}
+                                        <a href="/schools/${school.id}/" class="btn btn-outline-primary">Ver Detalles</a>
+                                    </div>
+                                </div>
+                            `;
+                            schoolResultsDiv.append(schoolCard);
+                        });
+
+                        // Add summary about user location if available
+                        if (data.search_criteria && data.search_criteria.user_location) {
+                            const locationInfo = `
+                                <div class="alert alert-info mt-3">
+                                    <p><strong>Tu ubicación:</strong> ${data.search_criteria.address}</p>
+                                    <p>Los centros están ordenados por distancia desde tu ubicación.</p>
+                                </div>
+                            `;
+                            schoolResultsDiv.append(locationInfo);
+                        }
+                    } else {
+                        schoolResultsDiv.append('<p>No se encontraron centros que coincidan con tus criterios.</p>');
+                    }
+                    
+                    // Show result
+                    resultDiv.removeClass('d-none');
+                    
+                } catch (error) {
+                    errorDiv.text(error.message);
+                    errorDiv.removeClass('d-none');
+                } finally {
+                    loadingDiv.addClass('d-none');
+                }
+            });
         });
     });
 </script>
