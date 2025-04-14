@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view
 from django.db.models import Q
 import math
 import requests
+from datetime import datetime, timedelta
 from django.conf import settings
 from .models import School, ImpartedStudy
 from .serializers import SchoolSerializer, StudySerializer
@@ -227,11 +228,16 @@ class NearestSchoolView(APIView):
             for entry in matching_schools:
                 school = entry['school']
                 try:
+                    hoy = datetime.now()
+                    lunes = hoy + timedelta(days=(7-hoy.weekday()) % 7)  # Próximo lunes
+                    llegada_lunes = lunes.replace(hour=8, minute=30, second=0, microsecond=0)
+                    llegada_lunes_timestamp = int(llegada_lunes.timestamp())
                     # Walking
                     walking_result = gmaps.directions(
                         origin=(user_lat, user_lon),
                         destination=(school.latitude, school.longitude),
-                        mode="walking"
+                        mode="walking",
+                        arrival_time=llegada_lunes_timestamp
                     )
                     walking_time = walking_result[0]['legs'][0]['duration']['text'] if walking_result else None
                     
@@ -239,7 +245,8 @@ class NearestSchoolView(APIView):
                     driving_result = gmaps.directions(
                         origin=(user_lat, user_lon),
                         destination=(school.latitude, school.longitude),
-                        mode="driving"
+                        mode="driving",
+                        arrival_time=llegada_lunes_timestamp
                     )
                     driving_time = driving_result[0]['legs'][0]['duration']['text'] if driving_result else None
                     
@@ -247,7 +254,8 @@ class NearestSchoolView(APIView):
                     biking_result = gmaps.directions(
                         origin=(user_lat, user_lon),
                         destination=(school.latitude, school.longitude),
-                        mode="bicycling"
+                        mode="bicycling",
+                        arrival_time=llegada_lunes_timestamp
                     )
                     biking_time = biking_result[0]['legs'][0]['duration']['text'] if biking_result else None
                     
@@ -255,7 +263,8 @@ class NearestSchoolView(APIView):
                     transit_result = gmaps.directions(
                         origin=(user_lat, user_lon),
                         destination=(school.latitude, school.longitude),
-                        mode="transit"
+                        mode="transit",
+                        arrival_time=llegada_lunes_timestamp
                     )
                     transit_time = transit_result[0]['legs'][0]['duration']['text'] if transit_result else None
                     
