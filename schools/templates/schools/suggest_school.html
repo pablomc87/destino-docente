@@ -1,0 +1,417 @@
+{% extends 'schools/base.html' %}
+
+{% block title %}Sugerir Centro Educativo{% endblock %}
+
+{% block custom_css %}
+<style>
+    .concerted-toggle {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin: 1rem 0;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+    }
+    .concerted-toggle label {
+        margin: 0;
+        font-weight: bold;
+    }
+    .concerted-toggle .form-check {
+        margin: 0;
+    }
+    .form-control:disabled {
+        background-color: #e9ecef;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Sugerir Centro Educativo</h1>
+    
+    <!-- Hidden div to store province data -->
+    <div id="provinceData" style="display: none;">
+        {% for province, community in provinces %}
+        <div data-province="{{ province }}" data-community="{{ community }}"></div>
+        {% endfor %}
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <form id="suggestionForm">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="name" class="form-label">Nombre del Centro</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="autonomous_community" class="form-label">Comunidad Autónoma</label>
+                            <select class="form-select" id="autonomous_community" name="autonomous_community" required>
+                                <option value="">Selecciona una comunidad...</option>
+                                {% for community in communities %}
+                                <option value="{{ community }}">{{ community }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="province" class="form-label">Provincia</label>
+                            <select class="form-select" id="province" name="province" required disabled>
+                                <option value="">Selecciona una provincia...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="postal_code" class="form-label">Código Postal</label>
+                            <input type="text" class="form-control" id="postal_code" name="postal_code" required>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label for="municipality" class="form-label">Municipio</label>
+                            <input type="text" class="form-control" id="municipality" name="municipality" list="municipalities" required>
+                            <datalist id="municipalities">
+                                {% for municipality in municipalities %}
+                                <option value="{{ municipality }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="address" class="form-label">Dirección</label>
+                    <input type="text" class="form-control" id="address" name="address" required>
+                </div>
+
+                <!-- Map container -->
+                <div class="mb-3">
+                    <div id="map" style="height: 300px; width: 100%;"></div>
+                    <small class="text-muted">Arrastra el marcador para ajustar la ubicación exacta del centro.</small>
+                </div>
+
+                <!-- Hidden fields for coordinates -->
+                <input type="hidden" id="latitude" name="latitude">
+                <input type="hidden" id="longitude" name="longitude">
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="nature" class="form-label">Naturaleza</label>
+                            <select class="form-select" id="nature" name="nature" required>
+                                <option value="">Selecciona una naturaleza...</option>
+                                <option value="Público">Público</option>
+                                <option value="Privado">Privado</option>
+                                <option value="Concertado">Concertado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="center_type" class="form-label">Tipo de Centro</label>
+                            <select class="form-select" id="center_type" name="center_type" required>
+                                <option value="">Selecciona un tipo...</option>
+                                {% for type in center_types %}
+                                <option value="{{ type }}">{{ type }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="concerted-toggle">
+                    <label>¿Es Concertado?</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="is_concerted" name="is_concerted">
+                        <label class="form-check-label" for="is_concerted">Sí</label>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="studies" class="form-label">Estudios Impartidos</label>
+                    <select class="form-select" id="studies" name="studies" multiple required>
+                        {% for study in studies %}
+                        <option value="{{ study.name }}">{{ study.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email de Contacto</label>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="phone" class="form-label">Teléfono</label>
+                    <input type="tel" class="form-control" id="phone" name="phone" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="website" class="form-label">Página Web (opcional)</label>
+                    <input type="url" class="form-control" id="website" name="website">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="notes" class="form-label">Notas Adicionales</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Enviar Sugerencia</button>
+            </form>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Información Importante</h5>
+                    <p class="card-text">
+                        Las sugerencias enviadas serán revisadas por nuestro equipo antes de ser añadidas a la base de datos.
+                        Por favor, asegúrate de que la información proporcionada es precisa y completa.
+                    </p>
+                    <p class="card-text">
+                        Si estás sugiriendo modificaciones para un centro existente, por favor incluye el nombre exacto del centro
+                        y especifica qué información necesita ser actualizada en el campo de notas adicionales.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+$(document).ready(function() {
+    let map;
+    let marker;
+    let lastGeocodeRequest = null;
+
+    // Initialize map
+    function initMap() {
+        map = L.map('map').setView([40.4168, -3.7038], 6); // Center of Spain
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Add marker
+        marker = L.marker([40.4168, -3.7038], {
+            draggable: true
+        }).addTo(map);
+
+        // Update coordinates when marker is dragged
+        marker.on('dragend', function() {
+            const position = marker.getLatLng();
+            $('#latitude').val(position.lat);
+            $('#longitude').val(position.lng);
+        });
+    }
+
+    // Geocode address and update map
+    function updateMapLocation() {
+        const community = $('#autonomous_community').val();
+        const province = $('#province').val();
+        const municipality = $('#municipality').val();
+        const postalCode = $('#postal_code').val();
+        const address = $('#address').val();
+
+        // Build address string based on available information
+        let addressString = '';
+        if (address) addressString += address + ', ';
+        if (municipality) addressString += municipality + ', ';
+        if (province) addressString += province + ', ';
+        if (community) addressString += community + ', ';
+        if (postalCode) addressString += postalCode + ', ';
+        addressString += 'Spain';
+
+        if (addressString === 'Spain') return; // Don't geocode if no location info
+
+        // Cancel previous request if it exists
+        if (lastGeocodeRequest) {
+            lastGeocodeRequest.abort();
+        }
+
+        // Create new request
+        lastGeocodeRequest = $.ajax({
+            url: 'https://nominatim.openstreetmap.org/search',
+            data: {
+                q: addressString,
+                format: 'json',
+                limit: 1,
+                countrycodes: 'es', // Limit to Spain
+                addressdetails: 1,  // Get detailed address information
+                'accept-language': 'es' // Get results in Spanish
+            },
+            success: function(results) {
+                if (results && results[0]) {
+                    const location = results[0];
+                    const latLng = L.latLng(location.lat, location.lon);
+                    
+                    // Calculate precision score (higher = more precise)
+                    let precision = 0;
+                    if (address) precision += 3;      // Street address is most precise
+                    if (postalCode) precision += 2;  // Postal code is very precise
+                    if (municipality) precision += 2; // Municipality is quite precise
+                    if (province) precision += 1;    // Province gives general area
+                    if (community) precision += 1;   // Community gives broad area
+                    
+                    // Set zoom level based on precision score
+                    let zoomLevel = 6; // Default zoom for Spain
+                    if (precision >= 8) {
+                        zoomLevel = 18; // Very precise (street + postal code + municipality)
+                    } else if (precision >= 6) {
+                        zoomLevel = 15; // Precise (postal code + municipality)
+                    } else if (precision >= 4) {
+                        zoomLevel = 12; // City level (municipality)
+                    } else if (precision >= 2) {
+                        zoomLevel = 9;  // Province level
+                    } else if (precision >= 1) {
+                        zoomLevel = 7;  // Autonomous community level
+                    }
+
+                    // If we have a street address, center on that
+                    // Otherwise, center on the administrative area
+                    let centerPoint = latLng;
+                    if (!address) {
+                        // Get the administrative center for the area
+                        const adminLevel = location.addressdetails || {};
+                        if (municipality && adminLevel.city) {
+                            // Center on municipality
+                            centerPoint = L.latLng(adminLevel.city.lat, adminLevel.city.lon);
+                        } else if (province && adminLevel.state) {
+                            // Center on province
+                            centerPoint = L.latLng(adminLevel.state.lat, adminLevel.state.lon);
+                        } else if (community && adminLevel.region) {
+                            // Center on autonomous community
+                            centerPoint = L.latLng(adminLevel.region.lat, adminLevel.region.lon);
+                        }
+                    }
+
+                    // Set view with smooth animation
+                    map.flyTo(centerPoint, zoomLevel, {
+                        duration: 1, // Animation duration in seconds
+                        easeLinearity: 0.25
+                    });
+                    
+                    // Update marker position
+                    marker.setLatLng(latLng);
+
+                    // Update hidden fields
+                    $('#latitude').val(location.lat);
+                    $('#longitude').val(location.lng);
+                }
+            }
+        });
+    }
+
+    // Initialize map
+    initMap();
+
+    // Add event listeners for location fields
+    $('#autonomous_community, #province, #municipality, #postal_code, #address').on('change', function() {
+        updateMapLocation();
+    });
+
+    // Initialize Select2 for studies
+    $('#studies').select2({
+        placeholder: 'Selecciona los estudios...',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // Handle autonomous community change
+    $('#autonomous_community').change(function() {
+        const community = $(this).val();
+        const provinceSelect = $('#province');
+        
+        if (community) {
+            // Clear and add placeholder
+            provinceSelect.empty().append('<option value="">Selecciona una provincia...</option>');
+            
+            // Add filtered provinces
+            $('#provinceData div').each(function() {
+                if ($(this).data('community') === community) {
+                    const province = $(this).data('province');
+                    provinceSelect.append(`<option value="${province}">${province}</option>`);
+                }
+            });
+            
+            provinceSelect.prop('disabled', false);
+        } else {
+            provinceSelect.empty().append('<option value="">Selecciona una provincia...</option>');
+            provinceSelect.prop('disabled', true);
+        }
+    });
+
+    // Handle nature change
+    $('#nature').change(function() {
+        const nature = $(this).val();
+        const isConcertedToggle = $('#is_concerted');
+        
+        if (nature === 'Concertado') {
+            isConcertedToggle.prop('checked', true);
+            isConcertedToggle.prop('disabled', true);
+        } else {
+            isConcertedToggle.prop('disabled', false);
+        }
+    });
+
+    // Prevent double submission
+    let isSubmitting = false;
+    $('#suggestionForm').on('submit', function(e) {
+        if (isSubmitting) {
+            e.preventDefault();
+            return;
+        }
+        isSubmitting = true;
+        
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Convert studies to array
+        data.studies = $('#studies').val();
+        
+        fetch('/api/suggestions/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.detail || 'Error al enviar la sugerencia');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            alert('Sugerencia enviada correctamente. Un administrador la revisará pronto.');
+            window.location.href = '/';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error: ' + error.message);
+        })
+        .finally(() => {
+            isSubmitting = false;
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

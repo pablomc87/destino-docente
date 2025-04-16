@@ -7,8 +7,8 @@ import math
 import requests
 from datetime import datetime, timedelta
 from django.conf import settings
-from .models import School, ImpartedStudy
-from .serializers import SchoolSerializer, StudySerializer
+from .models import School, ImpartedStudy, SchoolSuggestion, SchoolEditSuggestion
+from .serializers import SchoolSerializer, StudySerializer, SchoolSuggestionSerializer, SchoolEditSuggestionSerializer
 from rest_framework.views import APIView
 from rest_framework import status
 from geopy.geocoders import Nominatim
@@ -29,7 +29,17 @@ from django.db.models.functions import Lower
 from django.core.exceptions import ValidationError
 from django.db.models import F, FloatField, ExpressionWrapper
 from django.db.models.functions import Cast
+from django.contrib.auth.models import User
+from django.contrib.auth.decorators import user_passes_test, login_required, permission_required
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.models import Group
+from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.models import Permission
+from django.contrib.auth.decorators import permission_required
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from django.http import Http404
 
+logger = logging.getLogger(__name__)
 api_key = settings.GOOGLE_MAPS_API_KEY
 
 # Create your views here.
@@ -40,7 +50,20 @@ def index(request):
 
 def school_detail(request, pk):
     """Render the school detail page"""
-    return render(request, 'schools/school_detail.html')
+    try:
+        school = School.objects.get(pk=pk)
+        context = {
+            'school': school,
+            'school_id': school.id,
+            'debug': settings.DEBUG
+        }
+        return render(request, 'schools/school_detail.html', context)
+    except School.DoesNotExist:
+        raise Http404("School not found")
+    except Exception as e:
+        if settings.DEBUG:
+            raise
+        return render(request, 'schools/error.html', {'error': str(e)})
 
 class SchoolListView(generics.ListAPIView):
     """List all schools"""
@@ -308,3 +331,114 @@ class NearestSchoolView(APIView):
 def find_nearest(request):
     """Render the find nearest school page."""
     return render(request, 'schools/find_nearest.html')
+
+class SchoolSuggestionView(APIView):
+    def post(self, request):
+        """Create a new school suggestion."""
+        serializer = SchoolSuggestionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class SchoolSuggestionListView(APIView):
+    permission_classes = [IsAdminUser]
+    
+    def get(self, request):
+        """List all school suggestions (admin only)."""
+        suggestions = SchoolSuggestion.objects.all().order_by('-created_at')
+        serializer = SchoolSuggestionSerializer(suggestions, many=True)
+        return Response(serializer.data)
+    
+    def put(self, request, pk):
+        """Update a suggestion's status (admin only)."""
+        try:
+            suggestion = SchoolSuggestion.objects.get(pk=pk)
+        except SchoolSuggestion.DoesNotExist:
+            return Response({'error': 'Suggestion not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Only allow updating status and notes
+        if 'status' in request.data:
+            suggestion.status = request.data['status']
+        if 'notes' in request.data:
+            suggestion.notes = request.data['notes']
+        
+        suggestion.save()
+        serializer = SchoolSuggestionSerializer(suggestion)
+        return Response(serializer.data)
+
+def suggest_school(request):
+    """Render the school suggestion form page."""
+    # Get unique values for dropdowns
+    communities = School.objects.exclude(autonomous_community__isnull=True).exclude(autonomous_community='').values_list('autonomous_community', flat=True).distinct().order_by('autonomous_community')
+    provinces = School.objects.exclude(province__isnull=True).exclude(province='').values_list('province', 'autonomous_community').distinct().order_by('province')
+    municipalities = School.objects.exclude(municipality__isnull=True).exclude(municipality='').values_list('municipality', flat=True).distinct().order_by('municipality')
+    center_types = School.objects.exclude(center_type__isnull=True).exclude(center_type='').values_list('center_type', flat=True).distinct().order_by('center_type')
+    studies = ImpartedStudy.objects.values('name').distinct().order_by('name')
+    
+    context = {
+        'communities': communities,
+        'provinces': provinces,
+        'municipalities': municipalities,
+        'center_types': center_types,
+        'studies': studies,
+    }
+    return render(request, 'schools/suggest_school.html', context)
+
+def edit_school(request, pk):
+    """Render the edit school page"""
+    try:
+        school = School.objects.get(pk=pk)
+        # Use the serializer to get all fields
+        serializer = SchoolSerializer(school)
+        context = {
+            'school': serializer.data,  # Use the serialized data
+            'debug': settings.DEBUG
+        }
+        return render(request, 'schools/edit_school.html', context)
+    except School.DoesNotExist:
+        raise Http404("School not found")
+    except Exception as e:
+        if settings.DEBUG:
+            raise
+        return render(request, 'schools/error.html', {'error': str(e)})
+
+class SchoolEditSuggestionView(generics.CreateAPIView):
+    """API endpoint for creating school edit suggestions"""
+    queryset = SchoolEditSuggestion.objects.all()
+    serializer_class = SchoolEditSuggestionSerializer
+    permission_classes = []  # Remove authentication requirement
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+class SchoolEditSuggestionListView(generics.ListAPIView):
+    """API endpoint for listing school edit suggestions"""
+    queryset = SchoolEditSuggestion.objects.all()
+    serializer_class = SchoolEditSuggestionSerializer
+    permission_classes = [IsAdminUser]
+
+class SchoolEditSuggestionDetailView(generics.RetrieveUpdateAPIView):
+    """API endpoint for updating school edit suggestions"""
+    queryset = SchoolEditSuggestion.objects.all()
+    serializer_class = SchoolEditSuggestionSerializer
+    permission_classes = [IsAdminUser]
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        if instance.status == 'approved':
+            # Update the school with the suggested changes
+            school = instance.school
+            school.name = instance.name
+            school.address = instance.address
+            school.postal_code = instance.postal_code
+            school.municipality = instance.municipality
+            school.province = instance.province
+            school.community = instance.community
+            school.nature = instance.nature
+            school.center_type = instance.center_type
+            school.generic_name = instance.generic_name
+            school.is_concerted = instance.is_concerted
+            school.latitude = instance.latitude
+            school.longitude = instance.longitude
+            school.save()

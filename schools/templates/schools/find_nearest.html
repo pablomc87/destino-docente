@@ -343,7 +343,7 @@ gmpx-place-picker {
                     }
                     
                     // Log the request for debugging
-                    const requestUrl = `/api/schools/nearest/?${params.toString()}`;
+                    const requestUrl = `/api/nearest/?${params.toString()}`;
                     console.log('Sending request to:', requestUrl);
                     
                     const response = await fetch(requestUrl);

@@ -1,0 +1,172 @@
+{% extends 'schools/base.html' %}
+
+{% block title %}Sugerir Cambios al Centro{% endblock %}
+
+{% block custom_css %}
+#map {
+    height: 400px;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">Sugerir Cambios al Centro</h2>
+                </div>
+                <div class="card-body">
+                    <form id="editSchoolForm" method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nombre del Centro</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ school.name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Dirección</label>
+                            <input type="text" class="form-control" id="address" name="address" value="{{ school.address }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="postal_code" class="form-label">Código Postal</label>
+                            <input type="text" class="form-control" id="postal_code" name="postal_code" value="{{ school.postal_code }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="municipality" class="form-label">Municipio</label>
+                            <input type="text" class="form-control" id="municipality" name="municipality" value="{{ school.municipality }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="province" class="form-label">Provincia</label>
+                            <input type="text" class="form-control" id="province" name="province" value="{{ school.province }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="autonomous_community" class="form-label">Comunidad Autónoma</label>
+                            <input type="text" class="form-control" id="autonomous_community" name="autonomous_community" value="{{ school.autonomous_community }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Teléfono</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" value="{{ school.phone|default:'' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ school.email|default:'' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="website" class="form-label">Página Web</label>
+                            <input type="url" class="form-control" id="website" name="website" value="{{ school.website|default:'' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="nature" class="form-label">Naturaleza</label>
+                            <select class="form-select" id="nature" name="nature" required>
+                                <option value="Público" {% if school.nature == "Público" %}selected{% endif %}>Público</option>
+                                <option value="Privado" {% if school.nature == "Privado" %}selected{% endif %}>Privado</option>
+                                <option value="Concertado" {% if school.nature == "Concertado" %}selected{% endif %}>Concertado</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="center_type" class="form-label">Tipo de Centro</label>
+                            <input type="text" class="form-control" id="center_type" name="center_type" value="{{ school.center_type }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="generic_name" class="form-label">Nombre Genérico</label>
+                            <input type="text" class="form-control" id="generic_name" name="generic_name" value="{{ school.generic_name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="is_concerted" class="form-label">¿Es Concertado?</label>
+                            <select class="form-select" id="is_concerted" name="is_concerted" required>
+                                <option value="true" {% if school.is_concerted %}selected{% endif %}>Sí</option>
+                                <option value="false" {% if not school.is_concerted %}selected{% endif %}>No</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Ubicación del Centro</label>
+                            <div id="map"></div>
+                            <small class="text-muted">Haz clic en el mapa para marcar la ubicación del centro</small>
+                        </div>
+                        <input type="hidden" id="latitude" name="latitude" value="{{ school.latitude|default:''|stringformat:'.15f' }}">
+                        <input type="hidden" id="longitude" name="longitude" value="{{ school.longitude|default:''|stringformat:'.15f' }}">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Enviar Sugerencia</button>
+                            <a href="{% url 'school_detail' school.id %}" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block custom_js %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Initialize the map
+const map = L.map('map').setView([40.4168, -3.7038], 6); // Center on Spain
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
+
+// Add marker for current location if it exists
+let marker = null;
+const currentLat = parseFloat(document.getElementById('latitude').value);
+const currentLng = parseFloat(document.getElementById('longitude').value);
+
+if (!isNaN(currentLat) && !isNaN(currentLng)) {
+    marker = L.marker([currentLat, currentLng]).addTo(map);
+    map.setView([currentLat, currentLng], 15);
+}
+
+// Add click handler to place marker
+map.on('click', function(e) {
+    if (marker) {
+        map.removeLayer(marker);
+    }
+    marker = L.marker(e.latlng).addTo(map);
+    document.getElementById('latitude').value = e.latlng.lat;
+    document.getElementById('longitude').value = e.latlng.lng;
+});
+
+document.getElementById('editSchoolForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    data.school = "{{ school.id }}";  // Add the school ID to the data
+    
+    // Convert empty strings to null for latitude and longitude
+    if (data.latitude === '') data.latitude = null;
+    if (data.longitude === '') data.longitude = null;
+    
+    // Log the data being sent
+    console.log('Submitting data:', data);
+    
+    fetch('/api/edit-suggestions/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.detail || 'Error al enviar la sugerencia');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert('Sugerencia enviada correctamente. Un administrador la revisará pronto.');
+        window.location.href = `/schools/{{ school.id }}/`;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error: ' + error.message);
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

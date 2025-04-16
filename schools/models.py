@@ -1,5 +1,17 @@
 from django.db import models
+from django.db.models import Q
+from django.contrib.auth.models import User
 
+NATURE_CHOICES = [
+    ('Público', 'Público'),
+    ('Privado', 'Privado')
+]
+
+SUGGESTION_STATUS_CHOICES = [
+    ('pendiente', 'Pendiente'),
+    ('aprobada', 'Aprobada'),
+    ('rechazada', 'Rechazada')
+]
 
 class ImpartedStudy(models.Model):
     id = models.AutoField(primary_key=True)
@@ -88,3 +100,66 @@ class SchoolStudy(models.Model):
     def composite_key(self):
         """Property that combines school_id and study_id to create a unique identifier."""
         return f"{self.school_id}_{self.study_id}"
+
+
+class SchoolSuggestion(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected')
+    ]
+    
+    school = models.ForeignKey(School, on_delete=models.CASCADE, null=True, blank=True)
+    name = models.CharField(max_length=255)
+    address = models.CharField(max_length=255)
+    postal_code = models.CharField(max_length=10)
+    municipality = models.CharField(max_length=100)
+    province = models.CharField(max_length=100)
+    autonomous_community = models.CharField(max_length=100)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    nature = models.CharField(max_length=50, choices=NATURE_CHOICES)
+    is_concerted = models.BooleanField(default=False)
+    center_type = models.CharField(max_length=100)
+    studies = models.ManyToManyField(ImpartedStudy, db_table='school_suggestion_studies')
+    email = models.EmailField()
+    phone = models.CharField(max_length=20)
+    website = models.URLField(max_length=200, blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        managed = False
+        db_table = 'school_suggestions'
+        verbose_name = 'School Suggestion'
+        verbose_name_plural = 'School Suggestions'
+    
+    def __str__(self):
+        return f"Suggestion for {self.name} ({self.status})"
+
+
+class SchoolEditSuggestion(models.Model):
+    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='edit_suggestions')
+    name = models.CharField(max_length=255, blank=True)
+    address = models.CharField(max_length=255, blank=True)
+    postal_code = models.CharField(max_length=10, blank=True)
+    municipality = models.CharField(max_length=100, blank=True)
+    province = models.CharField(max_length=100, blank=True)
+    autonomous_community = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+    website = models.URLField(blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=SUGGESTION_STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'school_edit_suggestions'
+        managed = False
+
+    def __str__(self):
+        return f"Edit suggestion for {self.school.name}"

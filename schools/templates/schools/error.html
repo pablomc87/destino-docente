@@ -1,0 +1,23 @@
+{% extends 'schools/base.html' %}
+
+{% block title %}Error{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h2 class="mb-0">Ha ocurrido un error</h2>
+                </div>
+                <div class="card-body">
+                    <p class="lead">{{ error }}</p>
+                    <div class="d-grid gap-2">
+                        <a href="/" class="btn btn-primary">Volver al inicio</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
