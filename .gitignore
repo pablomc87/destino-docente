@@ -69,3 +69,4 @@ coverage.xml
 .env.development.local
 .env.test.local
 .env.production.local
+.cursorrules

@@ -123,25 +123,15 @@ if IS_HEROKU_APP:
             conn_max_age=600,
             conn_health_checks=True,
             ssl_require=True,
-        ),
-        'schools_db': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'schools.db',
-        }
+        )
     }
 else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
-        },
-        'schools_db': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'schools.db',
         }
     }
-
-DATABASE_ROUTERS = ['schools.db_router.SchoolDBRouter']
 
 
 # Password validation
