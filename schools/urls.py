@@ -13,5 +13,5 @@ urlpatterns = [
     path('schools/<int:pk>/', views.school_detail, name='school_detail'),
     path('schools/<int:pk>/edit/', views.edit_school, name='edit_school'),
     path('find-nearest/', views.find_nearest, name='find_nearest'),
-    path('suggest-school/', views.suggest_school_page, name='suggest_school_page'),
+    path('suggest-school/', views.suggest_school, name='suggest_school'),
 ] 
