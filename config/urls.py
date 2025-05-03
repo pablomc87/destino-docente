@@ -26,10 +26,10 @@ urlpatterns = [
     
     # Page routes
     path('', views.index, name='index'),
-    path('schools/', include('schools.urls')),
+    path('schools/', include('schools.urls', namespace='schools')),
     
     # API routes
-    path('api/', include('schools.api_urls')),
+    path('api/', include('schools.api_urls', namespace='api')),
 ]
 
 # Serve static and media files in development
