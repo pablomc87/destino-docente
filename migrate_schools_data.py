@@ -8,23 +8,24 @@ from django.db import connection
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from schools.models import *  # Import all your models
+from schools.models import School, ImpartedStudy, SchoolStudy, SchoolSuggestion, SchoolEditSuggestion
 
 def migrate_data():
     # Connect to SQLite database
     sqlite_conn = sqlite3.connect('schools.db')
     sqlite_cursor = sqlite_conn.cursor()
 
-    # Get all tables from SQLite
-    sqlite_cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = sqlite_cursor.fetchall()
+    # Define model to table mapping
+    model_mapping = {
+        'schools': School,
+        'imparted_studies': ImpartedStudy,
+        'school_studies': SchoolStudy,
+        'school_suggestions': SchoolSuggestion,
+        'school_edit_suggestions': SchoolEditSuggestion
+    }
 
     # For each table
-    for table in tables:
-        table_name = table[0]
-        if table_name.startswith('sqlite_') or table_name == 'django_migrations':
-            continue
-
+    for table_name, model in model_mapping.items():
         print(f"Migrating table: {table_name}")
 
         # Get all data from SQLite table
@@ -40,20 +41,13 @@ def migrate_data():
             # Create a dictionary of column names and values
             data = dict(zip(columns, row))
             
-            # Get the model class
-            model_name = ''.join(word.capitalize() for word in table_name.split('_'))
             try:
-                model = globals()[model_name]
-                
                 # Create or update the object
                 obj, created = model.objects.update_or_create(
                     id=data['id'],  # Assuming 'id' is the primary key
                     defaults=data
                 )
-                print(f"{'Created' if created else 'Updated'} {model_name} with id {data['id']}")
-            except KeyError:
-                print(f"Could not find model for table {table_name}")
-                continue
+                print(f"{'Created' if created else 'Updated'} {model.__name__} with id {data['id']}")
             except Exception as e:
                 print(f"Error processing {table_name}: {str(e)}")
                 continue
