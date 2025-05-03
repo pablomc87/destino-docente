@@ -82,14 +82,14 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Ubicación del Centro</label>
-                            <div id="map"></div>
+                            <div id="map" data-lat="{{ school.latitude|default:'' }}" data-lng="{{ school.longitude|default:'' }}"></div>
                             <small class="text-muted">Haz clic en el mapa para marcar la ubicación del centro</small>
                         </div>
                         <input type="hidden" id="latitude" name="latitude" value="{{ school.latitude|default:''|stringformat:'.15f' }}">
                         <input type="hidden" id="longitude" name="longitude" value="{{ school.longitude|default:''|stringformat:'.15f' }}">
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">Enviar Sugerencia</button>
-                            <a href="{% url 'school_detail' school.id %}" class="btn btn-secondary">Cancelar</a>
+                            <a href="{% url 'schools:school_detail' school.id %}" class="btn btn-secondary">Cancelar</a>
                         </div>
                     </form>
                 </div>
@@ -110,8 +110,9 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 // Add marker for current location if it exists
 let marker = null;
-const currentLat = parseFloat(document.getElementById('latitude').value);
-const currentLng = parseFloat(document.getElementById('longitude').value);
+const mapElement = document.getElementById('map');
+const currentLat = parseFloat(mapElement.dataset.lat);
+const currentLng = parseFloat(mapElement.dataset.lng);
 
 if (!isNaN(currentLat) && !isNaN(currentLng)) {
     marker = L.marker([currentLat, currentLng]).addTo(map);

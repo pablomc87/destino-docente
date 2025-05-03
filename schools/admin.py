@@ -1,246 +1,216 @@
 from django.contrib import admin
-from django.core.exceptions import PermissionDenied
-from django.db import connections
-from django.template.response import TemplateResponse
-from django.urls import path
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _
 from .models import School, ImpartedStudy, SchoolStudy, SchoolSuggestion, SchoolEditSuggestion
 
 
 @admin.register(School)
 class SchoolAdmin(admin.ModelAdmin):
-    list_display = ('name', 'municipality', 'province', 'autonomous_community')
-    search_fields = ('name', 'municipality', 'province', 'autonomous_community')
-    list_filter = ('autonomous_community', 'province', 'nature', 'center_type')
+    list_display = ('name', 'municipality', 'province', 'autonomous_community', 'nature', 'center_type')
+    list_filter = ('autonomous_community', 'province', 'nature', 'center_type', 'is_concerted')
+    search_fields = ('name', 'municipality', 'province', 'autonomous_community', 'email', 'phone')
+    readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        (_('Core Information'), {
+            'fields': ('id', 'name', 'email', 'phone', 'fax', 'website')
+        }),
+        (_('Location'), {
+            'fields': ('address', 'postal_code', 'municipality', 'province', 
+                      'autonomous_community', 'region', 'sub_region', 'locality', 'country')
+        }),
+        (_('School Details'), {
+            'fields': ('nature', 'is_concerted', 'center_type', 'generic_name', 'services')
+        }),
+        (_('Geolocation'), {
+            'fields': ('latitude', 'longitude')
+        }),
+        (_('Metadata'), {
+            'fields': ('created_at', 'updated_at')
+        }),
+    )
 
 
 @admin.register(ImpartedStudy)
 class ImpartedStudyAdmin(admin.ModelAdmin):
     list_display = ('name', 'degree', 'family', 'modality')
-    search_fields = ('name', 'degree', 'family', 'modality')
     list_filter = ('degree', 'family', 'modality')
+    search_fields = ('name', 'degree', 'family', 'modality')
+    readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'degree', 'family', 'modality')
+        }),
+        (_('Metadata'), {
+            'fields': ('created_at', 'updated_at')
+        }),
+    )
 
 
+@admin.register(SchoolStudy)
 class SchoolStudyAdmin(admin.ModelAdmin):
-    list_display = ('school_name', 'study_name')
-    search_fields = ('school__name', 'study__name')
+    list_display = ('school', 'study')
     list_filter = ('study__degree', 'study__family', 'study__modality')
-    raw_id_fields = ('school', 'study')
-    list_per_page = 25
-    
-    def school_name(self, obj):
-        return obj.school.name
-    school_name.short_description = 'School'
-    
-    def study_name(self, obj):
-        return obj.study.name
-    study_name.short_description = 'Study'
-    
-    def get_queryset(self, request):
-        # Basic queryset with minimal fields to avoid the 'id' column issue
-        return SchoolStudy.objects.all().select_related('school', 'study')
-    
-    def get_urls(self):
-        # Define a custom URL pattern for the changelist view
-        urls = super().get_urls()
-        custom_urls = [
-            path('', self.admin_site.admin_view(self.custom_changelist_view), name='schools_schoolstudy_changelist'),
-        ]
-        return custom_urls + urls
-    
-    def custom_changelist_view(self, request):
-        """
-        Custom changelist view that uses raw SQL to avoid the 'id' column issue
-        """
-        # Check permissions
-        if not self.has_view_permission(request):
-            raise PermissionDenied
-        
-        # Execute raw SQL query using the schools_db connection
-        with connections['schools_db'].cursor() as cursor:
-            cursor.execute("""
-                SELECT 
-                    ss.school_id, 
-                    ss.study_id,
-                    s.name as school_name, 
-                    i.name as study_name
-                FROM 
-                    school_studies ss
-                JOIN 
-                    schools s ON ss.school_id = s.id
-                JOIN 
-                    imparted_studies i ON ss.study_id = i.id
-                ORDER BY
-                    s.name, i.name
-                LIMIT 100
-            """)
-            rows = cursor.fetchall()
-        
-        # Convert to list of dictionaries
-        school_studies = []
-        for row in rows:
-            school_studies.append({
-                'school_id': row[0],
-                'study_id': row[1],
-                'school_name': row[2],
-                'study_name': row[3],
-                'composite_key': f"{row[0]}_{row[1]}"
-            })
-        
-        # Render a custom template
-        context = {
-            'app_label': 'schools',
-            'model_name': 'schoolstudy',
-            'title': 'School Studies',
-            'school_studies': school_studies,
-            'cl': { 'result_count': len(school_studies) },  # Mock ChangeList object
-            'opts': self.model._meta,
-            'is_popup': False,
-            'has_add_permission': self.has_add_permission(request),
-            'has_change_permission': self.has_change_permission(request),
-            'has_delete_permission': self.has_delete_permission(request),
-            'request': request,  # Pass the request for the template
-        }
-        return TemplateResponse(request, 'admin/schools/schoolstudy/change_list.html', context)
-    
-    def get_object(self, request, object_id, from_field=None):
-        """
-        Get the SchoolStudy object using the composite key
-        """
-        try:
-            # Split the composite key
-            school_id, study_id = object_id.split('_')
-            # Get the object
-            return self.get_queryset(request).get(school_id=school_id, study_id=study_id)
-        except (ValueError, SchoolStudy.DoesNotExist):
-            return None
+    search_fields = ('school__name', 'study__name')
+    autocomplete_fields = ['school', 'study']
 
-
-admin.site.register(SchoolStudy, SchoolStudyAdmin)
 
 @admin.register(SchoolSuggestion)
 class SchoolSuggestionAdmin(admin.ModelAdmin):
-    list_display = ('name', 'status', 'created_at')
-    list_filter = ('status', 'autonomous_community', 'province')
-    search_fields = ('name', 'address', 'municipality')
+    list_display = ('name', 'municipality', 'province', 'status', 'created_at')
+    list_filter = ('status', 'autonomous_community', 'province', 'nature', 'is_concerted')
+    search_fields = ('name', 'municipality', 'province', 'email', 'phone')
     readonly_fields = ('created_at', 'updated_at')
-    
+    fieldsets = (
+        (_('Core Information'), {
+            'fields': ('name', 'email', 'phone', 'website')
+        }),
+        (_('Location'), {
+            'fields': ('address', 'postal_code', 'municipality', 'province', 
+                      'autonomous_community', 'latitude', 'longitude')
+        }),
+        (_('School Details'), {
+            'fields': ('nature', 'is_concerted', 'center_type')
+        }),
+        (_('Relationships'), {
+            'fields': ('school', 'studies')
+        }),
+        (_('Status'), {
+            'fields': ('status', 'notes')
+        }),
+        (_('Metadata'), {
+            'fields': ('created_at', 'updated_at')
+        }),
+    )
+
+
+@admin.register(SchoolEditSuggestion)
+class SchoolEditSuggestionAdmin(admin.ModelAdmin):
+    list_display = ('school', 'status', 'created_at', 'get_changes_summary')
+    list_filter = ('status', 'created_at')
+    search_fields = ('school__name', 'name', 'municipality')
+    readonly_fields = ('created_at', 'updated_at', 'get_changes_comparison')
+    actions = ['accept_suggestions', 'reject_suggestions']
+
     def get_readonly_fields(self, request, obj=None):
         if obj:  # editing an existing object
             return self.readonly_fields + ('school',)
         return self.readonly_fields
 
-@admin.register(SchoolEditSuggestion)
-class SchoolEditSuggestionAdmin(admin.ModelAdmin):
-    list_display = ('school', 'name', 'status', 'created_at', 'get_changes_summary')
-    list_filter = ('status', 'province', 'autonomous_community')
-    search_fields = ('name', 'address', 'municipality', 'school__name')
-    readonly_fields = ('created_at', 'updated_at', 'get_changes_comparison')
-    actions = ['accept_suggestions', 'deny_suggestions']
-    
-    def get_readonly_fields(self, request, obj=None):
-        if obj:  # editing an existing object
-            return self.readonly_fields + ('school', 'name', 'address', 'municipality', 
-                                         'postal_code', 'province', 'autonomous_community',
-                                         'email', 'phone', 'website', 'latitude', 'longitude')
-        return self.readonly_fields
-
     def get_changes_summary(self, obj):
         """Display a summary of changes in the list view"""
         changes = []
-        if obj.name and obj.name != obj.school.name:
-            changes.append("Nombre")
-        if obj.address and obj.address != obj.school.address:
-            changes.append("Dirección")
-        if obj.municipality and obj.municipality != obj.school.municipality:
-            changes.append("Municipio")
-        if obj.postal_code and obj.postal_code != obj.school.postal_code:
-            changes.append("Código Postal")
-        if obj.province and obj.province != obj.school.province:
-            changes.append("Provincia")
-        if obj.autonomous_community and obj.autonomous_community != obj.school.autonomous_community:
-            changes.append("Comunidad Autónoma")
-        if obj.email and obj.email != obj.school.email:
-            changes.append("Email")
-        if obj.phone and obj.phone != obj.school.phone:
-            changes.append("Teléfono")
-        if obj.website and obj.website != obj.school.website:
-            changes.append("Web")
-        if obj.latitude is not None and obj.latitude != obj.school.latitude:
-            changes.append("Latitud")
-        if obj.longitude is not None and obj.longitude != obj.school.longitude:
-            changes.append("Longitud")
-        return ", ".join(changes) if changes else "Sin cambios"
-    get_changes_summary.short_description = "Cambios"
+        fields_to_check = [
+            ('name', _('Name')),
+            ('address', _('Address')),
+            ('municipality', _('Municipality')),
+            ('postal_code', _('Postal Code')),
+            ('province', _('Province')),
+            ('autonomous_community', _('Autonomous Community')),
+            ('email', _('Email')),
+            ('phone', _('Phone')),
+            ('website', _('Website')),
+            ('latitude', _('Latitude')),
+            ('longitude', _('Longitude')),
+        ]
+        
+        for field, label in fields_to_check:
+            suggested = getattr(obj, field)
+            current = getattr(obj.school, field)
+            if suggested and suggested != current:
+                changes.append(str(label))
+        
+        return ', '.join(changes) if changes else _('No changes')
+    get_changes_summary.short_description = _('Changes')
 
     def get_changes_comparison(self, obj):
         """Display a side-by-side comparison of current and suggested values"""
-        template = """
-        <table class="table">
+        template = '''
+        <style>
+            .changes-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            .changes-table th, .changes-table td { 
+                padding: 8px; 
+                border: 1px solid #ddd; 
+                text-align: left; 
+            }
+            .changes-table th { background-color: #f5f5f5; }
+            .changes-row:nth-child(even) { background-color: #f9f9f9; }
+            .different { background-color: #fff3cd; }
+        </style>
+        <table class="changes-table">
             <thead>
                 <tr>
-                    <th>Campo</th>
-                    <th>Valor Actual</th>
-                    <th>Valor Sugerido</th>
+                    <th>{field}</th>
+                    <th>{current}</th>
+                    <th>{suggested}</th>
                 </tr>
             </thead>
             <tbody>
                 {rows}
             </tbody>
         </table>
-        """
-        
-        rows = []
-        fields = [
-            ('Nombre', 'name'),
-            ('Dirección', 'address'),
-            ('Municipio', 'municipality'),
-            ('Código Postal', 'postal_code'),
-            ('Provincia', 'province'),
-            ('Comunidad Autónoma', 'autonomous_community'),
-            ('Email', 'email'),
-            ('Teléfono', 'phone'),
-            ('Web', 'website'),
-            ('Latitud', 'latitude'),
-            ('Longitud', 'longitude')
+        '''.format(
+            field=_('Field'),
+            current=_('Current Value'),
+            suggested=_('Suggested Value'),
+            rows=self._get_comparison_rows(obj)
+        )
+        return mark_safe(template)
+    get_changes_comparison.short_description = _('Changes Comparison')
+
+    def _get_comparison_rows(self, obj):
+        fields_to_compare = [
+            ('name', _('Name')),
+            ('address', _('Address')),
+            ('municipality', _('Municipality')),
+            ('postal_code', _('Postal Code')),
+            ('province', _('Province')),
+            ('autonomous_community', _('Autonomous Community')),
+            ('email', _('Email')),
+            ('phone', _('Phone')),
+            ('website', _('Website')),
+            ('latitude', _('Latitude')),
+            ('longitude', _('Longitude')),
         ]
         
-        for label, field in fields:
-            current = getattr(obj.school, field)
+        rows = []
+        for field, label in fields_to_compare:
             suggested = getattr(obj, field)
-            if suggested is not None and current != suggested:  # Only show if there's a suggested value
-                rows.append(f"""
-                    <tr>
-                        <td><strong>{label}</strong></td>
-                        <td>{current}</td>
-                        <td>{suggested}</td>
-                    </tr>
-                """)
-        
-        return mark_safe(template.format(rows="\n".join(rows)))
-    get_changes_comparison.short_description = "Comparación de Cambios"
+            current = getattr(obj.school, field)
+            if suggested and suggested != current:
+                rows.append(
+                    '<tr class="changes-row different">'
+                    f'<td><strong>{label}</strong></td>'
+                    f'<td>{current or "-"}</td>'
+                    f'<td>{suggested or "-"}</td>'
+                    '</tr>'
+                )
+        return '\n'.join(rows)
 
-    @admin.action(description='Aceptar sugerencias seleccionadas')
+    @admin.action(description=_('Accept selected suggestions'))
     def accept_suggestions(self, request, queryset):
-        for suggestion in queryset:
-            if suggestion.status == 'pending':
-                # Update the school with the suggested values
-                school = suggestion.school
-                for field in ['name', 'address', 'municipality', 'postal_code', 
-                            'province', 'autonomous_community', 'email', 'phone', 
-                            'website', 'latitude', 'longitude']:
-                    suggested_value = getattr(suggestion, field)
-                    if suggested_value is not None:  # Only update if there's a suggested value
-                        setattr(school, field, suggested_value)
-                school.save()
-                suggestion.status = 'accepted'
-                suggestion.save()
-        self.message_user(request, f"{queryset.count()} sugerencias aceptadas correctamente.")
+        for suggestion in queryset.filter(status='pending'):
+            school = suggestion.school
+            fields_to_update = [
+                'name', 'address', 'municipality', 'postal_code', 'province',
+                'autonomous_community', 'email', 'phone', 'website', 'latitude', 'longitude'
+            ]
+            
+            for field in fields_to_update:
+                suggested_value = getattr(suggestion, field)
+                if suggested_value:
+                    setattr(school, field, suggested_value)
+            
+            school.save()
+            suggestion.status = 'approved'
+            suggestion.save()
 
-    @admin.action(description='Denegar sugerencias seleccionadas')
-    def deny_suggestions(self, request, queryset):
-        queryset.update(status='denied')
-        self.message_user(request, f"{queryset.count()} sugerencias denegadas correctamente.")
+        self.message_user(request, _('%(count)d suggestions were successfully accepted.') % {
+            'count': queryset.count()
+        })
 
-    def has_add_permission(self, request):
-        return False  # Disable adding new suggestions through admin
+    @admin.action(description=_('Reject selected suggestions'))
+    def reject_suggestions(self, request, queryset):
+        updated = queryset.filter(status='pending').update(status='rejected')
+        self.message_user(request, _('%(count)d suggestions were successfully rejected.') % {
+            'count': updated
+        })

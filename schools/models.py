@@ -1,6 +1,6 @@
 from django.db import models
-from django.db.models import Q
-from django.contrib.auth.models import User
+from django.utils.translation import gettext_lazy as _
+from typing import Any
 
 NATURE_CHOICES = [
     ('Público', 'Público'),
@@ -14,152 +14,196 @@ SUGGESTION_STATUS_CHOICES = [
 ]
 
 class ImpartedStudy(models.Model):
-    id = models.AutoField(primary_key=True)
-    degree = models.CharField(blank=True, null=True, max_length=255)
-    family = models.CharField(blank=True, null=True, max_length=255)
-    name = models.CharField(max_length=255)
-    modality = models.CharField(blank=True, null=True, max_length=255)
-    created_at = models.CharField(max_length=255)
-    updated_at = models.CharField(max_length=255)
+    """Model representing a study program that can be offered by schools."""
+    
+    name = models.CharField(_("Name"), max_length=255)
+    degree = models.CharField(_("Degree"), max_length=255, blank=True, null=True)
+    family = models.CharField(_("Family"), max_length=255, blank=True, null=True)
+    modality = models.CharField(_("Modality"), max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
 
     class Meta:
-        managed = False
         db_table = 'imparted_studies'
-        verbose_name = 'Study'
-        verbose_name_plural = 'Studies'
+        verbose_name = _("Study")
+        verbose_name_plural = _("Studies")
         indexes = [
             models.Index(fields=['degree']),
             models.Index(fields=['family']),
             models.Index(fields=['modality']),
         ]
 
-    def __str__(self):
-        return f"{self.name} ({self.degree})"
+    def __str__(self) -> str:
+        return f"{self.name} ({self.degree or 'No degree'})"
 
 
 class School(models.Model):
-    id = models.CharField(max_length=10, primary_key=True)
-    name = models.CharField(max_length=255)
-    phone = models.CharField(max_length=20)
-    fax = models.CharField(max_length=20)
-    email = models.EmailField()
-    website = models.URLField()
-    autonomous_community = models.CharField(max_length=100)
-    province = models.CharField(max_length=100)
-    country = models.CharField(max_length=100)
-    region = models.CharField(max_length=100)
-    sub_region = models.CharField(max_length=100)
-    municipality = models.CharField(max_length=100)
-    locality = models.CharField(max_length=100)
-    address = models.CharField(max_length=255)
-    postal_code = models.CharField(max_length=10)
-    nature = models.CharField(max_length=50)
-    is_concerted = models.BooleanField()
-    center_type = models.CharField(max_length=50)
-    generic_name = models.CharField(max_length=255)
-    services = models.JSONField()
-    latitude = models.FloatField(null=True, blank=True)
-    longitude = models.FloatField(null=True, blank=True)
-    created_at = models.CharField(max_length=255)
-    updated_at = models.CharField(max_length=255)
-    studies = models.ManyToManyField(ImpartedStudy, through='SchoolStudy')
+    """Model representing an educational institution."""
+
+    NATURE_CHOICES = [
+        ('public', _('Public')),
+        ('private', _('Private'))
+    ]
+
+    # Core fields
+    id = models.CharField(_("ID"), max_length=10, primary_key=True)
+    name = models.CharField(_("Name"), max_length=255, db_index=True)
+    email = models.EmailField(_("Email"))
+    phone = models.CharField(_("Phone"), max_length=20)
+    fax = models.CharField(_("Fax"), max_length=20, blank=True)
+    website = models.URLField(_("Website"), blank=True)
+
+    # Location fields
+    address = models.CharField(_("Address"), max_length=255)
+    postal_code = models.CharField(_("Postal code"), max_length=10)
+    municipality = models.CharField(_("Municipality"), max_length=100, db_index=True)
+    province = models.CharField(_("Province"), max_length=100, db_index=True)
+    autonomous_community = models.CharField(_("Autonomous community"), max_length=100, db_index=True)
+    region = models.CharField(_("Region"), max_length=100)
+    sub_region = models.CharField(_("Sub-region"), max_length=100)
+    locality = models.CharField(_("Locality"), max_length=100)
+    country = models.CharField(_("Country"), max_length=100, default='España')
+    
+    # School characteristics
+    nature = models.CharField(_("Nature"), max_length=50, choices=NATURE_CHOICES, db_index=True)
+    is_concerted = models.BooleanField(_("Is concerted"), default=False)
+    center_type = models.CharField(_("Center type"), max_length=50, db_index=True)
+    generic_name = models.CharField(_("Generic name"), max_length=255)
+    services = models.JSONField(_("Services"), default=dict)
+    
+    # Geolocation
+    latitude = models.DecimalField(_("Latitude"), max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(_("Longitude"), max_digits=9, decimal_places=6, null=True, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
+    
+    # Relationships
+    studies = models.ManyToManyField(
+        ImpartedStudy,
+        through='SchoolStudy',
+        verbose_name=_("Studies")
+    )
 
     class Meta:
-        managed = False
         db_table = 'schools'
-        verbose_name = 'School'
-        verbose_name_plural = 'Schools'
-        indexes = [
-            models.Index(fields=['municipality']),
-            models.Index(fields=['province']),
-            models.Index(fields=['autonomous_community']),
-            models.Index(fields=['nature']),
-            models.Index(fields=['center_type']),
-        ]
+        verbose_name = _("School")
+        verbose_name_plural = _("Schools")
+        ordering = ['name']
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name} ({self.municipality})"
 
 
 class SchoolStudy(models.Model):
-    # Explicitly define both fields as primary key components
-    school = models.ForeignKey(School, on_delete=models.CASCADE, db_column='school_id', primary_key=True)
-    study = models.ForeignKey(ImpartedStudy, on_delete=models.CASCADE, db_column='study_id')
+    """Through model for the many-to-many relationship between School and ImpartedStudy."""
+    
+    school = models.ForeignKey(
+        School,
+        on_delete=models.CASCADE,
+        db_column='school_id'
+    )
+    study = models.ForeignKey(
+        ImpartedStudy,
+        on_delete=models.CASCADE,
+        db_column='study_id'
+    )
     
     class Meta:
-        managed = False
         db_table = 'school_studies'
-        verbose_name = 'School Study'
-        verbose_name_plural = 'School Studies'
+        verbose_name = _("School Study")
+        verbose_name_plural = _("School Studies")
         unique_together = ('school', 'study')
-    
-    def __str__(self):
+
+    def __str__(self) -> str:
         return f"{self.school.name} - {self.study.name}"
-    
-    @property
-    def composite_key(self):
-        """Property that combines school_id and study_id to create a unique identifier."""
-        return f"{self.school_id}_{self.study_id}"
 
 
 class SchoolSuggestion(models.Model):
+    """Model for suggesting new schools to be added to the database."""
+
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected')
+        ('pending', _('Pending')),
+        ('approved', _('Approved')),
+        ('rejected', _('Rejected'))
     ]
     
-    school = models.ForeignKey(School, on_delete=models.CASCADE, null=True, blank=True)
-    name = models.CharField(max_length=255)
-    address = models.CharField(max_length=255)
-    postal_code = models.CharField(max_length=10)
-    municipality = models.CharField(max_length=100)
-    province = models.CharField(max_length=100)
-    autonomous_community = models.CharField(max_length=100)
-    latitude = models.FloatField(null=True, blank=True)
-    longitude = models.FloatField(null=True, blank=True)
-    nature = models.CharField(max_length=50, choices=NATURE_CHOICES)
-    is_concerted = models.BooleanField(default=False)
-    center_type = models.CharField(max_length=100)
-    studies = models.ManyToManyField(ImpartedStudy, db_table='school_suggestion_studies')
-    email = models.EmailField()
-    phone = models.CharField(max_length=20)
-    website = models.URLField(max_length=200, blank=True, null=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    notes = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    # Core fields
+    name = models.CharField(_("Name"), max_length=255)
+    email = models.EmailField(_("Email"))
+    phone = models.CharField(_("Phone"), max_length=20)
+    website = models.URLField(_("Website"), blank=True)
+    
+    # Location fields
+    address = models.CharField(_("Address"), max_length=255)
+    postal_code = models.CharField(_("Postal code"), max_length=10)
+    municipality = models.CharField(_("Municipality"), max_length=100)
+    province = models.CharField(_("Province"), max_length=100)
+    autonomous_community = models.CharField(_("Autonomous community"), max_length=100)
+    latitude = models.DecimalField(_("Latitude"), max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(_("Longitude"), max_digits=9, decimal_places=6, null=True, blank=True)
+    
+    # School characteristics
+    nature = models.CharField(_("Nature"), max_length=50, choices=NATURE_CHOICES)
+    is_concerted = models.BooleanField(_("Is concerted"), default=False)
+    center_type = models.CharField(_("Center type"), max_length=100)
+    
+    # Relationships and status
+    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
+    studies = models.ManyToManyField(ImpartedStudy)
+    status = models.CharField(_("Status"), max_length=20, choices=STATUS_CHOICES, default='pending')
+    notes = models.TextField(_("Notes"), blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
 
     class Meta:
-        managed = False
         db_table = 'school_suggestions'
-        verbose_name = 'School Suggestion'
-        verbose_name_plural = 'School Suggestions'
-    
-    def __str__(self):
-        return f"Suggestion for {self.name} ({self.status})"
+        verbose_name = _("School Suggestion")
+        verbose_name_plural = _("School Suggestions")
+        ordering = ['-created_at']
+
+    def __str__(self) -> str:
+        return f"Suggestion for {self.name} ({self.get_status_display()})"
 
 
 class SchoolEditSuggestion(models.Model):
+    """Model for suggesting edits to existing schools."""
+
+    STATUS_CHOICES = [
+        ('pending', _('Pending')),
+        ('approved', _('Approved')),
+        ('rejected', _('Rejected'))
+    ]
+    
+    # Core fields
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='edit_suggestions')
-    name = models.CharField(max_length=255, blank=True)
-    address = models.CharField(max_length=255, blank=True)
-    postal_code = models.CharField(max_length=10, blank=True)
-    municipality = models.CharField(max_length=100, blank=True)
-    province = models.CharField(max_length=100, blank=True)
-    autonomous_community = models.CharField(max_length=100, blank=True)
-    phone = models.CharField(max_length=20, blank=True)
-    email = models.EmailField(blank=True)
-    website = models.URLField(blank=True)
-    latitude = models.FloatField(null=True, blank=True)
-    longitude = models.FloatField(null=True, blank=True)
-    status = models.CharField(max_length=20, choices=SUGGESTION_STATUS_CHOICES, default='pending')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    name = models.CharField(_("Name"), max_length=255, blank=True)
+    email = models.EmailField(_("Email"), blank=True)
+    phone = models.CharField(_("Phone"), max_length=20, blank=True)
+    website = models.URLField(_("Website"), blank=True)
+    
+    # Location fields
+    address = models.CharField(_("Address"), max_length=255, blank=True)
+    postal_code = models.CharField(_("Postal code"), max_length=10, blank=True)
+    municipality = models.CharField(_("Municipality"), max_length=100, blank=True)
+    province = models.CharField(_("Province"), max_length=100, blank=True)
+    autonomous_community = models.CharField(_("Autonomous community"), max_length=100, blank=True)
+    latitude = models.DecimalField(_("Latitude"), max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(_("Longitude"), max_digits=9, decimal_places=6, null=True, blank=True)
+    
+    # Status and timestamps
+    status = models.CharField(_("Status"), max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
 
     class Meta:
         db_table = 'school_edit_suggestions'
-        managed = False
+        verbose_name = _("School Edit Suggestion")
+        verbose_name_plural = _("School Edit Suggestions")
+        ordering = ['-created_at']
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Edit suggestion for {self.school.name}"

@@ -1,5 +1,10 @@
+"""
+URL configuration for schools app.
+"""
 from django.urls import path
 from . import views
+
+app_name = 'schools'
 
 urlpatterns = [
     # Page routes
@@ -11,7 +16,7 @@ urlpatterns = [
     
     # API routes
     path('api/schools/', views.SchoolListView.as_view(), name='school_list'),
-    path('api/schools/<int:pk>/', views.SchoolDetailView.as_view(), name='school_detail'),
+    path('api/schools/<int:pk>/', views.SchoolDetailView.as_view(), name='api_school_detail'),
     path('api/schools/search/', views.SchoolSearchView.as_view(), name='school_search'),
     path('api/nearest/', views.NearestSchoolView.as_view(), name='nearest_school'),
     path('api/studies/', views.StudyListView.as_view(), name='study_list'),
