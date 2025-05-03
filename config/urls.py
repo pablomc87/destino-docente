@@ -18,16 +18,18 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from schools import views
 
 urlpatterns = [
     # Admin URLs
     path('admin/', admin.site.urls),
     
     # Page routes
-    path('', include('schools.urls')),
+    path('', views.index, name='index'),
+    path('schools/', include('schools.urls')),
     
     # API routes
-    path('api/', include('schools.urls')),
+    path('api/', include('schools.api_urls')),
 ]
 
 # Serve static and media files in development
