@@ -26,9 +26,9 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 media/
-static/
+staticfiles/
 
-# Virtual Environment
+# Environment
 .env
 .venv
 env/
@@ -43,30 +43,11 @@ venv.bak/
 *.swp
 *.swo
 .DS_Store
-*.sublime-workspace
-*.sublime-project
 
-# Docker
-.docker/
-docker-compose.override.yml
-
-# Coverage
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-
-# Misc
+# Project specific
 *.bak
-*.tmp
-*.temp
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+*.sql
+*.dump 
+
+# Cursor
 .cursorrules
