@@ -132,10 +132,6 @@
         </div>
     </div>
 </div>
-
-<div class="text-center mt-4 mb-4">
-    <a href="/find-nearest/?preset_school={{ request.resolver_match.kwargs.pk }}" class="btn btn-success">Encontrar Centros Similares Cercanos</a>
-</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -166,12 +162,6 @@
                 updateElementText('schoolName', 'ID de centro no válido');
                 updateElementText('schoolLocation', 'Por favor, vuelve a la página de búsqueda');
                 return;
-            }
-
-            // Update find similar button href
-            const findSimilarBtn = document.getElementById('findSimilarBtn');
-            if (findSimilarBtn) {
-                findSimilarBtn.href = `/find-nearest/?preset_school=${schoolId}`;
             }
             
             // Fetch school details
@@ -250,11 +240,10 @@
                     servicesContainer.innerHTML = '<p>No hay información disponible sobre los servicios ofrecidos.</p>';
                 }
             }
-            
         } catch (error) {
-            console.error('Error fetching school details:', error);
-            updateElementText('schoolName', 'Error al cargar los detalles del centro');
-            updateElementText('schoolLocation', 'Por favor, inténtalo de nuevo más tarde');
+            console.error('Error:', error);
+            updateElementText('schoolName', 'Error al cargar los datos');
+            updateElementText('schoolLocation', 'Por favor, intenta de nuevo más tarde');
         }
     });
 </script>
