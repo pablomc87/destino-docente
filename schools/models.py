@@ -41,8 +41,8 @@ class School(models.Model):
     """Model representing an educational institution."""
 
     NATURE_CHOICES = [
-        ('public', _('Public')),
-        ('private', _('Private'))
+        ('Centro público', _('Centro público')),
+        ('Centro privado', _('Centro privado'))
     ]
 
     # Core fields
@@ -65,9 +65,9 @@ class School(models.Model):
     country = models.CharField(_("Country"), max_length=100, default='España', null=True, blank=True)
     
     # School characteristics
-    nature = models.CharField(_("Nature"), max_length=50, choices=NATURE_CHOICES, db_index=True, null=True, blank=True)
+    nature = models.CharField(_("Nature"), max_length=100, choices=NATURE_CHOICES, db_index=True, null=True, blank=True)
     is_concerted = models.BooleanField(_("Is concerted"), default=False, null=True, blank=True)
-    center_type = models.CharField(_("Center type"), max_length=50, db_index=True, null=True, blank=True)
+    center_type = models.CharField(_("Center type"), max_length=100, db_index=True, null=True, blank=True)
     generic_name = models.CharField(_("Generic name"), max_length=255, null=True, blank=True)
     services = models.JSONField(_("Services"), default=dict, null=True, blank=True)
     
@@ -145,7 +145,7 @@ class SchoolSuggestion(models.Model):
     longitude = models.DecimalField(_("Longitude"), max_digits=9, decimal_places=6, null=True, blank=True)
     
     # School characteristics
-    nature = models.CharField(_("Nature"), max_length=50, choices=NATURE_CHOICES)
+    nature = models.CharField(_("Nature"), max_length=100, choices=NATURE_CHOICES)
     is_concerted = models.BooleanField(_("Is concerted"), default=False)
     center_type = models.CharField(_("Center type"), max_length=100)
     
