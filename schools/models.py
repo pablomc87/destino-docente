@@ -49,8 +49,8 @@ class School(models.Model):
     id = models.CharField(_("ID"), max_length=10, primary_key=True)
     name = models.CharField(_("Name"), max_length=255, db_index=True, null=True, blank=True)
     email = models.EmailField(_("Email"), null=True, blank=True)
-    phone = models.CharField(_("Phone"), max_length=20, null=True, blank=True)
-    fax = models.CharField(_("Fax"), max_length=20, null=True, blank=True)
+    phone = models.CharField(_("Phone"), max_length=30, null=True, blank=True)
+    fax = models.CharField(_("Fax"), max_length=30, null=True, blank=True)
     website = models.URLField(_("Website"), null=True, blank=True)
 
     # Location fields
@@ -132,7 +132,7 @@ class SchoolSuggestion(models.Model):
     # Core fields
     name = models.CharField(_("Name"), max_length=255)
     email = models.EmailField(_("Email"))
-    phone = models.CharField(_("Phone"), max_length=20)
+    phone = models.CharField(_("Phone"), max_length=30)
     website = models.URLField(_("Website"), blank=True)
     
     # Location fields
@@ -152,7 +152,7 @@ class SchoolSuggestion(models.Model):
     # Relationships and status
     school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
     studies = models.ManyToManyField(ImpartedStudy)
-    status = models.CharField(_("Status"), max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(_("Status"), max_length=30, choices=STATUS_CHOICES, default='pending')
     notes = models.TextField(_("Notes"), blank=True)
     
     # Timestamps
@@ -182,7 +182,7 @@ class SchoolEditSuggestion(models.Model):
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='edit_suggestions')
     name = models.CharField(_("Name"), max_length=255, blank=True)
     email = models.EmailField(_("Email"), blank=True)
-    phone = models.CharField(_("Phone"), max_length=20, blank=True)
+    phone = models.CharField(_("Phone"), max_length=30, blank=True)
     website = models.URLField(_("Website"), blank=True)
     
     # Location fields
@@ -195,7 +195,7 @@ class SchoolEditSuggestion(models.Model):
     longitude = models.DecimalField(_("Longitude"), max_digits=9, decimal_places=6, null=True, blank=True)
     
     # Status and timestamps
-    status = models.CharField(_("Status"), max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(_("Status"), max_length=30, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
 
