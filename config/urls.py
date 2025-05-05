@@ -26,7 +26,7 @@ urlpatterns = [
     
     # Page routes
     path('', views.index, name='index'),
-    path('schools/', include('schools.urls', namespace='schools')),
+    path('', include('schools.urls', namespace='schools')),
     
     # API routes
     path('api/', include('schools.api_urls', namespace='api')),
