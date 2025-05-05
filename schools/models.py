@@ -47,29 +47,29 @@ class School(models.Model):
 
     # Core fields
     id = models.CharField(_("ID"), max_length=10, primary_key=True)
-    name = models.CharField(_("Name"), max_length=255, db_index=True)
-    email = models.EmailField(_("Email"))
-    phone = models.CharField(_("Phone"), max_length=20)
-    fax = models.CharField(_("Fax"), max_length=20, blank=True)
-    website = models.URLField(_("Website"), blank=True)
+    name = models.CharField(_("Name"), max_length=255, db_index=True, null=True, blank=True)
+    email = models.EmailField(_("Email"), null=True, blank=True)
+    phone = models.CharField(_("Phone"), max_length=20, null=True, blank=True)
+    fax = models.CharField(_("Fax"), max_length=20, null=True, blank=True)
+    website = models.URLField(_("Website"), null=True, blank=True)
 
     # Location fields
-    address = models.CharField(_("Address"), max_length=255)
-    postal_code = models.CharField(_("Postal code"), max_length=10)
-    municipality = models.CharField(_("Municipality"), max_length=100, db_index=True)
-    province = models.CharField(_("Province"), max_length=100, db_index=True)
-    autonomous_community = models.CharField(_("Autonomous community"), max_length=100, db_index=True)
-    region = models.CharField(_("Region"), max_length=100)
-    sub_region = models.CharField(_("Sub-region"), max_length=100)
-    locality = models.CharField(_("Locality"), max_length=100)
-    country = models.CharField(_("Country"), max_length=100, default='España')
+    address = models.CharField(_("Address"), max_length=255, null=True, blank=True)
+    postal_code = models.CharField(_("Postal code"), max_length=10, null=True, blank=True)
+    municipality = models.CharField(_("Municipality"), max_length=100, db_index=True, null=True, blank=True)
+    province = models.CharField(_("Province"), max_length=100, db_index=True, null=True, blank=True)
+    autonomous_community = models.CharField(_("Autonomous community"), max_length=100, db_index=True, null=True, blank=True)
+    region = models.CharField(_("Region"), max_length=100, null=True, blank=True)
+    sub_region = models.CharField(_("Sub-region"), max_length=100, null=True, blank=True)
+    locality = models.CharField(_("Locality"), max_length=100, null=True, blank=True)
+    country = models.CharField(_("Country"), max_length=100, default='España', null=True, blank=True)
     
     # School characteristics
-    nature = models.CharField(_("Nature"), max_length=50, choices=NATURE_CHOICES, db_index=True)
-    is_concerted = models.BooleanField(_("Is concerted"), default=False)
-    center_type = models.CharField(_("Center type"), max_length=50, db_index=True)
-    generic_name = models.CharField(_("Generic name"), max_length=255)
-    services = models.JSONField(_("Services"), default=dict)
+    nature = models.CharField(_("Nature"), max_length=50, choices=NATURE_CHOICES, db_index=True, null=True, blank=True)
+    is_concerted = models.BooleanField(_("Is concerted"), default=False, null=True, blank=True)
+    center_type = models.CharField(_("Center type"), max_length=50, db_index=True, null=True, blank=True)
+    generic_name = models.CharField(_("Generic name"), max_length=255, null=True, blank=True)
+    services = models.JSONField(_("Services"), default=dict, null=True, blank=True)
     
     # Geolocation
     latitude = models.DecimalField(_("Latitude"), max_digits=9, decimal_places=6, null=True, blank=True)
@@ -93,7 +93,7 @@ class School(models.Model):
         ordering = ['name']
 
     def __str__(self) -> str:
-        return f"{self.name} ({self.municipality})"
+        return f"{self.name or 'Unnamed'} ({self.municipality or 'No location'})"
 
 
 class SchoolStudy(models.Model):
