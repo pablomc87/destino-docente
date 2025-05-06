@@ -51,3 +51,6 @@ venv.bak/
 
 # Cursor
 .cursorrules
+
+# SQLite
+schools.db
