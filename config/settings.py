@@ -217,16 +217,17 @@ if DEBUG:
     SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 else:
     # Redis session configuration
-    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
     CACHES = {
         "default": {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "BACKEND": "django_redis.cache.RedisCache",
             "LOCATION": os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
             "OPTIONS": {
                 "CLIENT_CLASS":"django_redis.client.DefaultClient",
             }
         }
     }
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+    SESSION_CACHE_ALIAS = 'default'
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_DOMAIN = os.environ.get('SESSION_COOKIE_DOMAIN', None)
