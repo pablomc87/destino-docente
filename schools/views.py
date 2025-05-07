@@ -152,8 +152,8 @@ class NearestSchoolView(APIView):
         school_types = request.GET.getlist('school_types')
         
         if not address or not latitude or not longitude:
-            return Response({'error': 'Address and coordinates are required'}, 
-                          status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Se requieren dirección y coordenadas'},
+                           status=status.HTTP_400_BAD_REQUEST)
         
         try:
             # Convert coordinates to float
@@ -243,7 +243,7 @@ class NearestSchoolView(APIView):
             
             if not matching_schools:
                 return Response({
-                    'error': 'No schools with location data found matching your criteria'
+                    'error': 'No se encontraron centros con datos de ubicación que coincidan con tus criterios'
                 }, status=status.HTTP_404_NOT_FOUND)
             
             # Calculate travel times only for the top 10 closest schools
@@ -300,13 +300,13 @@ class NearestSchoolView(APIView):
                 except Exception as e:
                     error_message = str(e)
                     # Check if it's a Google API quota error
-                    if hasattr(e, 'response') and e.response:
+                    if hasattr(e, 'response'):
                         try:
                             error_data = e.response.json()
                             if 'error' in error_data:
-                                error_message = f"Google API Error: {error_data['error'].get('message', 'Unknown error')}"
+                                error_message = f"Error de API de Google: {error_data['error'].get('message', 'Error desconocido')}"
                                 if 'quota' in error_message.lower():
-                                    error_message += f" (Quota remaining: {getattr(e, 'quota_remaining', 'unknown')})"
+                                    error_message += f" (Cuota restante: {getattr(e, 'quota_remaining', 'desconocida')})"
                         except:
                             pass
                     
@@ -388,7 +388,7 @@ class SchoolSuggestionListView(APIView):
         try:
             suggestion = SchoolSuggestion.objects.get(pk=pk)
         except SchoolSuggestion.DoesNotExist:
-            return Response({'error': 'Suggestion not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'Sugerencia no encontrada'}, status=status.HTTP_404_NOT_FOUND)
         
         # Only allow updating status and notes
         if 'status' in request.data:
@@ -491,7 +491,7 @@ def toggle_search_favorite(request, pk):
     except SearchHistory.DoesNotExist:
         return JsonResponse({
             'status': 'error',
-            'message': 'Search history not found'
+            'message': 'Búsqueda no encontrada'
         }, status=404)
 
 @api_view(['POST'])
@@ -503,10 +503,10 @@ def delete_search(request, pk):
         search.delete()
         return JsonResponse({
             'status': 'success',
-            'message': 'Search history deleted successfully'
+            'message': 'Búsqueda eliminada correctamente'
         })
     except SearchHistory.DoesNotExist:
         return JsonResponse({
             'status': 'error',
-            'message': 'Search history not found'
+            'message': 'Búsqueda no encontrada'
         }, status=404)

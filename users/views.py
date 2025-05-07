@@ -30,12 +30,12 @@ def signup(request):
         try:
             validate_email(email)
         except ValidationError:
-            messages.error(request, 'Please enter a valid email address.')
+            messages.error(request, 'Por favor, introduce un correo electrónico válido.')
             return render(request, 'users/signup.html', {'form_data': form_data})
             
         # Validate passwords match
         if password1 != password2:
-            messages.error(request, 'Passwords do not match.')
+            messages.error(request, 'Las contraseñas no coinciden.')
             return render(request, 'users/signup.html', {'form_data': form_data})
             
         # Validate password strength
@@ -48,7 +48,7 @@ def signup(request):
             
         # Check if user already exists
         if User.objects.filter(email=email).exists():
-            messages.error(request, 'A user with this email already exists.')
+            messages.error(request, 'Ya existe un usuario con este correo electrónico.')
             return render(request, 'users/signup.html', {'form_data': form_data})
         
         try:
@@ -61,11 +61,11 @@ def signup(request):
             
             # Log the user in
             login(request, user)
-            messages.success(request, 'Account created successfully! Welcome to School Finder.')
-            return redirect('index')
+            messages.success(request, '¡Bienvenido a Destino Docente! Tu cuenta ha sido creada con éxito.')
+            return redirect('users:dashboard')
             
         except IntegrityError:
-            messages.error(request, 'An error occurred while creating your account. Please try again.')
+            messages.error(request, 'Ya existe un usuario con este correo electrónico.')
             return render(request, 'users/signup.html', {'form_data': form_data})
     
     return render(request, 'users/signup.html')
@@ -94,10 +94,10 @@ def signin(request):
             if not remember:
                 request.session.set_expiry(0)  # Session expires when browser closes
                 
-            messages.success(request, 'Successfully signed in!')
+            messages.success(request, '¡Conectado con éxito!')
             return redirect('users:dashboard')
         else:
-            messages.error(request, 'Invalid email or password.')
+            messages.error(request, 'Correo electrónico o contraseña incorrectos.')
     
     return render(request, 'users/signin.html')
 
@@ -108,7 +108,7 @@ def signout(request):
     Handle user sign out.
     """
     logout(request)
-    messages.success(request, 'Successfully signed out!')
+    messages.success(request, '¡Desconectado con éxito!')
     return redirect('index')
 
 
@@ -158,19 +158,19 @@ def settings(request):
             try:
                 validate_email(new_email)
             except ValidationError:
-                messages.error(request, 'Please enter a valid email address.')
+                messages.error(request, 'Por favor, introduce un correo electrónico válido.')
                 return redirect('users:settings')
                 
             # Check if email is already taken
             if User.objects.filter(email=new_email).exclude(id=request.user.id).exists():
-                messages.error(request, 'This email is already in use.')
+                messages.error(request, 'Este correo electrónico ya está en uso.')
                 return redirect('users:settings')
                 
             # Update email
             request.user.email = new_email
             request.user.username = new_email  # Update username to match email
             request.user.save()
-            messages.success(request, 'Email updated successfully.')
+            messages.success(request, 'Correo electrónico actualizado con éxito.')
             
         elif action == 'update_password':
             current_password = request.POST.get('current_password')
@@ -179,12 +179,12 @@ def settings(request):
             
             # Verify current password
             if not request.user.check_password(current_password):
-                messages.error(request, 'Current password is incorrect.')
+                messages.error(request, 'La contraseña actual es incorrecta.')
                 return redirect('users:settings')
                 
             # Validate new password
             if new_password != confirm_password:
-                messages.error(request, 'New passwords do not match.')
+                messages.error(request, 'Las contraseñas no coinciden.')
                 return redirect('users:settings')
                 
             try:
@@ -200,19 +200,19 @@ def settings(request):
             
             # Re-authenticate user
             login(request, request.user)
-            messages.success(request, 'Password updated successfully.')
+            messages.success(request, 'Contraseña actualizada con éxito.')
             
         elif action == 'delete_account':
             password = request.POST.get('password')
             
             # Verify password
             if not request.user.check_password(password):
-                messages.error(request, 'Password is incorrect.')
+                messages.error(request, 'La contraseña es incorrecta.')
                 return redirect('users:settings')
                 
             # Delete user
             request.user.delete()
-            messages.success(request, 'Your account has been deleted.')
+            messages.success(request, 'Tu cuenta ha sido eliminada.')
             return redirect('index')
             
     return render(request, 'users/settings.html')

@@ -257,7 +257,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 <button type="button" class="btn btn-primary" id="modalRepeatSearch" onclick="repeatSearch(this.getAttribute('data-lat'), this.getAttribute('data-lng'), this.getAttribute('data-provinces')?.split(', '), this.getAttribute('data-school-types')?.split(', '))">
                     <i class="fas fa-redo me-1"></i> Repetir Búsqueda
                 </button>
@@ -508,7 +508,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const button = event.target.closest('button');
         const originalText = button.innerHTML;
         button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Searching...';
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Buscando...';
 
         // Get the search ID and location from the button's data attributes
         const searchId = button.getAttribute('data-search-id');
@@ -528,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (isNaN(latitude) || isNaN(longitude)) {
             console.error('Invalid coordinates:', { lat, lng, parsed: { latitude, longitude } });
-            alert('Invalid coordinates. Please try again.');
+            alert('Coordenadas inválidas. Por favor, inténtelo de nuevo.');
             button.disabled = false;
             button.innerHTML = originalText;
             return;
@@ -626,7 +626,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert(error.message || 'Error performing search. Please try again.');
+                alert(error.message || 'Error al realizar la búsqueda. Por favor, inténtelo de nuevo.');
             })
             .finally(() => {
                 // Restore button state
