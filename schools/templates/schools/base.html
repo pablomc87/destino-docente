@@ -142,10 +142,11 @@
                 });
             });
             
-            // Only check session on protected pages
+            // Only check session on protected pages and if user is authenticated
             {% if user.is_authenticated %}
                 if (window.location.pathname.startsWith('/usuarios/')) {
-                    checkSession();
+                    // Add a small delay to ensure session is ready
+                    setTimeout(checkSession, 100);
                 }
             {% endif %}
         });

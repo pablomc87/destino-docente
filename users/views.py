@@ -93,24 +93,32 @@ def signin(request):
             user = None
         
         if user is not None:
-            # Force session creation
-            if not request.session.session_key:
+            try:
+                # Clear any existing session data
+                request.session.flush()
+                
+                # Create new session
                 request.session.create()
-            
-            # Login and set session data
-            login(request, user)
-            
-            # Set session expiry based on remember me
-            if not remember:
-                request.session.set_expiry(86400)  # 24 hours
-            else:
-                request.session.set_expiry(None)  # Use default (2 weeks)
-            
-            # Force session save
-            request.session.save()
-            
-            messages.success(request, '¡Conectado con éxito!')
-            return redirect('users:dashboard')
+                
+                # Login and set session data
+                login(request, user)
+                
+                # Set session expiry based on remember me
+                if not remember:
+                    request.session.set_expiry(86400)  # 24 hours
+                else:
+                    request.session.set_expiry(None)  # Use default (2 weeks)
+                
+                # Force session save
+                request.session.save()
+                
+                logger.debug(f"Session created successfully - key: {request.session.session_key}")
+                messages.success(request, '¡Conectado con éxito!')
+                return redirect('users:dashboard')
+            except Exception as e:
+                logger.error(f"Error during login: {str(e)}", exc_info=True)
+                messages.error(request, 'Error al iniciar sesión. Por favor, inténtelo de nuevo.')
+                return render(request, 'users/signin.html')
         else:
             messages.error(request, 'Correo electrónico o contraseña incorrectos.')
     
