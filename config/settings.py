@@ -223,7 +223,6 @@ else:
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
             "OPTIONS": {
-                "CLIENT_CLASS": "django_redis.client.DefaultClient",
                 "SOCKET_TIMEOUT": 1,
                 "RETRY_ON_TIMEOUT": True,
             }
