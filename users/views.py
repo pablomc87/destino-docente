@@ -14,6 +14,7 @@ from django.contrib.auth.views import PasswordResetView
 from schools.models import SearchHistory
 import logging
 from django.conf import settings as django_settings
+from django.http import HttpResponse
 
 logger = logging.getLogger(__name__)
 
@@ -241,4 +242,14 @@ def profile(request):
     """
     Display user profile information.
     """
-    return render(request, 'users/profile.html') 
+    return render(request, 'users/profile.html')
+
+@login_required
+def check_session(request):
+    """
+    Check if the user's session is valid.
+    Returns 200 if valid, 401 if not.
+    """
+    if request.user.is_authenticated:
+        return HttpResponse(status=200)
+    return HttpResponse(status=401) 

@@ -14,6 +14,7 @@ urlpatterns = [
     path('perfil/', views.profile, name='profile'),
     path('panel/', views.dashboard, name='dashboard'),
     path('ajustes/', views.settings, name='settings'),
+    path('check-session/', views.check_session, name='check_session'),
     
     # Password Reset URLs
     path('restablecer-contraseña/', 

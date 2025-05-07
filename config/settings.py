@@ -223,13 +223,21 @@ CACHES = {
             "CONNECTION_POOL_KWARGS": {
                 "ssl_cert_reqs": None,
                 "ssl_check_hostname": False
-            }
+            },
+            "SOCKET_TIMEOUT": 5,
+            "RETRY_ON_TIMEOUT": True,
+            "MAX_CONNECTIONS": 1000,
+            "PARSER_CLASS": "redis.connection.HiredisParser",
+            "COMPRESSOR_CLASS": "django_redis.compressors.zlib.ZlibCompressor",
+            "IGNORE_EXCEPTIONS": True
         }
     }
 }
 SESSION_CACHE_ALIAS = 'default'
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
+SESSION_SAVE_EVERY_REQUEST = True  # Force session save on every request
+SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 
 # Add context processor for Google Maps API key
 def google_maps_api_key(request):
