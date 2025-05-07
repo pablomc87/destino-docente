@@ -211,6 +211,12 @@ LOGIN_URL = '/usuarios/conectarse/'
 LOGIN_REDIRECT_URL = '/usuarios/panel/'
 LOGOUT_REDIRECT_URL = '/'
 
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_SAVE_EVERY_REQUEST = True
+
 # Add context processor for Google Maps API key
 def google_maps_api_key(request):
     return {'google_maps_api_key': GOOGLE_MAPS_API_KEY}
