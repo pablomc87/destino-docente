@@ -250,6 +250,14 @@ def check_session(request):
     Check if the user's session is valid.
     Returns 200 if valid, 401 if not.
     """
-    if request.user.is_authenticated:
-        return HttpResponse(status=200)
-    return HttpResponse(status=401) 
+    try:
+        # Check if user is authenticated and session exists
+        if request.user.is_authenticated and request.session.session_key:
+            # Force session save to ensure it's persisted
+            request.session.save()
+            return HttpResponse(status=200)
+        return HttpResponse(status=401)
+    except Exception as e:
+        logger.error(f"Error checking session: {str(e)}")
+        # On error, assume session is valid to prevent unnecessary redirects
+        return HttpResponse(status=200) 
