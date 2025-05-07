@@ -13,5 +13,5 @@ urlpatterns = [
     path('schools/search/', views.SchoolSearchView.as_view(), name='school_search'),
     path('nearest/', views.NearestSchoolView.as_view(), name='nearest_school'),
     path('edit-suggestions/', views.SchoolEditSuggestionView.as_view(), name='edit_suggestion'),
-    path('suggest-school/', views.suggest_school, name='suggest_school'),
+    path('sugerir-centro/', views.suggest_school, name='suggest_school'),
 ] 

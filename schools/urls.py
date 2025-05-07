@@ -9,9 +9,13 @@ app_name = 'schools'
 urlpatterns = [
     # Page routes
     path('', views.index, name='index'),
-    path('schools/', views.SchoolListView.as_view(), name='school_list'),
-    path('schools/<int:pk>/', views.school_detail, name='school_detail'),
-    path('schools/<int:pk>/edit/', views.edit_school, name='edit_school'),
-    path('find-nearest/', views.find_nearest, name='find_nearest'),
-    path('suggest-school/', views.suggest_school, name='suggest_school'),
+    path('centros/', views.SchoolListView.as_view(), name='school_list'),
+    path('centros/<int:pk>/', views.school_detail, name='school_detail'),
+    path('centros/<int:pk>/editar/', views.edit_school, name='edit_school'),
+    path('buscar-cercanos/', views.find_nearest, name='find_nearest'),
+    path('sugerir-centro/', views.suggest_school, name='suggest_school'),
+    
+    # Search history actions
+    path('api/historial-busquedas/<int:pk>/favorito/', views.toggle_search_favorite, name='toggle_search_favorite'),
+    path('api/historial-busquedas/<int:pk>/eliminar/', views.delete_search, name='delete_search'),
 ] 

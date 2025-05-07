@@ -1,0 +1,101 @@
+{% extends 'users/base_user.html' %}
+
+{% block title %}Ajustes de la cuenta - Destino Docente{% endblock %}
+
+{% block user_content %}
+<div class="row">
+    <div class="col-12">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="card shadow mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">Actualizar correo electrónico</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_email">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Correo electrónico</label>
+                        <input type="email" 
+                               class="form-control" 
+                               id="email" 
+                               name="email" 
+                               value="{{ user.email }}" 
+                               required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Actualizar correo electrónico</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">Cambiar contraseña</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_password">
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">Contraseña actual</label>
+                        <input type="password" 
+                               class="form-control" 
+                               id="current_password" 
+                               name="current_password" 
+                               required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">Nueva contraseña</label>
+                        <input type="password" 
+                               class="form-control" 
+                               id="new_password" 
+                               name="new_password" 
+                               required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirmar nueva contraseña</label>
+                        <input type="password" 
+                               class="form-control" 
+                               id="confirm_password" 
+                               name="confirm_password" 
+                               required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Cambiar contraseña</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">Eliminar cuenta</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-danger mb-3">
+                    Advertencia: Esta acción no se puede deshacer. Todos tus datos se eliminarán permanentemente.
+                </p>
+                <form method="post" onsubmit="return confirm('¿Estás seguro de querer eliminar tu cuenta? Esta acción no se puede deshacer.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_account">
+                    <div class="mb-3">
+                        <label for="delete_password" class="form-label">Introduce tu contraseña para confirmar</label>
+                        <input type="password" 
+                               class="form-control" 
+                               id="delete_password" 
+                               name="password" 
+                               required>
+                    </div>
+                    <button type="submit" class="btn btn-danger">Eliminar cuenta</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

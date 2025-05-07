@@ -7,7 +7,7 @@ import math
 import requests
 from datetime import datetime, timedelta
 from django.conf import settings
-from .models import School, ImpartedStudy, SchoolSuggestion, SchoolEditSuggestion
+from .models import School, ImpartedStudy, SchoolSuggestion, SchoolEditSuggestion, SearchHistory
 from .serializers import SchoolSerializer, StudySerializer, SchoolSuggestionSerializer, SchoolEditSuggestionSerializer
 from rest_framework.views import APIView
 from rest_framework import status
@@ -298,13 +298,27 @@ class NearestSchoolView(APIView):
                         'transit': transit_time
                     }
                 except Exception as e:
-                    logger.error(f"Error calculating travel times: {str(e)}")
+                    error_message = str(e)
+                    # Check if it's a Google API quota error
+                    if hasattr(e, 'response') and e.response:
+                        try:
+                            error_data = e.response.json()
+                            if 'error' in error_data:
+                                error_message = f"Google API Error: {error_data['error'].get('message', 'Unknown error')}"
+                                if 'quota' in error_message.lower():
+                                    error_message += f" (Quota remaining: {getattr(e, 'quota_remaining', 'unknown')})"
+                        except:
+                            pass
+                    
+                    logger.error(f"Error calculating travel times: {error_message}")
                     entry['travel_times'] = {
                         'walking': None,
                         'driving': None,
                         'bicycling': None,
                         'transit': None
                     }
+                    # Add error information to the response
+                    entry['travel_times_error'] = error_message
             
             # Build response
             school_data = []
@@ -313,6 +327,25 @@ class NearestSchoolView(APIView):
                 school_dict['distance'] = entry['distance']
                 school_dict['travel_times'] = entry['travel_times']
                 school_data.append(school_dict)
+            
+            # Store search history for authenticated users
+            if request.user.is_authenticated:
+                # Get autonomous community from the first matching school
+                autonomous_community = None
+                if matching_schools:
+                    autonomous_community = matching_schools[0]['school'].autonomous_community
+
+                SearchHistory.objects.create(
+                    user=request.user,
+                    location=address,
+                    latitude=user_lat,
+                    longitude=user_lon,
+                    results_count=len(matching_schools),
+                    provinces=provinces,
+                    autonomous_community=autonomous_community,
+                    school_types=school_types,
+                    results=school_data  # Store the complete search results
+                )
             
             return Response({
                 'schools': school_data,
@@ -442,3 +475,38 @@ class SchoolEditSuggestionDetailView(generics.RetrieveUpdateAPIView):
             school.latitude = instance.latitude
             school.longitude = instance.longitude
             school.save()
+
+@api_view(['POST'])
+@login_required
+def toggle_search_favorite(request, pk):
+    """Toggle favorite status of a search history entry."""
+    try:
+        search = SearchHistory.objects.get(pk=pk, user=request.user)
+        search.is_favorite = not search.is_favorite
+        search.save()
+        return JsonResponse({
+            'status': 'success',
+            'is_favorite': search.is_favorite
+        })
+    except SearchHistory.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Search history not found'
+        }, status=404)
+
+@api_view(['POST'])
+@login_required
+def delete_search(request, pk):
+    """Delete a search history entry."""
+    try:
+        search = SearchHistory.objects.get(pk=pk, user=request.user)
+        search.delete()
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Search history deleted successfully'
+        })
+    except SearchHistory.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Search history not found'
+        }, status=404)

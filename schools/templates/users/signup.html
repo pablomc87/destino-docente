@@ -1,0 +1,70 @@
+{% extends "schools/base.html" %}
+
+{% block title %}Registrarse - Destino Docente{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h2 class="text-center mb-4">Crear una cuenta</h2>
+                    
+                    <!-- Social Sign Up -->
+                    <div class="d-grid gap-2 mb-4">
+                        <button class="btn btn-outline-dark" disabled>
+                            <img src="https://www.google.com/favicon.ico" alt="Google" width="20" height="20" class="me-2">
+                            Registrarse con Google (próximamente)
+                        </button>
+                    </div>
+                    
+                    <div class="text-center mb-4">
+                        <span class="text-muted">o</span>
+                    </div>
+                    
+                    <!-- Email Sign Up -->
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Correo electrónico</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ form_data.email|default:'' }}" required>
+                            <div class="invalid-feedback">
+                                Por favor, introduce una dirección de correo electrónico válida.
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password1" class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="password1" name="password1" value="{{ form_data.password1|default:'' }}" required>
+                            <div class="invalid-feedback">
+                                Por favor, introduce una contraseña.
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password2" class="form-label">Confirmar contraseña</label>
+                            <input type="password" class="form-control" id="password2" name="password2" value="{{ form_data.password2|default:'' }}" required>
+                            <div class="invalid-feedback">
+                                Por favor, confirma tu contraseña.
+                            </div>
+                        </div>
+
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} mb-3" role="alert" style="background-color: {% if message.tags == 'error' %}#dc3545{% else %}#198754{% endif %}; color: white; border: none;">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Registrarse con correo electrónico</button>
+                        </div>
+                    </form>
+                    <div class="text-center mt-4">
+                        <p class="mb-0">¿Ya tienes una cuenta? <a href="{% url 'users:signin' %}">Iniciar sesión</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

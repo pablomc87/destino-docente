@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Buscador de Centros Educativos{% endblock %}</title>
+    <title>{% block title %}Destino Docente{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     {% block extra_css %}{% endblock %}
@@ -30,16 +30,33 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">Inicio</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if '/find-nearest/' in request.path %}active{% endif %}" href="/find-nearest/">Encuentra Centros Cercanos</a>
+                        <a class="nav-link {% if '/buscar-cercanos/' in request.path %}active{% endif %}" href="/buscar-cercanos/">Próximo Destino</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if '/suggest-school/' in request.path %}active{% endif %}" href="/suggest-school/">Sugerir Centro</a>
+                        <a class="nav-link {% if '/sugerir-centro/' in request.path %}active{% endif %}" href="/sugerir-centro/">Añadir Centro</a>
                     </li>
+                </ul>
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if '/users/dashboard/' in request.path %}active{% endif %}" href="{% url 'users:dashboard' %}">Panel de control</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'users:signout' %}">Cerrar sesión</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if '/users/signin/' in request.path %}active{% endif %}" href="{% url 'users:signin' %}">Iniciar sesión</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if '/users/signup/' in request.path %}active{% endif %}" href="{% url 'users:signup' %}">Registrarse</a>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>

@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from typing import Any
+from django.contrib.auth.models import User
 
 NATURE_CHOICES = [
     ('Público', 'Público'),
@@ -207,3 +208,28 @@ class SchoolEditSuggestion(models.Model):
 
     def __str__(self) -> str:
         return f"Edit suggestion for {self.school.name}"
+
+
+class SearchHistory(models.Model):
+    """Model for tracking user search history."""
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='search_history')
+    location = models.CharField(_("Location"), max_length=255)
+    latitude = models.DecimalField(_("Latitude"), max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(_("Longitude"), max_digits=9, decimal_places=6)
+    results_count = models.IntegerField(_("Number of results"), default=0)
+    provinces = models.JSONField(_("Provinces"), default=list, blank=True)
+    autonomous_community = models.CharField(_("Autonomous community"), max_length=100, blank=True)
+    school_types = models.JSONField(_("School types"), default=list, blank=True)
+    results = models.JSONField(_("Search results"), default=list, blank=True)
+    timestamp = models.DateTimeField(_("Search timestamp"), auto_now_add=True)
+    is_favorite = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'search_history'
+        verbose_name = _("Search History")
+        verbose_name_plural = _("Search History")
+        ordering = ['-timestamp']
+
+    def __str__(self) -> str:
+        return f"{self.user.email} - {self.location} ({self.timestamp})"

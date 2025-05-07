@@ -1,0 +1,68 @@
+{% extends "schools/base.html" %}
+
+{% block title %}Sign In - School Finder{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h2 class="text-center mb-4">Iniciar sesión</h2>
+                    
+                    <!-- Social Sign In -->
+                    <div class="d-grid gap-2 mb-4">
+                        <button class="btn btn-outline-dark" disabled>
+                            <img src="https://www.google.com/favicon.ico" alt="Google" width="20" height="20" class="me-2">
+                            Iniciar sesión con Google (próximamente)
+                        </button>
+                    </div>
+                    
+                    <div class="text-center mb-4">
+                        <span class="text-muted">o</span>
+                    </div>
+                    
+                    <!-- Email Sign In -->
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email address</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="invalid-feedback">
+                                Por favor, introduce tu dirección de correo electrónico.
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                            <div class="invalid-feedback">
+                                Por favor, introduce tu contraseña.
+                            </div>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                            <label class="form-check-label" for="remember">Recordarme</label>
+                        </div>
+
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} mb-3" role="alert" style="background-color: {% if message.tags == 'error' %}#dc3545{% else %}#198754{% endif %}; color: white; border: none;">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Iniciar sesión</button>
+                        </div>
+                    </form>
+                    <div class="text-center mt-4">
+                        <p class="mb-0">¿No tienes una cuenta? <a href="{% url 'users:signup' %}">Regístrate</a></p>
+                        <p class="mt-2"><a href="{% url 'users:password_reset' %}">¿Olvidaste tu contraseña?</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,762 @@
+{% extends 'users/base_user.html' %}
+
+{% block title %}Actividad - Destino Docente{% endblock %}
+
+{% block user_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Búsqueda Seleccionada</h4>
+                {% if search_history %}
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-history me-1"></i> Cambiar Selección
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        {% for search in search_history %}
+                        <li>
+                            <a class="dropdown-item" href="#" 
+                               onclick="event.preventDefault(); selectSearch({{ search.id }}, event)"
+                               data-search-id="{{ search.id }}"
+                               data-location="{{ search.location }}"
+                               data-results="{{ search.results_count }}"
+                               data-provinces="{{ search.provinces|join:', ' }}"
+                               data-school-types="{{ search.school_types|join:', ' }}"
+                               data-lat="{{ search.latitude }}"
+                               data-lng="{{ search.longitude }}"
+                               data-search-results='{{ search.results|json_script:"search-results"|safe }}'
+                               data-autonomous-community="{{ search.autonomous_community }}">
+                                <i class="fas fa-star {% if search.is_favorite %}text-warning{% else %}text-muted{% endif %} me-2"></i>
+                                {{ search.location }} ({{ search.timestamp|date:"d M Y H:i" }})
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if search_history %}
+                    {% with selected_search=search_history.0 %}
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="mb-2">Detalles de la Búsqueda</h5>
+                                    <div class="row g-2">
+                                        <div class="col-6 mb-2">
+                                            <small class="text-muted d-block">Ubicación</small>
+                                            <span>{{ selected_search.location }}</span>
+                                        </div>
+                                        {% if selected_search.autonomous_community %}
+                                        <div class="col-6 mb-2">
+                                            <small class="text-muted d-block">Comunidad Autónoma</small>
+                                            <span>{{ selected_search.autonomous_community }}</span>
+                                        </div>
+                                        {% endif %}
+                                        <div class="col-md-3">
+                                            <small class="text-muted d-block">Resultados</small>
+                                            <span>{{ selected_search.results_count }} centros</span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="text-muted d-block">Fecha de Búsqueda</small>
+                                            <span>{{ selected_search.timestamp|date:"d M Y H:i" }}</span>
+                                        </div>
+                                        {% if selected_search.provinces %}
+                                        <div class="col-md-3">
+                                            <small class="text-muted d-block">Provincias</small>
+                                            <span>{{ selected_search.provinces|join:", " }}</span>
+                                        </div>
+                                        {% endif %}
+                                        {% if selected_search.school_types %}
+                                        <div class="col-md-3">
+                                            <small class="text-muted d-block">Tipos de Centro</small>
+                                            <span>{{ selected_search.school_types|join:", " }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <h5>Resultados de la Búsqueda</h5>
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Centro</th>
+                                                <th>Distancia</th>
+                                                <th>Tiempos de Viaje</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for school in selected_search.results %}
+                                            <tr {% if not forloop.first %}class="d-none"{% endif %}>
+                                                <td>
+                                                    <strong>{{ school.name }}</strong><br>
+                                                    <small class="text-muted">{{ school.municipality }}, {{ school.province }}</small>
+                                                </td>
+                                                <td>{{ school.distance|floatformat:0 }} km</td>
+                                                <td>
+                                                    {% if school.travel_times %}
+                                                    <small>
+                                                        <div>🚶 {{ school.travel_times.walking|default:"N/A" }}</div>
+                                                        <div>🚗 {{ school.travel_times.driving|default:"N/A" }}</div>
+                                                        <div>🚲 {{ school.travel_times.bicycling|default:"N/A" }}</div>
+                                                        <div>🚌 {{ school.travel_times.transit|default:"N/A" }}</div>
+                                                    </small>
+                                                    {% else %}
+                                                    N/A
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    {% if selected_search.results|length > 1 %}
+                                    <div class="text-center mt-2">
+                                        <button class="btn btn-link" onclick="toggleMoreSchools(this)">
+                                            <i class="fas fa-chevron-down me-1"></i> Mostrar Más Centros
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mt-4 text-end">
+                                <button onclick="confirmRepeatSearch({{ selected_search.latitude|stringformat:'f' }}, {{ selected_search.longitude|stringformat:'f' }}, {{ selected_search.provinces|safe }}, {{ selected_search.school_types|safe }})" 
+                                        class="btn btn-primary"
+                                        data-location="{{ selected_search.location }}"
+                                        data-search-id="{{ selected_search.id }}">
+                                    <i class="fas fa-search me-2"></i> Repetir Búsqueda
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endwith %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No hay historial de búsquedas disponible.</p>
+                        <a href="{% url 'schools:find_nearest' %}" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i> Buscar Centros
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header">
+                <h4 class="mb-0">Historial de Búsquedas</h4>
+            </div>
+            <div class="card-body">
+                {% if search_history %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Ubicación</th>
+                                    <th>Resultados</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for search in search_history %}
+                                    <tr>
+                                        <td>{{ search.timestamp|date:"d M Y H:i" }}</td>
+                                        <td>{{ search.location }}</td>
+                                        <td>{{ search.results_count }} centros</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary show-search-details" 
+                                                    onclick="selectSearch({{ search.id }}, event)"
+                                                    data-search-id="{{ search.id }}"
+                                                    data-location="{{ search.location }}"
+                                                    data-results="{{ search.results_count }}"
+                                                    data-provinces="{{ search.provinces|join:', ' }}"
+                                                    data-school-types="{{ search.school_types|join:', ' }}"
+                                                    data-lat="{{ search.latitude }}"
+                                                    data-lng="{{ search.longitude }}"
+                                                    data-search-results='{{ search.results|json_script:"search-results"|safe }}'
+                                                    data-autonomous-community="{{ search.autonomous_community }}">
+                                                <i class="fas fa-eye me-1"></i> Ver
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success"
+                                                    onclick="repeatSearch({{ search.latitude|stringformat:'f' }}, {{ search.longitude|stringformat:'f' }}, {{ search.provinces|safe }}, {{ search.school_types|safe }})"
+                                                    data-location="{{ search.location }}"
+                                                    data-search-id="{{ search.id }}">
+                                                <i class="fas fa-redo me-1"></i> Repetir
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-warning"
+                                                    onclick="toggleFavorite({{ search.id }}, this)"
+                                                    data-search-id="{{ search.id }}">
+                                                <i class="fas fa-star {% if search.is_favorite %}text-warning{% else %}text-muted{% endif %}"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                    onclick="deleteSearch({{ search.id }}, this)"
+                                                    data-search-id="{{ search.id }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No hay historial de búsquedas disponible.</p>
+                        <a href="{% url 'schools:find_nearest' %}" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i> Buscar Centros
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Details Modal -->
+<div class="modal fade" id="searchDetailsModal" tabindex="-1" aria-labelledby="searchDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="searchDetailsModalLabel">Detalles de la Búsqueda</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>Parámetros de la Búsqueda</h6>
+                        <p><strong>Dirección:</strong> <span id="modalLocation"></span></p>
+                        <p><strong>Resultados:</strong> <span id="modalResults"></span> centros encontrados</p>
+                        <p><strong>Provincias:</strong> <span id="modalProvinces"></span></p>
+                        <p><strong>Tipos de Centro:</strong> <span id="modalSchoolTypes"></span></p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <h6>Resultados de la Búsqueda</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Centro</th>
+                                        <th>Distancia</th>
+                                        <th>Tiempos de Viaje</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modalResultsList">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="modalRepeatSearch" onclick="repeatSearch(this.getAttribute('data-lat'), this.getAttribute('data-lng'), this.getAttribute('data-provinces')?.split(', '), this.getAttribute('data-school-types')?.split(', '))">
+                    <i class="fas fa-redo me-1"></i> Repetir Búsqueda
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchDetailsModal = document.getElementById('searchDetailsModal');
+    if (searchDetailsModal) {
+        searchDetailsModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const location = button.getAttribute('data-location');
+            const results = button.getAttribute('data-results');
+            const provinces = button.getAttribute('data-provinces');
+            const schoolTypes = button.getAttribute('data-school-types');
+            const lat = button.getAttribute('data-lat');
+            const lng = button.getAttribute('data-lng');
+            const searchResults = JSON.parse(button.getAttribute('data-search-results') || '[]');
+
+            document.getElementById('modalLocation').textContent = location;
+            document.getElementById('modalResults').textContent = results;
+            document.getElementById('modalProvinces').textContent = provinces || 'All';
+            document.getElementById('modalSchoolTypes').textContent = schoolTypes || 'All';
+
+            // Set up the repeat button
+            const repeatButton = document.getElementById('modalRepeatSearch');
+            repeatButton.setAttribute('data-lat', lat);
+            repeatButton.setAttribute('data-lng', lng);
+            repeatButton.setAttribute('data-provinces', provinces);
+            repeatButton.setAttribute('data-school-types', schoolTypes);
+
+            // Populate results table
+            const resultsList = document.getElementById('modalResultsList');
+            resultsList.innerHTML = '';
+            searchResults.forEach(school => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <strong>${school.name}</strong><br>
+                        <small class="text-muted">${school.municipality}, ${school.province}</small>
+                    </td>
+                    <td>${Math.round(school.distance)} km</td>
+                    <td>
+                        ${school.travel_times ? `
+                            <small>
+                                <div>🚶 ${school.travel_times.walking || 'N/A'}</div>
+                                <div>🚗 ${school.travel_times.driving || 'N/A'}</div>
+                                <div>🚲 ${school.travel_times.bicycling || 'N/A'}</div>
+                                <div>🚌 ${school.travel_times.transit || 'N/A'}</div>
+                            </small>
+                        ` : school.travel_times_error ? `
+                            <small class="text-danger">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                ${school.travel_times_error}
+                            </small>
+                        ` : 'N/A'}
+                    </td>
+                `;
+                resultsList.appendChild(row);
+            });
+        });
+    }
+
+    // Function to select a search from history
+    window.selectSearch = function(searchId, event) {
+        // Get the search details from the button's data attributes
+        const button = event.target.closest('button, a');
+        
+        // Parse the search results
+        let searchResults = [];
+        try {
+            const resultsStr = button.getAttribute('data-search-results');
+            if (resultsStr) {
+                // Remove any script tags and get the content
+                const cleanResults = resultsStr.replace(/<script[^>]*>|<\/script>/g, '');
+                searchResults = JSON.parse(cleanResults);
+            }
+        } catch (e) {
+            console.error('Error parsing search results:', e);
+        }
+
+        // Get timestamp based on element type
+        let timestamp;
+        if (button.classList.contains('dropdown-item')) {
+            // For dropdown items, timestamp is in the text content
+            const text = button.textContent.trim();
+            const match = text.match(/\((.*?)\)/);
+            timestamp = match ? match[1] : '';
+        } else {
+            // For view buttons, timestamp is in the first cell of the row
+            const row = button.closest('tr');
+            if (row) {
+                const firstCell = row.querySelector('td:first-child');
+                timestamp = firstCell ? firstCell.textContent.trim() : '';
+            }
+        }
+
+        const search = {
+            id: searchId,
+            location: button.getAttribute('data-location'),
+            results: searchResults,
+            results_count: button.getAttribute('data-results'),
+            autonomous_community: button.getAttribute('data-autonomous-community'),
+            provinces: button.getAttribute('data-provinces'),
+            school_types: button.getAttribute('data-school-types'),
+            latitude: button.getAttribute('data-lat'),
+            longitude: button.getAttribute('data-lng'),
+            timestamp: timestamp
+        };
+
+        // Update the search details section
+        const detailsSection = document.querySelector('.card-body .row:first-child');
+        if (detailsSection) {
+            detailsSection.innerHTML = `
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="mb-2">Detalles de la Búsqueda</h5>
+                            <div class="row g-2">
+                                <div class="col-6 mb-2">
+                                    <small class="text-muted d-block">Dirección</small>
+                                    <span>${search.location || 'N/A'}</span>
+                                </div>
+                                ${search.autonomous_community ? `
+                                <div class="col-6 mb-2">
+                                    <small class="text-muted d-block">Comunidad Autónoma</small>
+                                    <span>${search.autonomous_community}</span>
+                                </div>
+                                ` : ''}
+                                <div class="col-md-3">
+                                    <small class="text-muted d-block">Resultados</small>
+                                    <span>${search.results_count || 0} centros</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted d-block">Fecha de Búsqueda</small>
+                                    <span>${search.timestamp}</span>
+                                </div>
+                                ${search.provinces ? `
+                                <div class="col-md-3">
+                                    <small class="text-muted d-block">Provincias</small>
+                                    <span>${search.provinces}</span>
+                                </div>
+                                ` : ''}
+                                ${search.school_types ? `
+                                <div class="col-md-3">
+                                    <small class="text-muted d-block">Tipos de Centro</small>
+                                    <span>${search.school_types}</span>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h5>Resultados de la Búsqueda</h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Centro</th>
+                                        <th>Distancia</th>
+                                        <th>Tiempos de Viaje</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${search.results.map((school, index) => `
+                                        <tr ${index > 0 ? 'class="d-none"' : ''}>
+                                            <td>
+                                                <strong>${school.name}</strong><br>
+                                                <small class="text-muted">${school.municipality}, ${school.province}</small>
+                                            </td>
+                                            <td>${Math.round(school.distance)} km</td>
+                                            <td>
+                                                ${school.travel_times ? `
+                                                    <small>
+                                                        <div>🚶 ${school.travel_times.walking || 'N/A'}</div>
+                                                        <div>🚗 ${school.travel_times.driving || 'N/A'}</div>
+                                                        <div>🚲 ${school.travel_times.bicycling || 'N/A'}</div>
+                                                        <div>🚌 ${school.travel_times.transit || 'N/A'}</div>
+                                                    </small>
+                                                ` : school.travel_times_error ? `
+                                                    <small class="text-danger">
+                                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                                        ${school.travel_times_error}
+                                                    </small>
+                                                ` : 'N/A'}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                            ${search.results.length > 1 ? `
+                            <div class="text-center mt-2">
+                                <button class="btn btn-link" onclick="toggleMoreSchools(this)">
+                                    <i class="fas fa-chevron-down me-1"></i> Mostrar Más Centros
+                                </button>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <div class="mt-4 text-end">
+                        <button onclick="confirmRepeatSearch(${search.latitude}, ${search.longitude}, ${JSON.stringify(search.provinces ? search.provinces.split(', ') : [])}, ${JSON.stringify(search.school_types ? search.school_types.split(', ') : [])})" 
+                                class="btn btn-primary"
+                                data-location="${search.location}"
+                                data-search-id="${search.id}">
+                            <i class="fas fa-search me-2"></i> Repetir Búsqueda
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Scroll to the top section
+        document.querySelector('.card.shadow.mb-4').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // Function to toggle visibility of additional schools
+    window.toggleMoreSchools = function(button) {
+        const rows = button.closest('.table-responsive').querySelectorAll('tbody tr');
+        const isExpanded = !rows[1].classList.contains('d-none');
+        
+        rows.forEach((row, index) => {
+            if (index > 0) {
+                row.classList.toggle('d-none');
+            }
+        });
+        
+        button.innerHTML = isExpanded 
+            ? '<i class="fas fa-chevron-down me-1"></i> Mostrar Más Centros'
+            : '<i class="fas fa-chevron-up me-1"></i> Mostrar Menos Centros';
+    };
+
+    // Function to confirm and repeat search
+    window.confirmRepeatSearch = function(lat, lng, provinces, schoolTypes) {
+        if (confirm('¿Estás seguro de que quieres repetir esta búsqueda? Esto puede incurrir en costos adicionales.')) {
+            repeatSearch(lat, lng, provinces, schoolTypes);
+        }
+    };
+
+    // Function to repeat a search
+    window.repeatSearch = function(lat, lng, provinces, schoolTypes) {
+        // Get the button that was clicked
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Searching...';
+
+        // Get the search ID and location from the button's data attributes
+        const searchId = button.getAttribute('data-search-id');
+        const location = button.getAttribute('data-location');
+
+        if (!location) {
+            console.error('Location not found in data attribute');
+            alert('La información de la ubicación está ausente. Por favor, inténtelo de nuevo.');
+            button.disabled = false;
+            button.innerHTML = originalText;
+            return;
+        }
+
+        // Parse and validate coordinates
+        const latitude = parseFloat(lat);
+        const longitude = parseFloat(lng);
+
+        if (isNaN(latitude) || isNaN(longitude)) {
+            console.error('Invalid coordinates:', { lat, lng, parsed: { latitude, longitude } });
+            alert('Invalid coordinates. Please try again.');
+            button.disabled = false;
+            button.innerHTML = originalText;
+            return;
+        }
+
+        // Build the URL with search parameters
+        const url = new URL('/api/nearest/', window.location.origin);
+        url.searchParams.append('address', location);
+        url.searchParams.append('latitude', lat);
+        url.searchParams.append('longitude', lng);
+        
+        // Add provinces if any
+        if (provinces && provinces.length > 0) {
+            provinces.forEach(province => {
+                url.searchParams.append('provinces', province);
+            });
+        }
+        
+        // Add school types if any
+        if (schoolTypes && schoolTypes.length > 0) {
+            schoolTypes.forEach(type => {
+                url.searchParams.append('school_types', type);
+            });
+        }
+
+        // Make the API call
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || `Network response was not ok: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Update the results table
+                const resultsTable = document.querySelector('.card-body .table-responsive tbody');
+                if (!resultsTable) {
+                    throw new Error('Results table not found');
+                }
+                
+                resultsTable.innerHTML = '';
+                
+                data.schools.forEach((school, index) => {
+                    const row = document.createElement('tr');
+                    if (index > 0) {
+                        row.classList.add('d-none');
+                    }
+                    row.innerHTML = `
+                        <td>
+                            <strong>${school.name}</strong><br>
+                            <small class="text-muted">${school.municipality}, ${school.province}</small>
+                        </td>
+                        <td>${Math.round(school.distance)} km</td>
+                        <td>
+                            ${school.travel_times ? `
+                                <small>
+                                    <div>🚶 ${school.travel_times.walking || 'N/A'}</div>
+                                    <div>🚗 ${school.travel_times.driving || 'N/A'}</div>
+                                    <div>🚲 ${school.travel_times.bicycling || 'N/A'}</div>
+                                    <div>🚌 ${school.travel_times.transit || 'N/A'}</div>
+                                </small>
+                            ` : school.travel_times_error ? `
+                                <small class="text-danger">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    ${school.travel_times_error}
+                                </small>
+                            ` : 'N/A'}
+                        </td>
+                    `;
+                    resultsTable.appendChild(row);
+                });
+
+                // Add show more button if there are multiple schools
+                if (data.schools.length > 1) {
+                    const showMoreDiv = document.createElement('div');
+                    showMoreDiv.className = 'text-center mt-2';
+                    showMoreDiv.innerHTML = `
+                        <button class="btn btn-link" onclick="toggleMoreSchools(this)">
+                            <i class="fas fa-chevron-down me-1"></i> Mostrar Más Centros
+                        </button>
+                    `;
+                    resultsTable.parentElement.parentElement.appendChild(showMoreDiv);
+                }
+
+                // Update results count
+                const resultsCountElement = document.querySelector('.card-body .col-md-2 span');
+                if (resultsCountElement) {
+                    resultsCountElement.textContent = `${data.schools.length} centros`;
+                }
+
+                // Scroll to the results
+                document.querySelector('.card.shadow.mb-4').scrollIntoView({ behavior: 'smooth' });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(error.message || 'Error performing search. Please try again.');
+            })
+            .finally(() => {
+                // Restore button state
+                button.disabled = false;
+                button.innerHTML = originalText;
+            });
+    };
+
+    // Update the repeat search buttons in the history table
+    const repeatButtons = document.querySelectorAll('.btn-outline-success');
+    repeatButtons.forEach(button => {
+        button.onclick = function(event) {
+            event.preventDefault();
+            const lat = this.getAttribute('data-lat');
+            const lng = this.getAttribute('data-lng');
+            const provinces = this.getAttribute('data-provinces')?.split(', ') || [];
+            const schoolTypes = this.getAttribute('data-school-types')?.split(', ') || [];
+            
+            if (confirm('¿Estás seguro de que quieres repetir esta búsqueda? Esto puede incurrir en costos adicionales.')) {
+                repeatSearch(lat, lng, provinces, schoolTypes);
+            }
+        };
+    });
+
+    // Select the first favorite search or the most recent one
+    const favoriteSearch = document.querySelector('.dropdown-item .fa-star.text-warning');
+    if (favoriteSearch) {
+        const searchItem = favoriteSearch.closest('.dropdown-item');
+        selectSearch(searchItem.getAttribute('data-search-id'), { target: searchItem });
+    } else {
+        const firstSearch = document.querySelector('.dropdown-item');
+        if (firstSearch) {
+            selectSearch(firstSearch.getAttribute('data-search-id'), { target: firstSearch });
+        }
+    }
+});
+
+// Function to toggle favorite status
+function toggleFavorite(searchId, button) {
+    const icon = button.querySelector('.fa-star');
+    fetch(`/api/historial-busquedas/${searchId}/favorito/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            icon.classList.toggle('text-warning');
+            icon.classList.toggle('text-muted');
+            
+            // Update the dropdown item star as well
+            const dropdownItem = document.querySelector(`.dropdown-item[data-search-id="${searchId}"] .fa-star`);
+            if (dropdownItem) {
+                dropdownItem.classList.toggle('text-warning');
+                dropdownItem.classList.toggle('text-muted');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al actualizar el estado de favorito');
+    });
+}
+
+// Function to delete a search
+function deleteSearch(searchId, button) {
+    if (!confirm('¿Estás seguro de que quieres eliminar esta búsqueda?')) {
+        return;
+    }
+
+    fetch(`/api/historial-busquedas/${searchId}/eliminar/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Remove the row from the table
+            const row = button.closest('tr');
+            row.remove();
+            
+            // Remove the dropdown item
+            const dropdownItem = document.querySelector(`.dropdown-item[data-search-id="${searchId}"]`).closest('li');
+            dropdownItem.remove();
+            
+            // If this was the selected search, select the first available one
+            const firstSearch = document.querySelector('.dropdown-item');
+            if (firstSearch) {
+                selectSearch(firstSearch.getAttribute('data-search-id'), { target: firstSearch });
+            } else {
+                // If no searches left, show the empty state
+                document.querySelector('.card-body .row:first-child').innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No hay historial de búsquedas disponible.</p>
+                        <a href="{% url 'schools:find_nearest' %}" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i> Buscar Centros
+                        </a>
+                    </div>
+                `;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al eliminar la búsqueda');
+    });
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}
+{% endblock %} 
