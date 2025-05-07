@@ -61,6 +61,7 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'corsheaders',
+    'django_redis',
 
     'schools',
     'users',
@@ -217,11 +218,16 @@ if DEBUG:
 else:
     # Redis session configuration
     SESSION_ENGINE = 'django_redis.session'
-    SESSION_REDIS = {
-        'url': os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
-        'prefix': 'session',
-        'socket_timeout': 1,
-        'retry_on_timeout': True
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "SOCKET_TIMEOUT": 1,
+                "RETRY_ON_TIMEOUT": True,
+            }
+        }
     }
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
