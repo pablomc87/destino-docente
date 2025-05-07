@@ -1,6 +1,6 @@
 {% extends "schools/base.html" %}
 
-{% block title %}Sign In - School Finder{% endblock %}
+{% block title %}Iniciar sesión - Destino Docente{% endblock %}
 
 {% block content %}
 <div class="container py-5">
@@ -26,7 +26,7 @@
                     <form method="post" class="needs-validation" novalidate>
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email address</label>
+                            <label for="email" class="form-label">Correo electrónico</label>
                             <input type="email" class="form-control" id="email" name="email" required>
                             <div class="invalid-feedback">
                                 Por favor, introduce tu dirección de correo electrónico.

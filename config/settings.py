@@ -207,6 +207,7 @@ LOGGING = {
     },
 }
 
+LOGIN_URL = '/usuarios/conectarse/'
 LOGIN_REDIRECT_URL = '/usuarios/panel/'
 LOGOUT_REDIRECT_URL = '/'
 
