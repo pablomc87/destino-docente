@@ -238,6 +238,11 @@ if not DEBUG:
     # Ensure session data is properly cleaned up
     SESSION_CLEANUP_INTERVAL = 3600  # Clean up expired sessions every hour
 
+# Authentication settings
+LOGIN_URL = '/usuarios/conectarse/'
+LOGIN_REDIRECT_URL = '/usuarios/panel/'
+LOGOUT_REDIRECT_URL = '/'
+
 # Add context processor for Google Maps API key
 def google_maps_api_key(request):
     return {'google_maps_api_key': GOOGLE_MAPS_API_KEY}

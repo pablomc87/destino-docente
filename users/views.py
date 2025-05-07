@@ -109,6 +109,10 @@ def signin(request):
                 # Force session save
                 request.session.save()
                 
+                # Verify session was created successfully
+                if not request.session.session_key:
+                    raise Exception("Failed to create session")
+                
                 # Log session info for debugging
                 logger.info(f"User {user.email} logged in. Session key: {request.session.session_key}")
                 logger.info(f"Session expiry: {request.session.get_expiry_date()}")
@@ -121,11 +125,16 @@ def signin(request):
                 response['X-Content-Type-Options'] = 'nosniff'
                 response['X-XSS-Protection'] = '1; mode=block'
                 
+                # Set SameSite cookie attribute
+                response.cookies['schools_sessionid']['samesite'] = 'Lax'
+                
                 messages.success(request, '¡Conectado con éxito!')
                 return response
                 
             except Exception as e:
                 logger.error(f"Session error during login for user {email}: {str(e)}")
+                # Clear any partial session data
+                request.session.flush()
                 messages.error(request, 'Error al iniciar sesión. Por favor, inténtelo de nuevo.')
                 return render(request, 'users/signin.html')
         else:
@@ -144,22 +153,32 @@ def signout(request):
     return redirect('index')
 
 
-@login_required
+@login_required(login_url='/usuarios/conectarse/')
 def dashboard(request):
     """
     Display user dashboard.
     """
-    # Get user's search history
-    search_history = SearchHistory.objects.filter(user=request.user).order_by('-timestamp')[:10]
-    
-    context = {
-        'user': request.user,
-        'email': request.user.email,
-        'date_joined': request.user.date_joined,
-        'last_login': request.user.last_login,
-        'search_history': search_history
-    }
-    return render(request, 'users/dashboard.html', context)
+    try:
+        # Verify session is valid
+        if not request.session.session_key:
+            logger.warning("Invalid session detected in dashboard view")
+            return redirect('users:signin')
+            
+        # Get user's search history
+        search_history = SearchHistory.objects.filter(user=request.user).order_by('-timestamp')[:10]
+        
+        context = {
+            'user': request.user,
+            'email': request.user.email,
+            'date_joined': request.user.date_joined,
+            'last_login': request.user.last_login,
+            'search_history': search_history
+        }
+        return render(request, 'users/dashboard.html', context)
+    except Exception as e:
+        logger.error(f"Error in dashboard view: {str(e)}")
+        messages.error(request, 'Error al cargar el panel de control. Por favor, inténtelo de nuevo.')
+        return redirect('users:signin')
 
 
 class CustomPasswordResetView(PasswordResetView):
