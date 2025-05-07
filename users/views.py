@@ -92,7 +92,11 @@ def signin(request):
             
             # Set session expiry based on remember me
             if not remember:
-                request.session.set_expiry(0)  # Session expires when browser closes
+                # If remember me is not checked, session expires in 24 hours
+                request.session.set_expiry(86400)  # 24 hours in seconds
+            else:
+                # If remember me is checked, use the default SESSION_COOKIE_AGE (2 weeks)
+                request.session.set_expiry(None)
                 
             messages.success(request, '¡Conectado con éxito!')
             return redirect('users:dashboard')

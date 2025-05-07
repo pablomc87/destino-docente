@@ -219,6 +219,12 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = True
     X_FRAME_OPTIONS = 'DENY'
 
+# Session settings
+SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Session persists after browser close
+SESSION_COOKIE_SAMESITE = 'Lax'  # Allows the cookie to be sent in cross-site requests
+SESSION_SAVE_EVERY_REQUEST = True  # Update session expiry on every request
+
 # Add context processor for Google Maps API key
 def google_maps_api_key(request):
     return {'google_maps_api_key': GOOGLE_MAPS_API_KEY}
