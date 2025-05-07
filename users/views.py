@@ -12,6 +12,9 @@ from django.db import IntegrityError
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import PasswordResetView
 from schools.models import SearchHistory
+import logging
+
+logger = logging.getLogger(__name__)
 
 def signup(request):
     """
@@ -88,18 +91,43 @@ def signin(request):
             user = None
         
         if user is not None:
-            login(request, user)
-            
-            # Set session expiry based on remember me
-            if not remember:
-                # If remember me is not checked, session expires in 24 hours
-                request.session.set_expiry(86400)  # 24 hours in seconds
-            else:
-                # If remember me is checked, use the default SESSION_COOKIE_AGE (2 weeks)
-                request.session.set_expiry(None)
+            try:
+                # Clear any existing session data
+                request.session.flush()
                 
-            messages.success(request, '¡Conectado con éxito!')
-            return redirect('users:dashboard')
+                # Log the user in
+                login(request, user)
+                
+                # Set session expiry based on remember me
+                if not remember:
+                    # If remember me is not checked, session expires in 24 hours
+                    request.session.set_expiry(86400)  # 24 hours in seconds
+                else:
+                    # If remember me is checked, use the default SESSION_COOKIE_AGE (2 weeks)
+                    request.session.set_expiry(None)
+                
+                # Force session save
+                request.session.save()
+                
+                # Log session info for debugging
+                logger.info(f"User {user.email} logged in. Session key: {request.session.session_key}")
+                logger.info(f"Session expiry: {request.session.get_expiry_date()}")
+                
+                # Create response with session cookie
+                response = redirect('users:dashboard')
+                
+                # Set additional security headers
+                response['X-Frame-Options'] = 'DENY'
+                response['X-Content-Type-Options'] = 'nosniff'
+                response['X-XSS-Protection'] = '1; mode=block'
+                
+                messages.success(request, '¡Conectado con éxito!')
+                return response
+                
+            except Exception as e:
+                logger.error(f"Session error during login for user {email}: {str(e)}")
+                messages.error(request, 'Error al iniciar sesión. Por favor, inténtelo de nuevo.')
+                return render(request, 'users/signin.html')
         else:
             messages.error(request, 'Correo electrónico o contraseña incorrectos.')
     

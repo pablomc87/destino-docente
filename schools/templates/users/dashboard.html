@@ -742,7 +742,34 @@ function deleteSearch(searchId, button) {
     });
 }
 
-// Helper function to get CSRF token
+// Debug cookie information
+function debugCookies() {
+    console.log('Cookie Debug Information:');
+    console.log('All cookies:', document.cookie);
+    
+    // Check session cookie
+    const sessionCookie = getCookie('sessionid');
+    console.log('Session cookie exists:', !!sessionCookie);
+    if (sessionCookie) {
+        console.log('Session cookie value:', sessionCookie);
+    }
+    
+    // Check debug cookie
+    const debugCookie = getCookie('session_debug');
+    console.log('Debug cookie exists:', !!debugCookie);
+    
+    // Check if cookies are being sent with requests
+    fetch(window.location.href, {
+        credentials: 'same-origin'
+    }).then(response => {
+        console.log('Cookies sent with request:', response.headers.get('set-cookie'));
+    });
+}
+
+// Run debug on page load
+document.addEventListener('DOMContentLoaded', debugCookies);
+
+// Existing getCookie function
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {

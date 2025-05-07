@@ -226,6 +226,18 @@ SESSION_COOKIE_SAMESITE = 'Lax'  # Allows the cookie to be sent in cross-site re
 SESSION_SAVE_EVERY_REQUEST = True  # Update session expiry on every request
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
+# Enhanced session security and reliability settings
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
+SESSION_COOKIE_SECURE = True  # Only send cookie over HTTPS
+SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'  # More reliable serializer
+SESSION_COOKIE_NAME = 'schools_sessionid'  # Custom session cookie name
+
+# Add explicit cookie domain settings for production
+if not DEBUG:
+    SESSION_COOKIE_DOMAIN = os.environ.get('SESSION_COOKIE_DOMAIN', None)
+    # Ensure session data is properly cleaned up
+    SESSION_CLEANUP_INTERVAL = 3600  # Clean up expired sessions every hour
+
 # Add context processor for Google Maps API key
 def google_maps_api_key(request):
     return {'google_maps_api_key': GOOGLE_MAPS_API_KEY}
