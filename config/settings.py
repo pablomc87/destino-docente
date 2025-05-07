@@ -207,6 +207,8 @@ LOGGING = {
     },
 }
 
+LOGIN_REDIRECT_URL = '/usuarios/panel/'
+LOGOUT_REDIRECT_URL = '/'
 
 # Add context processor for Google Maps API key
 def google_maps_api_key(request):
