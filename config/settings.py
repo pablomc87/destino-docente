@@ -224,35 +224,7 @@ SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Session persists after browser close
 SESSION_COOKIE_SAMESITE = 'Lax'  # Allows the cookie to be sent in cross-site requests
 SESSION_SAVE_EVERY_REQUEST = True  # Update session expiry on every request
-
-# Cache and Session settings
-if IS_HEROKU_APP:
-    # Production: Use Redis
-    CACHES = {
-        "default": {
-            "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
-            "OPTIONS": {
-                "CLIENT_CLASS": "django_redis.client.DefaultClient",
-                "SOCKET_CONNECT_TIMEOUT": 5,
-                "SOCKET_TIMEOUT": 5,
-                "RETRY_ON_TIMEOUT": True,
-                "MAX_CONNECTIONS": 1000,
-                "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
-            }
-        }
-    }
-    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-    SESSION_CACHE_ALIAS = "default"
-else:
-    # Development: Use local memory cache
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "unique-snowflake",
-        }
-    }
-    SESSION_ENGINE = "django.contrib.sessions.backends.db"
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 # Add context processor for Google Maps API key
 def google_maps_api_key(request):
