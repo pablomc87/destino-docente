@@ -217,10 +217,10 @@ if DEBUG:
     SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 else:
     # Redis session configuration
-    SESSION_ENGINE = 'django_redis.session'
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
     CACHES = {
         "default": {
-            "BACKEND": "django_redis.cache.RedisCache",
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
             "OPTIONS": {
                 "CLIENT_CLASS": "django_redis.client.DefaultClient",
