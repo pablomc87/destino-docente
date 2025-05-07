@@ -92,56 +92,17 @@ def signin(request):
             user = None
         
         if user is not None:
-            try:
-                # Clear any existing session data
-                request.session.flush()
-                
-                # Log the user in
-                login(request, user)
-                
-                # Set session expiry based on remember me
-                if not remember:
-                    # If remember me is not checked, session expires in 24 hours
-                    request.session.set_expiry(86400)  # 24 hours in seconds
-                else:
-                    # If remember me is checked, use the default SESSION_COOKIE_AGE (2 weeks)
-                    request.session.set_expiry(None)
-                
-                # Force session save
-                request.session.save()
-                
-                # Verify session was created successfully
-                if not request.session.session_key:
-                    raise Exception("Failed to create session")
-                
-                # Log session info for debugging
-                logger.info(f"User {user.email} logged in. Session key: {request.session.session_key}")
-                logger.info(f"Session expiry: {request.session.get_expiry_date()}")
-                
-                # Create response with session cookie
-                response = redirect('users:dashboard')
-                
-                # Set additional security headers
-                response['X-Frame-Options'] = 'DENY'
-                response['X-Content-Type-Options'] = 'nosniff'
-                response['X-XSS-Protection'] = '1; mode=block'
-                
-                # Set session cookie attributes
-                session_cookie = response.cookies.get(django_settings.SESSION_COOKIE_NAME)
-                if session_cookie:
-                    session_cookie['samesite'] = 'Lax'
-                    session_cookie['secure'] = True
-                    session_cookie['httponly'] = True
-                
-                messages.success(request, '¡Conectado con éxito!')
-                return response
-                
-            except Exception as e:
-                logger.error(f"Session error during login for user {email}: {str(e)}")
-                # Clear any partial session data
-                request.session.flush()
-                messages.error(request, 'Error al iniciar sesión. Por favor, inténtelo de nuevo.')
-                return render(request, 'users/signin.html')
+            # Simple login
+            login(request, user)
+            
+            # Set session expiry based on remember me
+            if not remember:
+                request.session.set_expiry(86400)  # 24 hours
+            else:
+                request.session.set_expiry(None)  # Use default (2 weeks)
+            
+            messages.success(request, '¡Conectado con éxito!')
+            return redirect('users:dashboard')
         else:
             messages.error(request, 'Correo electrónico o contraseña incorrectos.')
     
