@@ -132,11 +132,6 @@ def dashboard(request):
     Display user dashboard.
     """
     try:
-        # Verify session is valid
-        if not request.session.session_key:
-            logger.warning("Invalid session detected in dashboard view")
-            return redirect('users:signin')
-            
         # Get user's search history
         search_history = SearchHistory.objects.filter(user=request.user).order_by('-timestamp')[:10]
         
