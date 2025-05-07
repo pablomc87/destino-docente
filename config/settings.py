@@ -208,6 +208,10 @@ LOGGING = {
     },
 }
 
+LOGIN_URL = '/usuarios/conectarse/'
+LOGIN_REDIRECT_URL = '/usuarios/panel/'
+LOGOUT_REDIRECT_URL = '/'
+
 # Session settings
 SESSION_ENGINE= 'django.contrib.sessions.backends.cached_db'
 
