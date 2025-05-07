@@ -216,11 +216,6 @@ LOGOUT_REDIRECT_URL = '/'
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_DOMAIN = os.environ.get('SESSION_COOKIE_DOMAIN', None)
-SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_SAVE_EVERY_REQUEST = True
 
 # Add context processor for Google Maps API key
 def google_maps_api_key(request):
