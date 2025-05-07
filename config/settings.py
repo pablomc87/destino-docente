@@ -216,7 +216,7 @@ if DEBUG:
     SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 else:
     # Redis session configuration
-    SESSION_ENGINE = 'django.contrib.sessions.backends.redis'
+    SESSION_ENGINE = 'django_redis.session'
     SESSION_REDIS = {
         'url': os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
         'prefix': 'session',
