@@ -92,7 +92,11 @@ def signin(request):
             user = None
         
         if user is not None:
-            # Simple login
+            # Force session creation
+            if not request.session.session_key:
+                request.session.create()
+            
+            # Login and set session data
             login(request, user)
             
             # Set session expiry based on remember me
@@ -100,6 +104,9 @@ def signin(request):
                 request.session.set_expiry(86400)  # 24 hours
             else:
                 request.session.set_expiry(None)  # Use default (2 weeks)
+            
+            # Force session save
+            request.session.save()
             
             messages.success(request, '¡Conectado con éxito!')
             return redirect('users:dashboard')
