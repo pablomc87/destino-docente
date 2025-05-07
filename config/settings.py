@@ -181,20 +181,16 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
-        "simple": {
-            "format": "[{levelname}] {message}",
+        "verbose": {
+            "format": "[{levelname}] {asctime} {module} {message}",
             "style": "{",
         },
     },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "formatter": "simple",
+            "formatter": "verbose",
         },
-    },
-    "root": {
-        "handlers": ["console"],
-        "level": "INFO",
     },
     "loggers": {
         "django": {
@@ -204,6 +200,11 @@ LOGGING = {
         },
         "django.request": {
             "level": "ERROR",
+        },
+        "django.contrib.sessions": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
         },
     },
 }
