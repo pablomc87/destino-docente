@@ -213,29 +213,10 @@ LOGIN_REDIRECT_URL = '/usuarios/panel/'
 LOGOUT_REDIRECT_URL = '/'
 
 # Session settings
-SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "CONNECTION_POOL_KWARGS": {
-                "ssl_cert_reqs": None,
-                "ssl_check_hostname": False
-            },
-            "SOCKET_TIMEOUT": 5,
-            "RETRY_ON_TIMEOUT": True,
-            "MAX_CONNECTIONS": 1000,
-            "IGNORE_EXCEPTIONS": True
-        }
-    }
-}
-SESSION_CACHE_ALIAS = 'default'
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
-SESSION_SAVE_EVERY_REQUEST = True  # Force session save on every request
-SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 # Add context processor for Google Maps API key
 def google_maps_api_key(request):

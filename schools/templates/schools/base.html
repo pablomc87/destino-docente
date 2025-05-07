@@ -110,7 +110,6 @@
             // Check session status
             async function checkSession() {
                 try {
-                    showLoading();
                     const response = await fetch('/usuarios/check-session/', {
                         method: 'GET',
                         credentials: 'include',
@@ -120,14 +119,15 @@
                     });
                     
                     if (!response.ok) {
-                        window.location.href = '/usuarios/conectarse/';
+                        // Only redirect if we're on a protected page
+                        if (window.location.pathname.startsWith('/usuarios/')) {
+                            window.location.href = '/usuarios/conectarse/';
+                        }
                         return;
                     }
-                    
-                    hideLoading();
                 } catch (error) {
                     console.error('Session check failed:', error);
-                    window.location.href = '/usuarios/conectarse/';
+                    // Don't redirect on network errors
                 }
             }
             
@@ -142,9 +142,11 @@
                 });
             });
             
-            // Check session on page load if user is authenticated
+            // Only check session on protected pages
             {% if user.is_authenticated %}
-                checkSession();
+                if (window.location.pathname.startsWith('/usuarios/')) {
+                    checkSession();
+                }
             {% endif %}
         });
     </script>
