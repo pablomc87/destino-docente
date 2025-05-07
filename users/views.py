@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import PasswordResetView
 from schools.models import SearchHistory
 import logging
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -125,8 +126,12 @@ def signin(request):
                 response['X-Content-Type-Options'] = 'nosniff'
                 response['X-XSS-Protection'] = '1; mode=block'
                 
-                # Set SameSite cookie attribute
-                response.cookies['schools_sessionid']['samesite'] = 'Lax'
+                # Set session cookie attributes
+                session_cookie = response.cookies.get(settings.SESSION_COOKIE_NAME)
+                if session_cookie:
+                    session_cookie['samesite'] = 'Lax'
+                    session_cookie['secure'] = True
+                    session_cookie['httponly'] = True
                 
                 messages.success(request, '¡Conectado con éxito!')
                 return response

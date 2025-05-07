@@ -231,6 +231,7 @@ SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
 SESSION_COOKIE_SECURE = True  # Only send cookie over HTTPS
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'  # More reliable serializer
 SESSION_COOKIE_NAME = 'schools_sessionid'  # Custom session cookie name
+SESSION_COOKIE_PATH = '/'  # Ensure cookie is available for all paths
 
 # Add explicit cookie domain settings for production
 if not DEBUG:
