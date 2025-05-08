@@ -20,4 +20,5 @@ urlpatterns = [
     path('api/historial-busquedas/<int:pk>/eliminar/', views.delete_search, name='delete_search'),
     path('api/stats/', views.api_stats, name='api_stats'),
     path('api/track-google-api/', views.track_google_api, name='track_google_api'),
+    path('api/check-limits/', views.check_api_limits, name='check_api_limits'),
 ] 

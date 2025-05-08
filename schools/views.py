@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from django.db.models import Q
+from django.db.models import Q, F, FloatField, ExpressionWrapper
 from datetime import datetime, timedelta
 from django.conf import settings
 from .models import School, ImpartedStudy, SchoolSuggestion, SchoolEditSuggestion, SearchHistory, APICall
@@ -15,7 +15,7 @@ from functools import lru_cache
 import logging
 import googlemaps
 from django.http import JsonResponse
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg, Sum
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from rest_framework.permissions import IsAdminUser
@@ -533,15 +533,15 @@ def api_stats(request):
     
     # Get statistics by API type
     type_stats = api_calls.values('api_type').annotate(
-        total_calls=Count('id'),
-        avg_response_time=Avg('response_time'),
+        total_calls=Sum('total_calls'),
+        avg_response_time=ExpressionWrapper(Sum('response_time') / F('total_calls'), output_field=FloatField()),
         success_rate=Count('id', filter=Q(response_status__lt=400)) * 100.0 / Count('id')
     ).order_by('-total_calls')
     
     # Get statistics by endpoint
     endpoint_stats = api_calls.values('endpoint').annotate(
-        total_calls=Count('id'),
-        avg_response_time=Avg('response_time'),
+        total_calls=Sum('total_calls'),
+        avg_response_time=ExpressionWrapper(Sum('response_time') / F('total_calls'), output_field=FloatField()),
         success_rate=Count('id', filter=Q(response_status__lt=400)) * 100.0 / Count('id')
     ).order_by('-total_calls')
     
@@ -549,14 +549,14 @@ def api_stats(request):
     user_stats = api_calls.filter(user__isnull=False).values(
         'user__email'
     ).annotate(
-        total_calls=Count('id'),
-        avg_response_time=Avg('response_time')
+        total_calls=Sum('total_calls'),
+        avg_response_time=ExpressionWrapper(Sum('response_time') / F('total_calls'), output_field=FloatField())
     ).order_by('-total_calls')
     
     # Get statistics by method
     method_stats = api_calls.values('method').annotate(
-        total_calls=Count('id'),
-        avg_response_time=Avg('response_time')
+        total_calls=Sum('total_calls'),
+        avg_response_time=ExpressionWrapper(Sum('response_time') / F('total_calls'), output_field=FloatField())
     ).order_by('-total_calls')
     
     context = {
@@ -603,3 +603,43 @@ def get_client_ip(request):
     else:
         ip = request.META.get('REMOTE_ADDR')
     return ip
+
+@api_view(['GET'])
+def check_api_limits(request):
+    """Check if API usage is within limits."""
+    try:
+        # TODO: Add payment status checking
+        # If user is authenticated and has an active payment subscription,
+        # they should bypass these limits. Example implementation:
+        # if request.user.is_authenticated and request.user.has_active_subscription:
+        #     return Response({'within_limits': True})
+
+        today = timezone.now().date()
+        month_start = today.replace(day=1)
+        
+        # Get daily and monthly usage
+        daily_usage = APICall.objects.filter(
+            timestamp__date=today
+        ).aggregate(
+            total_calls=Sum('total_calls')
+        )['total_calls'] or 0
+        
+        monthly_usage = APICall.objects.filter(
+            timestamp__date__gte=month_start
+        ).aggregate(
+            total_calls=Sum('total_calls')
+        )['total_calls'] or 0
+        
+        # Check against limits
+        daily_limit = 300
+        monthly_limit = 10000
+        
+        return Response({
+            'within_limits': daily_usage < daily_limit and monthly_usage < monthly_limit,
+            'daily_usage': daily_usage,
+            'monthly_usage': monthly_usage,
+            'daily_limit': daily_limit,
+            'monthly_limit': monthly_limit
+        })
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

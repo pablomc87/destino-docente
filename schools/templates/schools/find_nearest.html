@@ -54,6 +54,11 @@ gmpx-place-picker {
 <div class="search-container">
     <h1 class="text-center mb-4">Encuentra Tu Próximo Destino</h1>
     
+    <!-- API Limit Message -->
+    <div id="apiLimitMessage" class="alert alert-warning d-none">
+        <p>Hemos alcanzado el límite de llamadas gratuitas a la API de Google. Por favor, <a href="/usuarios/conectarse/" class="alert-link">inicia sesión</a> si tienes una cuenta de pago, o considera <a href="#" class="alert-link">contribuir al proyecto</a> si quieres seguir usando la herramienta.</p>
+    </div>
+    
     <!-- Debug info for API key -->
     {% if debug %}
     <div class="alert alert-info">
@@ -182,6 +187,37 @@ gmpx-place-picker {
         return cookieValue;
     }
     
+    // Function to check API limits
+    const checkApiLimits = async () => {
+        try {
+            const response = await fetch('/api/check-limits/');
+            const data = await response.json();
+            return data.within_limits;
+        } catch (error) {
+            console.error('Error checking API limits:', error);
+            return true; // Allow API calls if we can't check limits
+        }
+    };
+
+    // Function to show API limit message
+    const showApiLimitMessage = () => {
+        const messageDiv = document.getElementById('apiLimitMessage');
+        messageDiv.classList.remove('d-none');
+        // Disable the form
+        document.getElementById('searchForm').querySelectorAll('input, select, button').forEach(el => {
+            el.disabled = true;
+        });
+    };
+
+    // Function to reset session
+    const resetSession = () => {
+        totalApiCalls = 0;
+        placeSelected = false;
+        hasTracked = false;
+        totalResponseTimeMs = 0;
+        lastInputTime = Date.now();
+    };
+
     // Initialize Google Maps Place Autocomplete
     const initializeGoogleMaps = () => {
         const input = document.getElementById('address');
@@ -201,75 +237,27 @@ gmpx-place-picker {
         let totalApiCalls = 0;
         let placeSelected = false;
         let hasTracked = false;
-        let totalResponseTimeMs = 0;  // Track total response time in milliseconds
+        let totalResponseTimeMs = 0;
         let lastInputTime = Date.now();
-        const SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
-
-        // Function to reset session
-        const resetSession = () => {
-            totalApiCalls = 0;
-            placeSelected = false;
-            hasTracked = false;
-            totalResponseTimeMs = 0;
-            lastInputTime = Date.now();
-        };
-
-        // Function to track API calls
-        const trackApiCalls = async (selected) => {
-            if (hasTracked) return;
-            hasTracked = true;
-
-            try {
-                const response = await fetch('/api/track-google-api/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCookie('csrftoken')
-                    },
-                    body: JSON.stringify({
-                        api_type: 'places',
-                        endpoint: 'session_summary',
-                        method: 'GET',
-                        total_calls: totalApiCalls,
-                        place_selected: selected,
-                        response_time: totalResponseTimeMs  // Response time in milliseconds
-                    })
-                });
-
-                if (!response.ok) {
-                    console.error('Failed to track API calls:', await response.text());
-                }
-            } catch (error) {
-                console.error('Error tracking API calls:', error);
-            }
-        };
-
-        // Check for session timeout
-        const checkSessionTimeout = () => {
-            const now = Date.now();
-            if (now - lastInputTime > SESSION_TIMEOUT) {
-                if (totalApiCalls > 0 && !hasTracked) {
-                    trackApiCalls(false);
-                }
-                resetSession();
-            }
-        };
-
-        // Set up periodic session check
-        setInterval(checkSessionTimeout, 60000); // Check every minute
+        const SESSION_TIMEOUT = 5 * 60 * 1000;
 
         // Count API calls when suggestions are shown
-        input.addEventListener('input', () => {
+        input.addEventListener('input', async () => {
             if (input.value.trim()) {
+                // Check API limits before proceeding
+                const withinLimits = await checkApiLimits();
+                if (!withinLimits) {
+                    showApiLimitMessage();
+                    return;
+                }
+
                 // Check if we need to reset the session
                 if (hasTracked) {
                     resetSession();
                 }
                 const startTime = performance.now();
-                // The actual API call happens here
                 totalApiCalls++;
-                // After the API call completes
-                totalResponseTimeMs += performance.now() - startTime;  // Add milliseconds
+                totalResponseTimeMs += performance.now() - startTime;
                 lastInputTime = Date.now();
                 console.log('API call counted, total:', totalApiCalls, 'Total response time (ms):', totalResponseTimeMs);
             }
@@ -278,13 +266,12 @@ gmpx-place-picker {
         // Track when a place is selected
         autocomplete.addListener('place_changed', () => {
             placeSelected = true;
-            trackApiCalls(true);
         });
 
         // Track API calls when user leaves without selecting
         input.addEventListener('blur', () => {
             if (totalApiCalls > 0 && !placeSelected && !hasTracked) {
-                trackApiCalls(false);
+                resetSession();
             }
         });
 
@@ -292,7 +279,7 @@ gmpx-place-picker {
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
                 if (totalApiCalls > 0 && !hasTracked) {
-                    trackApiCalls(false);
+                    resetSession();
                 }
             }
         });
@@ -341,10 +328,16 @@ gmpx-place-picker {
         return autocomplete;
     };
 
-    // Wait for the Google Maps API to be loaded
-    window.addEventListener('load', () => {
+    // Initialize the page
+    window.addEventListener('load', async () => {
+        // Check API limits before initializing anything
+        const withinLimits = await checkApiLimits();
+        if (!withinLimits) {
+            showApiLimitMessage();
+            return; // Don't initialize the form if we're over the limit
+        }
+
         let autocomplete = null;
-        
         try {
             autocomplete = initializeGoogleMaps();
         } catch (error) {
@@ -412,6 +405,13 @@ gmpx-place-picker {
             $('#searchForm').submit(async function(e) {
                 e.preventDefault();
                 
+                // Check API limits before proceeding
+                const withinLimits = await checkApiLimits();
+                if (!withinLimits) {
+                    showApiLimitMessage();
+                    return;
+                }
+
                 if (!autocomplete) {
                     $('#error').text('El buscador de direcciones no está disponible. Por favor, recarga la página.');
                     $('#error').removeClass('d-none');
@@ -581,4 +581,4 @@ gmpx-place-picker {
         });
     });
 </script>
-{% endblock %} 
+{% endblock %}
