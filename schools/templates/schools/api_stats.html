@@ -1,0 +1,162 @@
+{% extends 'schools/base.html' %}
+
+{% block title %}API Statistics - Destino Docente{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">API Statistics</h1>
+    
+    <!-- Time Range Selector -->
+    <form method="get" class="mb-4">
+        <div class="form-group">
+            <label for="days">Time Range:</label>
+            <select name="days" id="days" class="form-control" onchange="this.form.submit()">
+                <option value="1" {% if days == 1 %}selected{% endif %}>Last 24 hours</option>
+                <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
+                <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
+                <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 days</option>
+            </select>
+        </div>
+    </form>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total API Calls</h5>
+                    <p class="card-text display-4">{{ total_calls }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Average Response Time</h5>
+                    <p class="card-text display-4">{{ avg_response_time|floatformat:2 }}ms</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Type Statistics -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Statistics by API Type</h2>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>API Type</th>
+                            <th>Total Calls</th>
+                            <th>Avg Response Time</th>
+                            <th>Success Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in type_stats %}
+                        <tr>
+                            <td>{{ stat.api_type|title }}</td>
+                            <td>{{ stat.total_calls }}</td>
+                            <td>{{ stat.avg_response_time|floatformat:2 }}ms</td>
+                            <td>{{ stat.success_rate|floatformat:1 }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Endpoint Statistics -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Statistics by Endpoint</h2>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Total Calls</th>
+                            <th>Avg Response Time</th>
+                            <th>Success Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in endpoint_stats %}
+                        <tr>
+                            <td>{{ stat.endpoint }}</td>
+                            <td>{{ stat.total_calls }}</td>
+                            <td>{{ stat.avg_response_time|floatformat:2 }}ms</td>
+                            <td>{{ stat.success_rate|floatformat:1 }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Statistics -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Statistics by User</h2>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Total Calls</th>
+                            <th>Avg Response Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in user_stats %}
+                        <tr>
+                            <td>{{ stat.user__email }}</td>
+                            <td>{{ stat.total_calls }}</td>
+                            <td>{{ stat.avg_response_time|floatformat:2 }}ms</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Method Statistics -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Statistics by HTTP Method</h2>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>Total Calls</th>
+                            <th>Avg Response Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in method_stats %}
+                        <tr>
+                            <td>{{ stat.method }}</td>
+                            <td>{{ stat.total_calls }}</td>
+                            <td>{{ stat.avg_response_time|floatformat:2 }}ms</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

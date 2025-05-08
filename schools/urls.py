@@ -18,4 +18,6 @@ urlpatterns = [
     # Search history actions
     path('api/historial-busquedas/<int:pk>/favorito/', views.toggle_search_favorite, name='toggle_search_favorite'),
     path('api/historial-busquedas/<int:pk>/eliminar/', views.delete_search, name='delete_search'),
+    path('api/stats/', views.api_stats, name='api_stats'),
+    path('api/track-google-api/', views.track_google_api, name='track_google_api'),
 ] 

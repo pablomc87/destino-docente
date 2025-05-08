@@ -233,3 +233,44 @@ class SearchHistory(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user.email} - {self.location} ({self.timestamp})"
+
+
+class APICall(models.Model):
+    """
+    Model to track Google API calls made by the application.
+    """
+    API_TYPES = [
+        ('directions', 'Google Directions API'),
+        ('geocoding', 'Google Geocoding API'),
+        ('places', 'Google Places API'),
+    ]
+    
+    endpoint = models.CharField(max_length=255, help_text="The Google API endpoint that was called")
+    api_type = models.CharField(max_length=50, choices=API_TYPES, help_text="Type of Google API being called")
+    method = models.CharField(max_length=10, help_text="HTTP method used (GET, POST, etc.)")
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
+                           help_text="User who made the call, if authenticated")
+    ip_address = models.GenericIPAddressField(null=True, blank=True, 
+                                            help_text="IP address of the caller")
+    timestamp = models.DateTimeField(auto_now_add=True, 
+                                   help_text="When the API call was made")
+    response_status = models.IntegerField(help_text="HTTP status code of the response")
+    response_time = models.FloatField(help_text="Response time in milliseconds")
+    quota_remaining = models.IntegerField(null=True, blank=True,
+                                        help_text="Remaining quota after the call")
+    total_calls = models.IntegerField(null=True, blank=True,
+                                    help_text="Total number of API calls in the session")
+    place_selected = models.BooleanField(null=True, blank=True,
+                                       help_text="Whether a place was selected in this session")
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['endpoint']),
+            models.Index(fields=['api_type']),
+            models.Index(fields=['user']),
+            models.Index(fields=['timestamp']),
+        ]
+        ordering = ['-timestamp']
+        
+    def __str__(self):
+        return f"{self.api_type} - {self.method} {self.endpoint} - {self.timestamp}"

@@ -1,13 +1,11 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.db.models import Q
-import math
-import requests
 from datetime import datetime, timedelta
 from django.conf import settings
-from .models import School, ImpartedStudy, SchoolSuggestion, SchoolEditSuggestion, SearchHistory
+from .models import School, ImpartedStudy, SchoolSuggestion, SchoolEditSuggestion, SearchHistory, APICall
 from .serializers import SchoolSerializer, StudySerializer, SchoolSuggestionSerializer, SchoolEditSuggestionSerializer
 from rest_framework.views import APIView
 from rest_framework import status
@@ -17,27 +15,13 @@ from functools import lru_cache
 import logging
 import googlemaps
 from django.http import JsonResponse
-from django.views import View
-import json
-from django.core.serializers import serialize
-from django.core.cache import cache
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
-from django.core.paginator import Paginator
-from django.db.models import Count
-from django.db.models.functions import Lower
-from django.core.exceptions import ValidationError
-from django.db.models import F, FloatField, ExpressionWrapper
-from django.db.models.functions import Cast
-from django.contrib.auth.models import User
-from django.contrib.auth.decorators import user_passes_test, login_required, permission_required
+from django.db.models import Count, Avg
+from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib.auth.models import Group
-from django.contrib.auth.decorators import user_passes_test
-from django.contrib.auth.models import Permission
-from django.contrib.auth.decorators import permission_required
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAdminUser
 from django.http import Http404
+from django.utils import timezone
+import time
 
 logger = logging.getLogger(__name__)
 api_key = settings.GOOGLE_MAPS_API_KEY
@@ -248,6 +232,10 @@ class NearestSchoolView(APIView):
             
             # Calculate travel times only for the top 10 closest schools
             gmaps = googlemaps.Client(key=api_key)
+            
+            # Track total API calls for this session
+            total_api_calls = 0
+            start_time = time.time()
             for entry in matching_schools:
                 school = entry['school']
                 try:
@@ -255,6 +243,7 @@ class NearestSchoolView(APIView):
                     lunes = hoy + timedelta(days=(7-hoy.weekday()) % 7)  # Próximo lunes
                     llegada_lunes = lunes.replace(hour=8, minute=30, second=0, microsecond=0)
                     llegada_lunes_timestamp = int(llegada_lunes.timestamp())
+                    
                     # Walking
                     walking_result = gmaps.directions(
                         origin=(user_lat, user_lon),
@@ -263,6 +252,7 @@ class NearestSchoolView(APIView):
                         arrival_time=llegada_lunes_timestamp
                     )
                     walking_time = walking_result[0]['legs'][0]['duration']['text'] if walking_result else None
+                    total_api_calls += 1
                     
                     # Driving
                     driving_result = gmaps.directions(
@@ -272,6 +262,7 @@ class NearestSchoolView(APIView):
                         arrival_time=llegada_lunes_timestamp
                     )
                     driving_time = driving_result[0]['legs'][0]['duration']['text'] if driving_result else None
+                    total_api_calls += 1
                     
                     # Bicycling
                     biking_result = gmaps.directions(
@@ -281,6 +272,7 @@ class NearestSchoolView(APIView):
                         arrival_time=llegada_lunes_timestamp
                     )
                     biking_time = biking_result[0]['legs'][0]['duration']['text'] if biking_result else None
+                    total_api_calls += 1
                     
                     # Transit
                     transit_result = gmaps.directions(
@@ -290,6 +282,7 @@ class NearestSchoolView(APIView):
                         arrival_time=llegada_lunes_timestamp
                     )
                     transit_time = transit_result[0]['legs'][0]['duration']['text'] if transit_result else None
+                    total_api_calls += 1
                     
                     entry['travel_times'] = {
                         'walking': walking_time,
@@ -319,6 +312,21 @@ class NearestSchoolView(APIView):
                     }
                     # Add error information to the response
                     entry['travel_times_error'] = error_message
+            
+            # Track all API calls for this session in a single record
+            if total_api_calls > 0:
+                APICall.objects.create(
+                    endpoint='directions',
+                    api_type='directions',
+                    method='GET',
+                    user=request.user if request.user.is_authenticated else None,
+                    ip_address=get_client_ip(request),
+                    response_status=200,
+                    response_time=(time.time() - start_time) * 1000,  # Convert to milliseconds
+                    quota_remaining=None,
+                    total_calls=total_api_calls,
+                    place_selected=True  # Since we're calculating travel times, a place was definitely selected
+                )
             
             # Build response
             school_data = []
@@ -510,3 +518,88 @@ def delete_search(request, pk):
             'status': 'error',
             'message': 'Búsqueda no encontrada'
         }, status=404)
+
+@staff_member_required
+def api_stats(request):
+    """
+    Display API call statistics.
+    """
+    # Get time range from query params
+    days = int(request.GET.get('days', 7))
+    start_date = timezone.now() - timedelta(days=days)
+    
+    # Get API calls within time range
+    api_calls = APICall.objects.filter(timestamp__gte=start_date)
+    
+    # Get statistics by API type
+    type_stats = api_calls.values('api_type').annotate(
+        total_calls=Count('id'),
+        avg_response_time=Avg('response_time'),
+        success_rate=Count('id', filter=Q(response_status__lt=400)) * 100.0 / Count('id')
+    ).order_by('-total_calls')
+    
+    # Get statistics by endpoint
+    endpoint_stats = api_calls.values('endpoint').annotate(
+        total_calls=Count('id'),
+        avg_response_time=Avg('response_time'),
+        success_rate=Count('id', filter=Q(response_status__lt=400)) * 100.0 / Count('id')
+    ).order_by('-total_calls')
+    
+    # Get statistics by user
+    user_stats = api_calls.filter(user__isnull=False).values(
+        'user__email'
+    ).annotate(
+        total_calls=Count('id'),
+        avg_response_time=Avg('response_time')
+    ).order_by('-total_calls')
+    
+    # Get statistics by method
+    method_stats = api_calls.values('method').annotate(
+        total_calls=Count('id'),
+        avg_response_time=Avg('response_time')
+    ).order_by('-total_calls')
+    
+    context = {
+        'type_stats': type_stats,
+        'endpoint_stats': endpoint_stats,
+        'user_stats': user_stats,
+        'method_stats': method_stats,
+        'total_calls': api_calls.count(),
+        'avg_response_time': api_calls.aggregate(Avg('response_time'))['response_time__avg'],
+        'days': days,
+    }
+    
+    return render(request, 'schools/api_stats.html', context)
+
+@api_view(['POST'])
+def track_google_api(request):
+    """Track Google API calls made from the frontend."""
+    try:
+        data = request.data
+        
+        # Create API call record
+        APICall.objects.create(
+            endpoint=data.get('endpoint'),
+            api_type=data.get('api_type'),
+            method=data.get('method', 'GET'),
+            user=request.user if request.user.is_authenticated else None,
+            ip_address=get_client_ip(request),
+            response_status=200,
+            response_time=data.get('response_time', 0),  # Get response time from frontend
+            quota_remaining=None,
+            total_calls=data.get('total_calls'),
+            place_selected=data.get('place_selected')
+        )
+        
+        return Response({'status': 'success'})
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+def get_client_ip(request):
+    """Get client IP address from request."""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip

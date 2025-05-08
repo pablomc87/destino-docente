@@ -166,13 +166,154 @@ gmpx-place-picker {
     // Debug log for API key
     console.log('Google Maps API Key:', '{{ google_maps_api_key }}');
     
+    // Function to get cookie value by name
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
     // Initialize Google Maps Place Autocomplete
     const initializeGoogleMaps = () => {
         const input = document.getElementById('address');
+        if (!input) {
+            console.error('Address input element not found');
+            return;
+        }
+
+        // Create the autocomplete
         const autocomplete = new google.maps.places.Autocomplete(input, {
             componentRestrictions: { country: 'es' },
             fields: ['formatted_address', 'geometry', 'address_components'],
             types: ['address']
+        });
+
+        // Track API calls
+        let totalApiCalls = 0;
+        let placeSelected = false;
+        let hasTracked = false;
+        let totalResponseTimeMs = 0;  // Track total response time in milliseconds
+        let lastInputTime = Date.now();
+        const SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+        // Function to reset session
+        const resetSession = () => {
+            totalApiCalls = 0;
+            placeSelected = false;
+            hasTracked = false;
+            totalResponseTimeMs = 0;
+            lastInputTime = Date.now();
+        };
+
+        // Function to track API calls
+        const trackApiCalls = async (selected) => {
+            if (hasTracked) return;
+            hasTracked = true;
+
+            try {
+                const response = await fetch('/api/track-google-api/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        api_type: 'places',
+                        endpoint: 'session_summary',
+                        method: 'GET',
+                        total_calls: totalApiCalls,
+                        place_selected: selected,
+                        response_time: totalResponseTimeMs  // Response time in milliseconds
+                    })
+                });
+
+                if (!response.ok) {
+                    console.error('Failed to track API calls:', await response.text());
+                }
+            } catch (error) {
+                console.error('Error tracking API calls:', error);
+            }
+        };
+
+        // Check for session timeout
+        const checkSessionTimeout = () => {
+            const now = Date.now();
+            if (now - lastInputTime > SESSION_TIMEOUT) {
+                if (totalApiCalls > 0 && !hasTracked) {
+                    trackApiCalls(false);
+                }
+                resetSession();
+            }
+        };
+
+        // Set up periodic session check
+        setInterval(checkSessionTimeout, 60000); // Check every minute
+
+        // Count API calls when suggestions are shown
+        input.addEventListener('input', () => {
+            if (input.value.trim()) {
+                // Check if we need to reset the session
+                if (hasTracked) {
+                    resetSession();
+                }
+                const startTime = performance.now();
+                // The actual API call happens here
+                totalApiCalls++;
+                // After the API call completes
+                totalResponseTimeMs += performance.now() - startTime;  // Add milliseconds
+                lastInputTime = Date.now();
+                console.log('API call counted, total:', totalApiCalls, 'Total response time (ms):', totalResponseTimeMs);
+            }
+        });
+
+        // Track when a place is selected
+        autocomplete.addListener('place_changed', () => {
+            placeSelected = true;
+            trackApiCalls(true);
+        });
+
+        // Track API calls when user leaves without selecting
+        input.addEventListener('blur', () => {
+            if (totalApiCalls > 0 && !placeSelected && !hasTracked) {
+                trackApiCalls(false);
+            }
+        });
+
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                if (totalApiCalls > 0 && !hasTracked) {
+                    trackApiCalls(false);
+                }
+            }
+        });
+
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            if (totalApiCalls > 0 && !hasTracked) {
+                // Use synchronous request for beforeunload
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/track-google-api/', false);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
+                xhr.send(JSON.stringify({
+                    api_type: 'places',
+                    endpoint: 'session_summary',
+                    method: 'GET',
+                    total_calls: totalApiCalls,
+                    place_selected: false,
+                    response_time: totalResponseTimeMs  // Response time in milliseconds
+                }));
+            }
         });
 
         // Handle place selection
@@ -183,7 +324,6 @@ gmpx-place-picker {
             // Try to automatically fill the region based on the selected place
             for (const component of place.address_components) {
                 if (component.types.includes('administrative_area_level_1')) {
-                    // This is the autonomous community
                     const regionSelect = $('#region');
                     const regionName = component.longName;
                     
