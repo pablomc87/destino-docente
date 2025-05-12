@@ -22,8 +22,8 @@ urlpatterns = [
     path('api/stats/', views.api_stats, name='api_stats'),
     path('api/track-google-api/', views.track_google_api, name='track_google_api'),
     path('api/check-limits/', views.check_api_limits, name='check_api_limits'),
-    path('api/schools/', views.school_list, name='school_list'),
-    path('api/schools/<int:pk>/', views.school_detail, name='school_detail'),
+    path('api/schools/', views.SchoolListView.as_view(), name='api_school_list'),
+    path('api/schools/<int:pk>/', views.SchoolDetailView.as_view(), name='api_school_detail'),
     path('api/provinces/', views.province_list, name='province_list'),
     path('api/municipalities/', views.municipality_list, name='municipality_list'),
 ] 
