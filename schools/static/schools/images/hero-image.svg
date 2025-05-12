@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="600" height="400" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background Elements -->
+    <circle cx="300" cy="200" r="150" fill="#ffffff" opacity="0.1"/>
+    <circle cx="300" cy="200" r="120" fill="#ffffff" opacity="0.15"/>
+    
+    <!-- School Building -->
+    <rect x="200" y="150" width="200" height="150" fill="#ffffff" opacity="0.9"/>
+    <polygon points="200,150 300,100 400,150" fill="#ffffff" opacity="0.9"/>
+    
+    <!-- Windows -->
+    <rect x="220" y="180" width="40" height="40" fill="#0d6efd" opacity="0.7"/>
+    <rect x="280" y="180" width="40" height="40" fill="#0d6efd" opacity="0.7"/>
+    <rect x="340" y="180" width="40" height="40" fill="#0d6efd" opacity="0.7"/>
+    
+    <!-- Door -->
+    <rect x="280" y="250" width="40" height="50" fill="#0d6efd" opacity="0.7"/>
+    
+    <!-- Decorative Elements -->
+    <circle cx="150" cy="100" r="20" fill="#ffffff" opacity="0.3"/>
+    <circle cx="450" cy="100" r="20" fill="#ffffff" opacity="0.3"/>
+    <circle cx="150" cy="300" r="20" fill="#ffffff" opacity="0.3"/>
+    <circle cx="450" cy="300" r="20" fill="#ffffff" opacity="0.3"/>
+    
+    <!-- Path -->
+    <path d="M280,300 L280,350 L320,350 L320,300" fill="#ffffff" opacity="0.5"/>
+</svg> 

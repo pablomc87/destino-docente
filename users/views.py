@@ -10,11 +10,19 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from django.db import IntegrityError
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import PasswordResetView
+from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
 from schools.models import SearchHistory
 import logging
 from django.conf import settings as django_settings
 from django.http import HttpResponse
+from django.urls import reverse
+from django.utils import timezone
+from django.core.mail import send_mail
+from django.utils.html import strip_tags
+from django.template.loader import render_to_string
+from datetime import timedelta
+from .models import UserSubscription
+
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +44,12 @@ def signup(request):
             validate_email(email)
         except ValidationError:
             messages.error(request, 'Por favor, introduce un correo electrónico válido.')
-            return render(request, 'users/signup.html', {'form_data': form_data})
+            return render(request, 'signup.html', {'form_data': form_data})
             
         # Validate passwords match
         if password1 != password2:
             messages.error(request, 'Las contraseñas no coinciden.')
-            return render(request, 'users/signup.html', {'form_data': form_data})
+            return render(request, 'signup.html', {'form_data': form_data})
             
         # Validate password strength
         try:
@@ -49,12 +57,12 @@ def signup(request):
         except ValidationError as e:
             for error in e:
                 messages.error(request, error)
-            return render(request, 'users/signup.html', {'form_data': form_data})
+            return render(request, 'signup.html', {'form_data': form_data})
             
         # Check if user already exists
         if User.objects.filter(email=email).exists():
             messages.error(request, 'Ya existe un usuario con este correo electrónico.')
-            return render(request, 'users/signup.html', {'form_data': form_data})
+            return render(request, 'signup.html', {'form_data': form_data})
         
         try:
             # Create user
@@ -64,16 +72,42 @@ def signup(request):
                 password=password1
             )
             
-            # Log the user in
-            login(request, user)
-            messages.success(request, '¡Bienvenido a Destino Docente! Tu cuenta ha sido creada con éxito.')
+            # Create free subscription for the user
+            subscription = UserSubscription.objects.create(
+                user=user,
+                subscription_type='free',
+                max_schools_per_search=10,
+                unlimited_api_calls=False
+            )
+            
+            # Generate verification token and send email
+            token = subscription.generate_email_verification_token()
+            verification_url = f"{django_settings.SITE_URL}/usuarios/verificar-correo/{token}/"
+            
+            # Render email template
+            html_message = render_to_string('verify_email.html', {
+                'verification_url': verification_url
+            })
+            plain_message = strip_tags(html_message)
+            
+            # Send verification email
+            send_mail(
+                'Verifica tu correo electrónico - Destino Docente',
+                plain_message,
+                django_settings.DEFAULT_FROM_EMAIL,
+                [email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+            
+            messages.success(request, '¡Bienvenido a Destino Docente! Tu cuenta ha sido creada con éxito. Por favor, verifica tu correo electrónico para activar tu cuenta.')
             return redirect('users:dashboard')
             
         except IntegrityError:
             messages.error(request, 'Ya existe un usuario con este correo electrónico.')
-            return render(request, 'users/signup.html', {'form_data': form_data})
+            return render(request, 'signup.html', {'form_data': form_data})
     
-    return render(request, 'users/signup.html')
+    return render(request, 'signup.html')
 
 
 def signin(request):
@@ -88,9 +122,39 @@ def signin(request):
         # Try to find user by email
         try:
             user_obj = User.objects.get(email=email)
+            subscription = UserSubscription.objects.get(user=user_obj)
+            
+            # Check if email is verified before attempting authentication
+            if not subscription.is_email_verified:
+                # Generate new verification token and send email
+                token = subscription.generate_email_verification_token()
+                verification_url = f"{django_settings.SITE_URL}/usuarios/verificar-correo/{token}/"
+                
+                # Render email template
+                html_message = render_to_string('verify_email.html', {
+                    'verification_url': verification_url
+                })
+                plain_message = strip_tags(html_message)
+                
+                # Send verification email
+                send_mail(
+                    'Verifica tu correo electrónico - Destino Docente',
+                    plain_message,
+                    django_settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                    html_message=html_message,
+                    fail_silently=False,
+                )
+                
+                messages.error(request, 'Por favor, verifica tu correo electrónico antes de iniciar sesión. Se ha enviado un nuevo correo de verificación.')
+                return render(request, 'signin.html')
+            
             user = authenticate(request, username=user_obj.username, password=password)
         except User.DoesNotExist:
             user = None
+        except UserSubscription.DoesNotExist:
+            messages.error(request, 'Error en la cuenta. Por favor, contacta con soporte.')
+            return render(request, 'signin.html')
         
         if user is not None:
             try:
@@ -118,11 +182,11 @@ def signin(request):
             except Exception as e:
                 logger.error(f"Error during login: {str(e)}", exc_info=True)
                 messages.error(request, 'Error al iniciar sesión. Por favor, inténtelo de nuevo.')
-                return render(request, 'users/signin.html')
+                return render(request, 'signin.html')
         else:
             messages.error(request, 'Correo electrónico o contraseña incorrectos.')
     
-    return render(request, 'users/signin.html')
+    return render(request, 'signin.html')
 
 
 @login_required
@@ -151,7 +215,7 @@ def dashboard(request):
             'last_login': request.user.last_login,
             'search_history': search_history
         }
-        return render(request, 'users/dashboard.html', context)
+        return render(request, 'dashboard.html', context)
     except Exception as e:
         logger.error(f"Error in dashboard view: {str(e)}")
         messages.error(request, 'Error al cargar el panel de control. Por favor, inténtelo de nuevo.')
@@ -162,14 +226,46 @@ class CustomPasswordResetView(PasswordResetView):
     """
     Custom password reset view that pre-fills the email field.
     """
-    template_name = 'users/password_reset.html'
-    email_template_name = 'users/password_reset_email.html'
-    subject_template_name = 'users/password_reset_subject.txt'
+    template_name = 'password_reset.html'
+    email_template_name = 'password_reset_email.html'
+    subject_template_name = 'password_reset_subject.txt'
+    success_url = '/usuarios/restablecer-contraseña/hecho/'
 
     def get_initial(self):
         initial = super().get_initial()
         initial['email'] = self.request.GET.get('email', '')
-        return initial 
+        return initial
+
+    def form_valid(self, form):
+        logger.debug("Starting password reset process")
+        logger.debug(f"Email settings: HOST={django_settings.EMAIL_HOST}, PORT={django_settings.EMAIL_PORT}, USER={django_settings.EMAIL_HOST_USER}")
+        logger.debug(f"Form data: {form.cleaned_data}")
+        
+        try:
+            # Get the email from the form
+            email = form.cleaned_data['email']
+            logger.debug(f"Attempting to send password reset email to: {email}")
+            
+            # Check if user exists
+            if not User.objects.filter(email=email).exists():
+                logger.warning(f"No user found with email: {email}")
+                messages.error(self.request, 'No existe ningún usuario con ese correo electrónico.')
+                return self.form_invalid(form)
+            
+            # Override the default URL names with our namespaced versions
+            self.reset_url_token = 'users:password_reset_confirm'
+            self.reset_url_name = 'users:password_reset_complete'
+            
+            # Set the success URL to use the namespaced URL
+            self.success_url = reverse('users:password_reset_done')
+            
+            response = super().form_valid(form)
+            logger.debug("Password reset email sent successfully")
+            return response
+        except Exception as e:
+            logger.error(f"Error sending password reset email: {str(e)}", exc_info=True)
+            messages.error(self.request, 'Error al enviar el correo electrónico. Por favor, inténtelo de nuevo.')
+            return self.form_invalid(form)
 
 @login_required
 def settings(request):
@@ -243,14 +339,14 @@ def settings(request):
             messages.success(request, 'Tu cuenta ha sido eliminada.')
             return redirect('index')
             
-    return render(request, 'users/settings.html')
+    return render(request, 'settings.html')
 
 @login_required
 def profile(request):
     """
     Display user profile information.
     """
-    return render(request, 'users/profile.html')
+    return render(request, 'profile.html')
 
 @login_required
 def check_session(request):
@@ -277,4 +373,53 @@ def check_session(request):
     except Exception as e:
         logger.error(f"Error checking session: {str(e)}", exc_info=True)
         # On error, assume session is valid to prevent unnecessary redirects
-        return HttpResponse(status=200) 
+        return HttpResponse(status=200)
+
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    """
+    Custom password reset confirm view.
+    """
+    template_name = 'password_reset_confirm.html'
+    success_url = '/usuarios/restablecer-contraseña/completado/'
+
+    def get_success_url(self):
+        return reverse('users:password_reset_complete')
+
+    def form_invalid(self, form):
+        """
+        Handle invalid form submission.
+        """
+        logger.debug("Password reset form validation failed")
+        logger.debug(f"Form errors: {form.errors}")
+        return super().form_invalid(form)
+
+    def form_valid(self, form):
+        """
+        Handle valid form submission.
+        """
+        logger.debug("Password reset form validation successful")
+        return super().form_valid(form) 
+    
+def verify_email(request, token):
+    try:
+        subscription = UserSubscription.objects.get(email_verification_token=token)
+        
+        # Check if token is expired (24 hours)
+        if subscription.email_verification_sent_at < timezone.now() - timedelta(hours=24):
+            messages.error(request, 'El enlace de verificación ha expirado. Por favor, solicita uno nuevo.')
+            return redirect('users:signin')
+        
+        # Mark user as verified
+        subscription.is_email_verified = True
+        subscription.save()
+        
+        # Clear verification token
+        subscription.email_verification_token = None
+        subscription.save()
+        
+        messages.success(request, '¡Correo electrónico verificado! Ya puedes iniciar sesión.')
+        return redirect('users:signin')
+        
+    except UserSubscription.DoesNotExist:
+        messages.error(request, 'Enlace de verificación inválido.')
+        return redirect('users:signin')

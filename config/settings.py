@@ -84,7 +84,10 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'schools' / 'templates'],
+        'DIRS': [
+            BASE_DIR / 'schools' / 'templates',
+            BASE_DIR / 'users' / 'templates',
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -207,6 +210,16 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": False,
         },
+        "django.security": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "django.mail": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
     },
 }
 
@@ -223,6 +236,28 @@ SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = True
 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Email settings
+if IS_HEROKU_APP:
+    import requests
+    MAILTRAP_API_TOKEN = os.environ.get('MAILTRAP_API_TOKEN', '')
+    response = requests.get(f"https://mailtrap.io/api/v1/inboxes.json?api_token={MAILTRAP_API_TOKEN}")
+    credentials = response.json()[0]
+    EMAIL_HOST = credentials['domain']
+    EMAIL_PORT = credentials['smtp_ports'][0]
+    EMAIL_HOST_USER = credentials['username']
+    EMAIL_HOST_PASSWORD = credentials['password']
+else:
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'sandbox.smtp.mailtrap.io')
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@destinodocente.com')
+
 # Add context processor for Google Maps API key
 def google_maps_api_key(request):
     return {'google_maps_api_key': GOOGLE_MAPS_API_KEY}
+
+SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')

@@ -55,8 +55,10 @@ gmpx-place-picker {
     <h1 class="text-center mb-4">Encuentra Tu Próximo Destino</h1>
     
     <!-- API Limit Message -->
-    <div id="apiLimitMessage" class="alert alert-warning d-none">
-        <p>Hemos alcanzado el límite de llamadas gratuitas a la API de Google. Por favor, <a href="/usuarios/conectarse/" class="alert-link">inicia sesión</a> si tienes una cuenta de pago, o considera <a href="#" class="alert-link">contribuir al proyecto</a> si quieres seguir usando la herramienta.</p>
+    <div id="apiLimitMessage" class="alert alert-warning" style="display: none;">
+        <h4>Límite de búsquedas alcanzado</h4>
+        <p>Hemos alcanzado el límite de búsquedas gratuitas. </p>
+        <p>Por favor, <a href="{% url 'users:signin' %}">inicia sesión</a> si tienes una cuenta de pago, o considera <a href="#" class="alert-link">contribuir al proyecto</a> si quieres seguir usando la herramienta.</p>
     </div>
     
     <!-- Debug info for API key -->
@@ -188,21 +190,38 @@ gmpx-place-picker {
     }
     
     // Function to check API limits
-    const checkApiLimits = async () => {
+    async function checkApiLimits() {
         try {
             const response = await fetch('/api/check-limits/');
             const data = await response.json();
-            return data.within_limits;
+            
+            if (!data.within_limits) {
+                showApiLimitMessage();
+                return false;
+            }
+            
+            // Store max schools limit
+            window.maxSchoolsPerSearch = data.max_schools || 10;
+            
+            // If user has unlimited API calls, remove any existing limit message
+            if (data.unlimited_api_calls) {
+                const limitMessage = document.getElementById('apiLimitMessage');
+                if (limitMessage) {
+                    limitMessage.style.display = 'none';
+                }
+            }
+            
+            return true;
         } catch (error) {
             console.error('Error checking API limits:', error);
-            return true; // Allow API calls if we can't check limits
+            return true; // Allow API calls if limit check fails
         }
-    };
+    }
 
     // Function to show API limit message
     const showApiLimitMessage = () => {
         const messageDiv = document.getElementById('apiLimitMessage');
-        messageDiv.classList.remove('d-none');
+        messageDiv.style.display = 'block';
         // Disable the form
         document.getElementById('searchForm').querySelectorAll('input, select, button').forEach(el => {
             el.disabled = true;
@@ -405,10 +424,7 @@ gmpx-place-picker {
             $('#searchForm').submit(async function(e) {
                 e.preventDefault();
                 
-                // Check API limits before proceeding
-                const withinLimits = await checkApiLimits();
-                if (!withinLimits) {
-                    showApiLimitMessage();
+                if (!await checkApiLimits()) {
                     return;
                 }
 
@@ -547,7 +563,7 @@ gmpx-place-picker {
                                         <p class="card-text">Tipo: ${school.nature || 'No especificado'}</p>
                                         ${distanceText}
                                         ${travelTimesHtml}
-                                        <a href="/schools/${school.id}/" class="btn btn-outline-primary">Ver Detalles</a>
+                                        <a href="/centros/${school.id}/" class="btn btn-outline-primary">Ver Detalles</a>
                                     </div>
                                 </div>
                             `;

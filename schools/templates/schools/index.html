@@ -1,66 +1,269 @@
 {% extends "schools/base.html" %}
+{% load static %}
 
-{% block title %}Destino Docente{% endblock %}
+{% block title %}Destino Docente - Encuentra tu próximo centro educativo{% endblock %}
 
 {% block custom_css %}
+.hero-section {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    color: white;
+    padding: 1rem 0.5rem;
+    margin-bottom: 60px;
+    border-radius: 1rem;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.hero-subtitle {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
 .feature-card {
     height: 100%;
     transition: all 0.3s;
     border: 1px solid rgba(0,0,0,0.125);
+    border-radius: 10px;
+    padding: 1rem 0.5rem;
+    overflow: hidden;
 }
-.feature-card:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    border-color: #0d6efd;
+
+.feature-icon {
+    font-size: 2.5rem;
+    color: #0d6efd;
+    margin-bottom: 1rem;
+}
+
+.search-section {
+    background-color: #f8f9fa;
+    padding: 60px 0;
+    margin: 60px 0;
+}
+
+.testimonial-card {
+    background: white;
+    border-radius: 10px;
+    padding: 30px;
+    margin: 20px 0;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.testimonial-text {
+    font-style: italic;
+    margin-bottom: 20px;
+}
+
+.testimonial-author {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+.stats-section {
+    background: #f8f9fa;
+    padding: 60px 0;
+    margin: 60px 0;
+}
+
+.stat-card {
+    text-align: center;
+    padding: 30px;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #0d6efd;
+    margin-bottom: 10px;
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+.cta-section {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    color: white;
+    padding: 80px 0;
+    text-align: center;
+    margin-top: 60px;
+}
+
+.cta-title {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.cta-subtitle {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+.school-card {
+    margin-bottom: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.school-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
 }
 {% endblock %}
 
 {% block content %}
-<h1 class="text-center mb-4">Destino Docente</h1>
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="hero-title">Encuentra tu próximo centro educativo</h1>
+                <p class="hero-subtitle">La plataforma definitiva para encontrar el centro perfecto para tu carrera docente.</p>
+                <a href="#searchSection" class="btn btn-light btn-lg">Empezar a buscar</a>
+            </div>
+            <div class="col-lg-6">
+                <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" 
+                    alt="Destino Docente" 
+                    class="img-fluid rounded-4 shadow-lg"
+                    style="border-radius: 1rem;">
+            </div>
+        </div>
+    </div>
+</section>
 
 <!-- Features Section -->
-<div class="row mb-5">
-    <div class="col-md-6 mb-4">
-        <div class="card feature-card">
-            <div class="card-body text-center">
-                <h3 class="card-title">Buscar Centros</h3>
-                <p class="card-text">Encuentra centros por nombre, municipio o provincia.</p>
-                <a href="#searchSection" class="btn btn-primary">Buscar</a>
+<section class="container">
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="feature-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-search feature-icon"></i>
+                    <h3 class="card-title">Búsqueda Avanzada</h3>
+                    <p class="card-text">Encuentra centros por nombre, ubicación y características específicas.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="feature-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-map-marker-alt feature-icon"></i>
+                    <h3 class="card-title">Ubicación Inteligente</h3>
+                    <p class="card-text">Descubre centros cercanos a tu ubicación con tiempos de desplazamiento.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="feature-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-line feature-icon"></i>
+                    <h3 class="card-title">Información Detallada</h3>
+                    <p class="card-text">Accede a datos completos sobre cada centro educativo.</p>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-6 mb-4">
-        <div class="card feature-card">
-            <div class="card-body text-center">
-                <h3 class="card-title">Encuentra Tu Próximo Destino</h3>
-                <p class="card-text">Encuentra centros según tu ubicación, región y preferencias.</p>
-                <a href="/buscar-cercanos/" class="btn btn-success">Ordenar</a>
-            </div>
-        </div>
-    </div>
-</div>
+</section>
 
-<!-- Search Form -->
-<div class="card mb-4" id="searchSection">
-    <div class="card-body">
-        <h5 class="card-title">Buscar Centros</h5>
-        <form id="searchForm">
-            <div class="mb-3">
-                <input type="text" class="form-control" id="searchInput" placeholder="Introduce nombre del centro, municipio o provincia...">
+<!-- Search Section -->
+<section class="search-section" id="searchSection">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="text-center mb-4">Buscar Centros</h2>
+                        <form id="searchForm">
+                            <div class="mb-3">
+                                <input type="text" class="form-control form-control-lg" id="searchInput" placeholder="Introduce nombre del centro, municipio o provincia...">
+                            </div>
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary btn-lg">Buscar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary">Buscar</button>
-        </form>
+        </div>
     </div>
-</div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-number">30.000+</div>
+                    <div class="stat-label">Centros Educativos</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-number">17</div>
+                    <div class="stat-label">Comunidades Autónomas</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Información Verificada</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% comment %}
+<!-- Testimonials Section -->
+<section class="container mb-5">
+    <h2 class="text-center mb-5">Lo que dicen nuestros usuarios</h2>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="testimonial-card">
+                <p class="testimonial-text">"Destino Docente me ayudó a encontrar el centro perfecto para mi carrera docente. La información es muy completa y precisa."</p>
+                <p class="testimonial-author">- María García, Profesora de Primaria</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="testimonial-card">
+                <p class="testimonial-text">"La búsqueda por ubicación es increíble. Pude encontrar varios centros cerca de mi casa y comparar sus características."</p>
+                <p class="testimonial-author">- Juan Martínez, Profesor de Secundaria</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="testimonial-card">
+                <p class="testimonial-text">"Una herramienta imprescindible para cualquier docente que busque nuevas oportunidades laborales."</p>
+                <p class="testimonial-author">- Ana López, Directora de Centro</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endcomment %}
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="container">
+        <h2 class="cta-title">¿Listo para encontrar tu próximo destino?</h2>
+        <p class="cta-subtitle">Únete a miles de docentes que ya han encontrado su centro ideal</p>
+        <a href="{% url 'users:signup' %}" class="btn btn-light btn-lg">Regístrate gratis</a>
+    </div>
+</section>
 
 <!-- Loading Indicator -->
-<div class="loading text-center">
+<div class="loading text-center" style="display: none;">
     <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Cargando...</span>
     </div>
 </div>
 
 <!-- Results -->
-<div id="results"></div>
+<div id="results" class="container mt-5"></div>
 {% endblock %}
 
 {% block extra_js %}
@@ -94,7 +297,7 @@
                                 <strong>Titularidad:</strong> ${school.nature}
                             </p>
                             <div class="d-flex gap-2">
-                                <a href="/schools/${school.id}/" class="btn btn-sm btn-outline-primary">Ver Detalles</a>
+                                <a href="/centros/${school.id}/" class="btn btn-sm btn-outline-primary">Ver Detalles</a>
                             </div>
                         </div>
                     </div>

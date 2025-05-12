@@ -6,6 +6,7 @@ from django.db.models import Q, F, FloatField, ExpressionWrapper
 from datetime import datetime, timedelta
 from django.conf import settings
 from .models import School, ImpartedStudy, SchoolSuggestion, SchoolEditSuggestion, SearchHistory, APICall
+from users.models import UserSubscription
 from .serializers import SchoolSerializer, StudySerializer, SchoolSuggestionSerializer, SchoolEditSuggestionSerializer
 from rest_framework.views import APIView
 from rest_framework import status
@@ -608,11 +609,27 @@ def get_client_ip(request):
 def check_api_limits(request):
     """Check if API usage is within limits."""
     try:
-        # TODO: Add payment status checking
-        # If user is authenticated and has an active payment subscription,
-        # they should bypass these limits. Example implementation:
-        # if request.user.is_authenticated and request.user.has_active_subscription:
-        #     return Response({'within_limits': True})
+        # Check if user is authenticated and has a paid subscription
+        is_paid_user = False
+        max_schools = 10  # Default for free users
+        
+        if request.user.is_authenticated:
+            try:
+                subscription = request.user.subscription
+                is_paid_user = subscription.is_paid
+                max_schools = subscription.max_schools_per_search
+            except UserSubscription.DoesNotExist:
+                # Create a free subscription for the user
+                UserSubscription.objects.create(user=request.user)
+        
+        # If user has unlimited API calls, return immediately
+        if is_paid_user and request.user.subscription.unlimited_api_calls:
+            return Response({
+                'within_limits': True,
+                'is_paid_user': True,
+                'max_schools': max_schools,
+                'unlimited_api_calls': True
+            })
 
         today = timezone.now().date()
         month_start = today.replace(day=1)
@@ -631,7 +648,7 @@ def check_api_limits(request):
         )['total_calls'] or 0
         
         # Check against limits
-        daily_limit = 300
+        daily_limit = 0
         monthly_limit = 10000
         
         return Response({
@@ -639,7 +656,10 @@ def check_api_limits(request):
             'daily_usage': daily_usage,
             'monthly_usage': monthly_usage,
             'daily_limit': daily_limit,
-            'monthly_limit': monthly_limit
+            'monthly_limit': monthly_limit,
+            'is_paid_user': is_paid_user,
+            'max_schools': max_schools,
+            'unlimited_api_calls': is_paid_user and request.user.subscription.unlimited_api_calls
         })
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

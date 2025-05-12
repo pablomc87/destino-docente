@@ -69,6 +69,11 @@
     background-color: #fff3e0;
     color: #f57c00;
 }
+#map {
+    height: 300px;
+    width: 100%;
+    border-radius: 8px;
+}
 {% endblock %}
 
 {% block content %}
@@ -85,48 +90,56 @@
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-6">
-        <div class="school-info">
-            <h3>Información Básica</h3>
-            <p><strong>Tipo:</strong> <span id="centerType">Cargando...</span></p>
-            <p><strong>Titularidad:</strong> <span id="nature">Cargando...</span></p>
-            <p><strong>Comunidad Autónoma:</strong> <span id="autonomousCommunity">Cargando...</span></p>
-            <p><strong>Provincia:</strong> <span id="province">Cargando...</span></p>
-            <p><strong>Municipio:</strong> <span id="municipality">Cargando...</span></p>
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="school-info">
+                <h3>Información Básica</h3>
+                <p><strong>Tipo:</strong> <span id="centerType">Cargando...</span></p>
+                <p><strong>Titularidad:</strong> <span id="nature">Cargando...</span></p>
+                <p><strong>Comunidad Autónoma:</strong> <span id="autonomousCommunity">Cargando...</span></p>
+                <p><strong>Provincia:</strong> <span id="province">Cargando...</span></p>
+                <p><strong>Municipio:</strong> <span id="municipality">Cargando...</span></p>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="school-info">
+                <h3>Información de Contacto</h3>
+                <p><strong>Dirección:</strong> <span id="address">Cargando...</span></p>
+                <p><strong>Código Postal:</strong> <span id="postalCode">Cargando...</span></p>
+                <p><strong>Teléfono:</strong> <span id="phone">Cargando...</span></p>
+                <p><strong>Email:</strong> <span id="email">Cargando...</span></p>
+                <p><strong>Web:</strong> <a id="web" href="#" target="_blank">Cargando...</a></p>
+            </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="school-info">
-            <h3>Información de Contacto</h3>
-            <p><strong>Dirección:</strong> <span id="address">Cargando...</span></p>
-            <p><strong>Código Postal:</strong> <span id="postalCode">Cargando...</span></p>
-            <p><strong>Teléfono:</strong> <span id="phone">Cargando...</span></p>
-            <p><strong>Email:</strong> <span id="email">Cargando...</span></p>
-            <p><strong>Web:</strong> <a id="web" href="#" target="_blank">Cargando...</a></p>
-        </div>
-    </div>
-</div>
 
-<div class="row">
-    <div class="col-12">
-        <div class="school-info">
-            <h3>Información adicional</h3>
-            <p><strong>Es concertado:</strong> <span id="isConcerted">Cargando...</span></p>
-            <p><strong>Nombre genérico:</strong> <span id="genericName">Cargando...</span></p>
-            <p><strong>Servicios:</strong>
-            <ul id="services" class="list-unstyled d-flex flex-wrap gap-2">Cargando...</ul>
-            
+    <div class="row">
+        <div class="col-md-6">
+            <div class="school-info">
+                <h3>Información adicional</h3>
+                <p><strong>Es concertado:</strong> <span id="isConcerted">Cargando...</span></p>
+                <p><strong>Nombre genérico:</strong> <span id="genericName">Cargando...</span></p>
+                <p><strong>Servicios:</strong>
+                <ul id="services" class="list-unstyled d-flex flex-wrap gap-2">Cargando...</ul>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="school-info">
+                <h3>Ubicación</h3>
+                <div id="map"></div>
+            </div>
         </div>
     </div>
-</div>
-<div class="row">
-    <div class="col-12">
-        <div class="school-info">
-            <h3>Estudios Impartidos</h3>
-            <div id="studiesList" class="row">
-                <div class="col-12">
-                    <p class="text-center">Cargando estudios...</p>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="school-info">
+                <h3>Estudios Impartidos</h3>
+                <div id="studiesList" class="row">
+                    <div class="col-12">
+                        <p class="text-center">Cargando estudios...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -199,6 +212,24 @@
                     webLink.textContent = 'No disponible';
                     webLink.removeAttribute('href');
                 }
+            }
+
+            // Initialize map if coordinates are available
+            if (school.latitude && school.longitude) {
+                const map = L.map('map').setView([school.latitude, school.longitude], 15);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                L.marker([school.latitude, school.longitude])
+                    .addTo(map)
+                    .bindPopup(school.name)
+                    .openPopup();
+            } else {
+                // If no coordinates, show a message
+                const mapDiv = document.getElementById('map');
+                mapDiv.innerHTML = '<div class="alert alert-info">Ubicación no disponible</div>';
             }
             
             // Update studies
