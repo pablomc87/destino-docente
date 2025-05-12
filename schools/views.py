@@ -648,7 +648,7 @@ def check_api_limits(request):
         )['total_calls'] or 0
         
         # Check against limits
-        daily_limit = 0
+        daily_limit = 300
         monthly_limit = 10000
         
         return Response({
