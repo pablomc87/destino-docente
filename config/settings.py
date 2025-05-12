@@ -238,21 +238,10 @@ SESSION_SAVE_EVERY_REQUEST = True
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # Email settings
-if IS_HEROKU_APP:
-    import requests
-    MAILTRAP_API_TOKEN = os.environ.get('MAILTRAP_API_TOKEN', '')
-    response = requests.get(f"https://mailtrap.io/api/v1/inboxes.json?api_token={MAILTRAP_API_TOKEN}")
-    credentials = response.json()[0]
-    EMAIL_HOST = credentials['domain']
-    EMAIL_PORT = credentials['smtp_ports'][0]
-    EMAIL_HOST_USER = credentials['username']
-    EMAIL_HOST_PASSWORD = credentials['password']
-else:
-    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'sandbox.smtp.mailtrap.io')
-    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
-    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'sandbox.smtp.mailtrap.io')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@destinodocente.com')
 
