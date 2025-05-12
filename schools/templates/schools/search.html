@@ -9,6 +9,7 @@
     color: white;
     padding: 60px 0;
     margin-bottom: 40px;
+    border-radius: 1rem;
 }
 
 .search-title {
@@ -160,12 +161,6 @@
                         </select>
                     </div>
 
-                    <!-- Distance -->
-                    <div class="mb-3">
-                        <label for="distance" class="form-label">Distancia máxima (km)</label>
-                        <input type="number" class="form-control" id="distance" name="distance" min="0" max="100" value="{{ request.GET.distance|default:'' }}">
-                    </div>
-
                     <button type="submit" class="btn btn-primary w-100">Aplicar Filtros</button>
                     <button type="reset" class="btn btn-outline-secondary w-100 mt-2">Limpiar Filtros</button>
                 </form>
@@ -180,7 +175,6 @@
                 <div class="btn-group">
                     <button type="button" class="btn btn-outline-secondary active" data-sort="relevance">Relevancia</button>
                     <button type="button" class="btn btn-outline-secondary" data-sort="name">Nombre</button>
-                    <button type="button" class="btn btn-outline-secondary" data-sort="distance">Distancia</button>
                 </div>
             </div>
 
