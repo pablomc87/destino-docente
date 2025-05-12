@@ -1,0 +1,326 @@
+{% extends "schools/base.html" %}
+{% load static %}
+
+{% block title %}Buscar Centros - Destino Docente{% endblock %}
+
+{% block custom_css %}
+.search-section {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    color: white;
+    padding: 60px 0;
+    margin-bottom: 40px;
+}
+
+.search-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.search-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+.filter-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+}
+
+.school-card {
+    border: 1px solid rgba(0,0,0,0.125);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    transition: all 0.3s;
+}
+
+.school-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.school-type-badge {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 20px;
+    margin-right: 0.5rem;
+}
+
+.school-type-badge.public {
+    background-color: #198754;
+    color: white;
+}
+
+.school-type-badge.private {
+    background-color: #dc3545;
+    color: white;
+}
+
+.school-type-badge.concerted {
+    background-color: #0dcaf0;
+    color: white;
+}
+
+.location-badge {
+    background-color: #e9ecef;
+    color: #495057;
+    padding: 0.25rem 0.5rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    margin-right: 0.5rem;
+}
+
+.sticky-filters {
+    position: sticky;
+    top: 20px;
+}
+{% endblock %}
+
+{% block content %}
+<!-- Search Hero Section -->
+<section class="search-section">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <h1 class="search-title">Buscar Centros</h1>
+                <p class="search-subtitle">Encuentra el centro perfecto para tu carrera docente</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Main Content -->
+<div class="container">
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3">
+            <div class="filter-section sticky-filters">
+                <h4 class="mb-4">Filtros</h4>
+                <form id="filterForm">
+                    <!-- Search Input -->
+                    <div class="mb-3">
+                        <label for="searchInput" class="form-label">Buscar</label>
+                        <input type="text" class="form-control" id="searchInput" name="search" value="{{ request.GET.search|default:'' }}" placeholder="Nombre, municipio...">
+                    </div>
+
+                    <!-- Autonomous Community -->
+                    <div class="mb-3">
+                        <label for="autonomousCommunity" class="form-label">Comunidad Autónoma</label>
+                        <select class="form-select" id="autonomousCommunity" name="autonomous_community">
+                            <option value="">Todas</option>
+                            {% for community in autonomous_communities %}
+                            <option value="{{ community }}" {% if request.GET.autonomous_community == community %}selected{% endif %}>{{ community }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Province -->
+                    <div class="mb-3">
+                        <label for="province" class="form-label">Provincia</label>
+                        <select class="form-select" id="province" name="province">
+                            <option value="">Todas</option>
+                            {% for province in provinces %}
+                            <option value="{{ province }}" {% if request.GET.province == province %}selected{% endif %}>{{ province }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Municipality -->
+                    <div class="mb-3">
+                        <label for="municipality" class="form-label">Municipio</label>
+                        <select class="form-select" id="municipality" name="municipality">
+                            <option value="">Todos</option>
+                            {% for municipality in municipalities %}
+                            <option value="{{ municipality }}" {% if request.GET.municipality == municipality %}selected{% endif %}>{{ municipality }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- School Type -->
+                    <div class="mb-3">
+                        <label for="centerType" class="form-label">Tipo de Centro</label>
+                        <select class="form-select" id="centerType" name="center_type">
+                            <option value="">Todos</option>
+                            {% for type in center_types %}
+                            <option value="{{ type }}" {% if request.GET.center_type == type %}selected{% endif %}>{{ type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Nature -->
+                    <div class="mb-3">
+                        <label for="nature" class="form-label">Titularidad</label>
+                        <select class="form-select" id="nature" name="nature">
+                            <option value="">Todas</option>
+                            <option value="Público" {% if request.GET.nature == 'Público' %}selected{% endif %}>Público</option>
+                            <option value="Privado" {% if request.GET.nature == 'Privado' %}selected{% endif %}>Privado</option>
+                            <option value="Concertado" {% if request.GET.nature == 'Concertado' %}selected{% endif %}>Concertado</option>
+                        </select>
+                    </div>
+
+                    <!-- Distance -->
+                    <div class="mb-3">
+                        <label for="distance" class="form-label">Distancia máxima (km)</label>
+                        <input type="number" class="form-control" id="distance" name="distance" min="0" max="100" value="{{ request.GET.distance|default:'' }}">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Aplicar Filtros</button>
+                    <button type="reset" class="btn btn-outline-secondary w-100 mt-2">Limpiar Filtros</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="col-lg-9">
+            <!-- Results Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3>Resultados ({{ total_results }})</h3>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-secondary active" data-sort="relevance">Relevancia</button>
+                    <button type="button" class="btn btn-outline-secondary" data-sort="name">Nombre</button>
+                    <button type="button" class="btn btn-outline-secondary" data-sort="distance">Distancia</button>
+                </div>
+            </div>
+
+            <!-- Results List -->
+            <div id="resultsList">
+                {% for school in schools %}
+                <div class="card school-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="card-title">{{ school.name }}</h5>
+                                <div class="mb-2">
+                                    <span class="school-type-badge {{ school.nature|lower }}">{{ school.nature }}</span>
+                                    <span class="location-badge">{{ school.municipality }}, {{ school.province }}</span>
+                                </div>
+                                <p class="card-text">
+                                    <strong>Tipo:</strong> {{ school.center_type }}<br>
+                                    <strong>Dirección:</strong> {{ school.address }}<br>
+                                    {% if school.phone %}
+                                    <strong>Teléfono:</strong> {{ school.phone }}<br>
+                                    {% endif %}
+                                    {% if school.email %}
+                                    <strong>Email:</strong> {{ school.email }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="text-end">
+                                {% if school.distance %}
+                                <div class="mb-2">
+                                    <span class="badge bg-primary">{{ school.distance }} km</span>
+                                </div>
+                                {% endif %}
+                                <a href="{% url 'schools:school_detail' school.id %}" class="btn btn-outline-primary">Ver Detalles</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="alert alert-info">
+                    No se encontraron centros que coincidan con los criterios de búsqueda.
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if schools.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if schools.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ schools.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in schools.paginator.page_range %}
+                    <li class="page-item {% if schools.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+
+                    {% if schools.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ schools.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle form submission
+    const filterForm = document.getElementById('filterForm');
+    filterForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(filterForm);
+        const params = new URLSearchParams(formData);
+        window.location.href = '?' + params.toString();
+    });
+
+    // Handle sorting
+    const sortButtons = document.querySelectorAll('[data-sort]');
+    sortButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const sortBy = this.dataset.sort;
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('sort', sortBy);
+            window.location.href = currentUrl.toString();
+        });
+    });
+
+    // Handle province change
+    const autonomousCommunitySelect = document.getElementById('autonomousCommunity');
+    const provinceSelect = document.getElementById('province');
+    
+    autonomousCommunitySelect.addEventListener('change', function() {
+        const community = this.value;
+        if (community) {
+            // Fetch provinces for selected community
+            fetch(`/api/provinces/?community=${encodeURIComponent(community)}`)
+                .then(response => response.json())
+                .then(provinces => {
+                    provinceSelect.innerHTML = '<option value="">Todas</option>';
+                    provinces.forEach(province => {
+                        provinceSelect.innerHTML += `<option value="${province}">${province}</option>`;
+                    });
+                });
+        } else {
+            provinceSelect.innerHTML = '<option value="">Todas</option>';
+        }
+    });
+
+    // Handle municipality change
+    const municipalitySelect = document.getElementById('municipality');
+    
+    provinceSelect.addEventListener('change', function() {
+        const province = this.value;
+        if (province) {
+            // Fetch municipalities for selected province
+            fetch(`/api/municipalities/?province=${encodeURIComponent(province)}`)
+                .then(response => response.json())
+                .then(municipalities => {
+                    municipalitySelect.innerHTML = '<option value="">Todos</option>';
+                    municipalities.forEach(municipality => {
+                        municipalitySelect.innerHTML += `<option value="${municipality}">${municipality}</option>`;
+                    });
+                });
+        } else {
+            municipalitySelect.innerHTML = '<option value="">Todos</option>';
+        }
+    });
+});
+</script>
+{% endblock %} 

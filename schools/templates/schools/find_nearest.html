@@ -236,7 +236,7 @@ gmpx-place-picker {
         totalResponseTimeMs = 0;
         lastInputTime = Date.now();
     };
-
+    
     // Initialize Google Maps Place Autocomplete
     const initializeGoogleMaps = () => {
         const input = document.getElementById('address');
@@ -427,7 +427,7 @@ gmpx-place-picker {
                 if (!await checkApiLimits()) {
                     return;
                 }
-
+                
                 if (!autocomplete) {
                     $('#error').text('El buscador de direcciones no está disponible. Por favor, recarga la página.');
                     $('#error').removeClass('d-none');
@@ -597,4 +597,4 @@ gmpx-place-picker {
         });
     });
 </script>
-{% endblock %}
+{% endblock %} 

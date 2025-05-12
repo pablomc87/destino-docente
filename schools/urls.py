@@ -14,6 +14,7 @@ urlpatterns = [
     path('centros/<int:pk>/editar/', views.edit_school, name='edit_school'),
     path('buscar-cercanos/', views.find_nearest, name='find_nearest'),
     path('sugerir-centro/', views.suggest_school, name='suggest_school'),
+    path('search/', views.search, name='search'),
     
     # Search history actions
     path('api/historial-busquedas/<int:pk>/favorito/', views.toggle_search_favorite, name='toggle_search_favorite'),
@@ -21,4 +22,8 @@ urlpatterns = [
     path('api/stats/', views.api_stats, name='api_stats'),
     path('api/track-google-api/', views.track_google_api, name='track_google_api'),
     path('api/check-limits/', views.check_api_limits, name='check_api_limits'),
+    path('api/schools/', views.school_list, name='school_list'),
+    path('api/schools/<int:pk>/', views.school_detail, name='school_detail'),
+    path('api/provinces/', views.province_list, name='province_list'),
+    path('api/municipalities/', views.municipality_list, name='municipality_list'),
 ] 

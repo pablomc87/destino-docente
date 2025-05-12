@@ -23,6 +23,7 @@ from rest_framework.permissions import IsAdminUser
 from django.http import Http404
 from django.utils import timezone
 import time
+from django.core.paginator import Paginator
 
 logger = logging.getLogger(__name__)
 api_key = settings.GOOGLE_MAPS_API_KEY
@@ -30,7 +31,7 @@ api_key = settings.GOOGLE_MAPS_API_KEY
 # Create your views here.
 
 def index(request):
-    """Render the main search page"""
+    """Landing page view."""
     return render(request, 'schools/index.html')
 
 def school_detail(request, pk):
@@ -661,5 +662,144 @@ def check_api_limits(request):
             'max_schools': max_schools,
             'unlimited_api_calls': is_paid_user and request.user.subscription.unlimited_api_calls
         })
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def search(request):
+    """Search view for schools with filters."""
+    # Get search parameters
+    search_query = request.GET.get('search', '')
+    autonomous_community = request.GET.get('autonomous_community', '')
+    province = request.GET.get('province', '')
+    municipality = request.GET.get('municipality', '')
+    center_type = request.GET.get('center_type', '')
+    nature = request.GET.get('nature', '')
+    distance = request.GET.get('distance', '')
+    sort_by = request.GET.get('sort', 'relevance')
+    page = request.GET.get('page', 1)
+
+    # Start with all schools
+    schools = School.objects.all()
+
+    # Apply filters
+    if search_query:
+        schools = schools.filter(
+            Q(name__icontains=search_query) |
+            Q(municipality__icontains=search_query) |
+            Q(province__icontains=search_query)
+        )
+
+    if autonomous_community:
+        schools = schools.filter(autonomous_community=autonomous_community)
+
+    if province:
+        schools = schools.filter(province=province)
+
+    if municipality:
+        schools = schools.filter(municipality=municipality)
+
+    if center_type:
+        schools = schools.filter(center_type=center_type)
+
+    if nature:
+        schools = schools.filter(nature=nature)
+
+    # Apply sorting
+    if sort_by == 'name':
+        schools = schools.order_by('name')
+    elif sort_by == 'distance':
+        schools = schools.order_by('distance')
+    else:  # relevance
+        schools = schools.order_by('-id')  # Default sorting by newest first
+
+    # Get unique values for filters
+    autonomous_communities = School.objects.values_list('autonomous_community', flat=True).distinct().order_by('autonomous_community')
+    provinces = School.objects.values_list('province', flat=True).distinct().order_by('province')
+    municipalities = School.objects.values_list('municipality', flat=True).distinct().order_by('municipality')
+    center_types = School.objects.values_list('center_type', flat=True).distinct().order_by('center_type')
+
+    # Pagination
+    paginator = Paginator(schools, 10)  # Show 10 schools per page
+    schools = paginator.get_page(page)
+
+    context = {
+        'schools': schools,
+        'total_results': schools.paginator.count,
+        'autonomous_communities': autonomous_communities,
+        'provinces': provinces,
+        'municipalities': municipalities,
+        'center_types': center_types,
+        'search_query': search_query,
+        'autonomous_community': autonomous_community,
+        'province': province,
+        'municipality': municipality,
+        'center_type': center_type,
+        'nature': nature,
+        'distance': distance,
+        'sort_by': sort_by,
+    }
+
+    return render(request, 'schools/search.html', context)
+
+@api_view(['GET'])
+def school_list(request):
+    """API endpoint to list schools with optional filtering."""
+    try:
+        # Get query parameters
+        name = request.GET.get('name', '')
+        autonomous_community = request.GET.get('autonomous_community', '')
+        province = request.GET.get('province', '')
+        municipality = request.GET.get('municipality', '')
+        center_type = request.GET.get('center_type', '')
+        nature = request.GET.get('nature', '')
+
+        # Start with all schools
+        schools = School.objects.all()
+
+        # Apply filters
+        if name:
+            schools = schools.filter(name__icontains=name)
+        if autonomous_community:
+            schools = schools.filter(autonomous_community=autonomous_community)
+        if province:
+            schools = schools.filter(province=province)
+        if municipality:
+            schools = schools.filter(municipality=municipality)
+        if center_type:
+            schools = schools.filter(center_type=center_type)
+        if nature:
+            schools = schools.filter(nature=nature)
+
+        # Serialize the results
+        serializer = SchoolSerializer(schools, many=True)
+        return Response(serializer.data)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def province_list(request):
+    """API endpoint to list provinces, optionally filtered by autonomous community."""
+    try:
+        community = request.GET.get('community', '')
+        provinces = School.objects.values_list('province', flat=True).distinct()
+        
+        if community:
+            provinces = provinces.filter(autonomous_community=community)
+        
+        return Response(list(provinces))
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def municipality_list(request):
+    """API endpoint to list municipalities, optionally filtered by province."""
+    try:
+        province = request.GET.get('province', '')
+        municipalities = School.objects.values_list('municipality', flat=True).distinct()
+        
+        if province:
+            municipalities = municipalities.filter(province=province)
+        
+        return Response(list(municipalities))
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
