@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -24,6 +24,9 @@ from django.http import Http404
 from django.utils import timezone
 import time
 from django.core.paginator import Paginator
+from django.core.mail import send_mail
+from django.contrib import messages
+from django.urls import reverse
 
 logger = logging.getLogger(__name__)
 api_key = settings.GOOGLE_MAPS_API_KEY
@@ -821,3 +824,50 @@ def municipality_list(request):
         return Response(list(municipalities))
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def test_500(request):
+    """Test view that raises an error to test the 500 handler."""
+    raise Exception("This is a test error")
+
+def handler500(request):
+    """Handle 500 server errors."""
+    return render(request, 'schools/error.html', {
+        'error': 'Ha ocurrido un error inesperado. Por favor, inténtalo de nuevo más tarde.'
+    }, status=500)
+
+def contact(request):
+    """Handle contact form submissions."""
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        subject = request.POST.get('subject')
+        message = request.POST.get('message')
+        
+        # Prepare email content
+        email_subject = f'Contacto Destino Docente: {subject}'
+        email_message = f"""
+        Nombre: {name}
+        Email: {email}
+        
+        Mensaje:
+        {message}
+        """
+        
+        try:
+            # Send email using Mailtrap
+            send_mail(
+                subject=email_subject,
+                message=email_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[settings.CONTACT_EMAIL],  # Add this to settings.py
+                fail_silently=False,
+            )
+            messages.success(request, '¡Mensaje enviado con éxito! Te responderemos lo antes posible.')
+        except Exception as e:
+            messages.error(request, 'Ha ocurrido un error al enviar el mensaje. Por favor, inténtalo de nuevo más tarde.')
+            if settings.DEBUG:
+                print(f"Error sending email: {e}")
+        
+        return redirect('schools:contact')
+    
+    return render(request, 'schools/contact.html')

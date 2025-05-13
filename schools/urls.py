@@ -12,6 +12,7 @@ urlpatterns = [
     path('centros/', views.SchoolListView.as_view(), name='school_list'),
     path('centros/<str:pk>/', views.school_detail, name='school_detail'),
     path('centros/<str:pk>/editar/', views.edit_school, name='edit_school'),
+    path('contacto/', views.contact, name='contact'),
     path('buscar-cercanos/', views.find_nearest, name='find_nearest'),
     path('sugerir-centro/', views.suggest_school, name='suggest_school'),
     path('search/', views.search, name='search'),

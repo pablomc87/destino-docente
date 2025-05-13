@@ -245,6 +245,7 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@destino-docente.org')
+CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'pablomc87@gmail.com')
 
 # Add context processor for Google Maps API key
 def google_maps_api_key(request):
