@@ -61,10 +61,10 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">Inicio</a>
+                        <a class="nav-link {% if '/buscar-cercanos/' in request.path %}active{% endif %}" href="/buscar-cercanos/">Próximo Destino</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if '/buscar-cercanos/' in request.path %}active{% endif %}" href="/buscar-cercanos/">Próximo Destino</a>
+                        <a class="nav-link {% if '/buscar/' in request.path %}active{% endif %}" href="{% url 'schools:search' %}">Explorar centros</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if '/sugerir-centro/' in request.path %}active{% endif %}" href="/sugerir-centro/">Añadir Centro</a>

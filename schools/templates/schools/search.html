@@ -35,11 +35,21 @@
     border-radius: 10px;
     margin-bottom: 20px;
     transition: all 0.3s;
+    cursor: pointer;
 }
 
 .school-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.school-card a {
+    display: block;
+    height: 100%;
+}
+
+.school-card .btn-primary {
+    pointer-events: none;
 }
 
 .school-type-badge {
@@ -103,16 +113,16 @@
                     <!-- Search Input -->
                     <div class="mb-3">
                         <label for="searchInput" class="form-label">Buscar</label>
-                        <input type="text" class="form-control" id="searchInput" name="search" value="{{ request.GET.search|default:'' }}" placeholder="Nombre, municipio...">
+                        <input type="text" class="form-control" id="searchInput" name="buscar" value="{{ request.GET.buscar|default:'' }}" placeholder="Nombre, municipio...">
                     </div>
 
                     <!-- Autonomous Community -->
                     <div class="mb-3">
                         <label for="autonomousCommunity" class="form-label">Comunidad Autónoma</label>
-                        <select class="form-select" id="autonomousCommunity" name="autonomous_community">
+                        <select class="form-select" id="autonomousCommunity" name="comunidad_autonoma">
                             <option value="">Todas</option>
                             {% for community in autonomous_communities %}
-                            <option value="{{ community }}" {% if request.GET.autonomous_community == community %}selected{% endif %}>{{ community }}</option>
+                            <option value="{{ community }}" {% if request.GET.comunidad_autonoma == community %}selected{% endif %}>{{ community }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -120,10 +130,10 @@
                     <!-- Province -->
                     <div class="mb-3">
                         <label for="province" class="form-label">Provincia</label>
-                        <select class="form-select" id="province" name="province">
+                        <select class="form-select" id="province" name="provincia">
                             <option value="">Todas</option>
                             {% for province in provinces %}
-                            <option value="{{ province }}" {% if request.GET.province == province %}selected{% endif %}>{{ province }}</option>
+                            <option value="{{ province }}" {% if request.GET.provincia == province %}selected{% endif %}>{{ province }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -131,10 +141,10 @@
                     <!-- Municipality -->
                     <div class="mb-3">
                         <label for="municipality" class="form-label">Municipio</label>
-                        <select class="form-select" id="municipality" name="municipality">
+                        <select class="form-select" id="municipality" name="municipio">
                             <option value="">Todos</option>
                             {% for municipality in municipalities %}
-                            <option value="{{ municipality }}" {% if request.GET.municipality == municipality %}selected{% endif %}>{{ municipality }}</option>
+                            <option value="{{ municipality }}" {% if request.GET.municipio == municipality %}selected{% endif %}>{{ municipality }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -142,10 +152,10 @@
                     <!-- School Type -->
                     <div class="mb-3">
                         <label for="centerType" class="form-label">Tipo de Centro</label>
-                        <select class="form-select" id="centerType" name="center_type">
+                        <select class="form-select" id="centerType" name="tipo">
                             <option value="">Todos</option>
                             {% for type in center_types %}
-                            <option value="{{ type }}" {% if request.GET.center_type == type %}selected{% endif %}>{{ type }}</option>
+                            <option value="{{ type }}" {% if request.GET.tipo == type %}selected{% endif %}>{{ type }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -153,11 +163,11 @@
                     <!-- Nature -->
                     <div class="mb-3">
                         <label for="nature" class="form-label">Titularidad</label>
-                        <select class="form-select" id="nature" name="nature">
+                        <select class="form-select" id="nature" name="titularidad">
                             <option value="">Todas</option>
-                            <option value="Público" {% if request.GET.nature == 'Público' %}selected{% endif %}>Público</option>
-                            <option value="Privado" {% if request.GET.nature == 'Privado' %}selected{% endif %}>Privado</option>
-                            <option value="Concertado" {% if request.GET.nature == 'Concertado' %}selected{% endif %}>Concertado</option>
+                            <option value="Público" {% if request.GET.titularidad == 'Público' %}selected{% endif %}>Público</option>
+                            <option value="Privado" {% if request.GET.titularidad == 'Privado' %}selected{% endif %}>Privado</option>
+                            <option value="Concertado" {% if request.GET.titularidad == 'Concertado' %}selected{% endif %}>Concertado</option>
                         </select>
                     </div>
 
@@ -172,74 +182,77 @@
             <!-- Results Header -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3>Resultados ({{ total_results }})</h3>
-                <div class="btn-group">
-                    <button type="button" class="btn btn-outline-secondary active" data-sort="relevance">Relevancia</button>
-                    <button type="button" class="btn btn-outline-secondary" data-sort="name">Nombre</button>
-                </div>
             </div>
 
             <!-- Results List -->
             <div id="resultsList">
                 {% for school in schools %}
                 <div class="card school-card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <h5 class="card-title">{{ school.name }}</h5>
-                                <div class="mb-2">
-                                    <span class="school-type-badge {{ school.nature|lower }}">{{ school.nature }}</span>
-                                    <span class="location-badge">{{ school.municipality }}, {{ school.province }}</span>
+                    <a href="{% url 'schools:school_detail' school.id %}" class="text-decoration-none text-dark">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="card-title">{{ school.name }}</h5>
+                                    <div class="mb-2">
+                                        <span class="school-type-badge {{ school.nature|lower }}">{{ school.nature }}</span>
+                                        <span class="location-badge">{{ school.municipality }}, {{ school.province }}</span>
+                                    </div>
+                                    <p class="card-text">
+                                        <strong>Tipo:</strong> {{ school.center_type }}<br>
+                                        <strong>Dirección:</strong> {{ school.address }}<br>
+                                        {% if school.phone %}
+                                        <strong>Teléfono:</strong> {{ school.phone }}<br>
+                                        {% endif %}
+                                        {% if school.email %}
+                                        <strong>Email:</strong> {{ school.email }}
+                                        {% endif %}
+                                    </p>
                                 </div>
-                                <p class="card-text">
-                                    <strong>Tipo:</strong> {{ school.center_type }}<br>
-                                    <strong>Dirección:</strong> {{ school.address }}<br>
-                                    {% if school.phone %}
-                                    <strong>Teléfono:</strong> {{ school.phone }}<br>
-                                    {% endif %}
-                                    {% if school.email %}
-                                    <strong>Email:</strong> {{ school.email }}
-                                    {% endif %}
-                                </p>
-                            </div>
-                            <div class="text-end">
-                                {% if school.distance %}
-                                <div class="mb-2">
-                                    <span class="badge bg-primary">{{ school.distance }} km</span>
-                                </div>
-                                {% endif %}
-                                <a href="{% url 'schools:school_detail' school.id %}" class="btn btn-outline-primary">Ver Detalles</a>
+                                <span class="btn btn-primary">Ver detalles</span>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
                 {% empty %}
                 <div class="alert alert-info">
-                    No se encontraron centros que coincidan con los criterios de búsqueda.
+                    No se encontraron centros que coincidan con tus criterios de búsqueda.
                 </div>
                 {% endfor %}
             </div>
 
             <!-- Pagination -->
             {% if schools.has_other_pages %}
-            <nav aria-label="Page navigation" class="mt-4">
+            <nav aria-label="Navegación de resultados" class="mt-4">
                 <ul class="pagination justify-content-center">
                     {% if schools.has_previous %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ schools.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Previous">
+                        <a class="page-link" href="?pagina={{ schools.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'pagina' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Anterior">
                             <span aria-hidden="true">&laquo;</span>
                         </a>
                     </li>
                     {% endif %}
 
-                    {% for num in schools.paginator.page_range %}
-                    <li class="page-item {% if schools.number == num %}active{% endif %}">
-                        <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
-                    </li>
+                    {% with ''|center:schools.paginator.num_pages as range %}
+                    {% for _ in range %}
+                        {% with forloop.counter as i %}
+                            {% if i == 1 or i == schools.paginator.num_pages or i >= schools.number|add:"-2" and i <= schools.number|add:"2" %}
+                                {% if schools.number == i %}
+                                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?pagina={{ i }}{% for key, value in request.GET.items %}{% if key != 'pagina' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
+                                </li>
+                                {% endif %}
+                            {% elif i == schools.number|add:"-3" or i == schools.number|add:"3" %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                        {% endwith %}
                     {% endfor %}
+                    {% endwith %}
 
                     {% if schools.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ schools.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Next">
+                        <a class="page-link" href="?pagina={{ schools.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'pagina' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Siguiente">
                             <span aria-hidden="true">&raquo;</span>
                         </a>
                     </li>
@@ -264,17 +277,6 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = '?' + params.toString();
     });
 
-    // Handle sorting
-    const sortButtons = document.querySelectorAll('[data-sort]');
-    sortButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const sortBy = this.dataset.sort;
-            const currentUrl = new URL(window.location.href);
-            currentUrl.searchParams.set('sort', sortBy);
-            window.location.href = currentUrl.toString();
-        });
-    });
-
     // Handle province change
     const autonomousCommunitySelect = document.getElementById('autonomousCommunity');
     const provinceSelect = document.getElementById('province');
@@ -283,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const community = this.value;
         if (community) {
             // Fetch provinces for selected community
-            fetch(`/api/provinces/?community=${encodeURIComponent(community)}`)
+            fetch(`/api/provinces/?comunidad_autonoma=${encodeURIComponent(community)}`)
                 .then(response => response.json())
                 .then(provinces => {
                     provinceSelect.innerHTML = '<option value="">Todas</option>';
@@ -303,7 +305,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const province = this.value;
         if (province) {
             // Fetch municipalities for selected province
-            fetch(`/api/municipalities/?province=${encodeURIComponent(province)}`)
+            fetch(`/api/municipalities/?provincia=${encodeURIComponent(province)}`)
                 .then(response => response.json())
                 .then(municipalities => {
                     municipalitySelect.innerHTML = '<option value="">Todos</option>';

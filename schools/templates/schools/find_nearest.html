@@ -17,10 +17,19 @@
 }
 .result-card {
     margin-top: 2rem;
-    transition: transform 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 .result-card:hover {
     transform: translateY(-2px);
+}
+.result-card.highlight {
+    box-shadow: 0 0 0 3px #0d6efd;
+    animation: pulse 2s ease-out;
+}
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(13, 110, 253, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0); }
 }
 .select2-container {
     width: 100% !important;
@@ -38,6 +47,7 @@ gmpx-place-picker {
     border-top: 1px solid #eee;
     padding-top: 0.5rem;
     margin-top: 0.5rem;
+    width: 100%;
 }
 .travel-times p {
     margin-bottom: 0.25rem;
@@ -237,6 +247,132 @@ gmpx-place-picker {
         lastInputTime = Date.now();
     };
     
+    // Function to save search results to local storage
+    const saveSearchResults = (data, searchParams) => {
+        try {
+            localStorage.setItem('lastSearchResults', JSON.stringify({
+                timestamp: Date.now(),
+                data: data,
+                params: searchParams
+            }));
+        } catch (error) {
+            console.error('Error saving search results:', error);
+        }
+    };
+
+    // Function to load last search results
+    const loadLastSearchResults = () => {
+        try {
+            const savedResults = localStorage.getItem('lastSearchResults');
+            if (savedResults) {
+                const { timestamp, data, params } = JSON.parse(savedResults);
+                // Check if results are less than 24 hours old
+                if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+                    return { data, params };
+                }
+            }
+        } catch (error) {
+            console.error('Error loading saved results:', error);
+        }
+        return null;
+    };
+
+    // Function to display search results
+    const displaySearchResults = (data) => {
+        const schoolResultsDiv = $('#schoolResults');
+        schoolResultsDiv.empty();
+        
+        // Display total count
+        schoolResultsDiv.append(`<p class="mb-3">Se encontraron ${data.total_count} centros que coinciden con tus criterios. Están ordenados por distancia desde tu ubicación.</p>`);
+        
+        if (data.schools && data.schools.length > 0) {
+            data.schools.forEach(school => {
+                const schoolCard = `
+                    <div class="card result-card mb-3" data-school-id="${school.id}">
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-9">
+                                    <h5 class="card-title">${school.name}</h5>
+                                    <p class="card-text">
+                                        <span class="badge bg-primary me-2">${school.nature || 'No especificado'}</span>
+                                        <span class="text-muted">${school.municipality}, ${school.province}</span><br>
+                                        <strong>Distancia:</strong> <span class="text-success">${school.distance ? school.distance.toFixed(1) : 'No disponible'} km</span>
+                                    </p>
+                                </div>
+                                <div class="col-3 text-end">
+                                    <a href="/centros/${school.id}/" class="btn btn-primary" onclick="saveScrollPosition(${school.id})">Ver Detalles</a>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="travel-times">
+                                        ${school.travel_times && school.travel_times.walking ? `
+                                        <p><i class="fas fa-walking"></i> A pie: ${school.travel_times.walking.replace('mins', 'minutos').replace('hour', 'hora').replace('hours', 'horas')}</p>
+                                        ` : ''}
+                                        ${school.travel_times && school.travel_times.driving ? `
+                                        <p><i class="fas fa-car"></i> En coche: ${school.travel_times.driving.replace('mins', 'minutos').replace('hour', 'hora').replace('hours', 'horas')}</p>
+                                        ` : ''}
+                                        ${school.travel_times && school.travel_times.bicycling ? `
+                                        <p><i class="fas fa-bicycle"></i> En bici: ${school.travel_times.bicycling.replace('mins', 'minutos').replace('hour', 'hora').replace('hours', 'horas')}</p>
+                                        ` : ''}
+                                        ${school.travel_times && school.travel_times.transit ? `
+                                        <p><i class="fas fa-bus"></i> En transporte: ${school.travel_times.transit.replace('mins', 'minutos').replace('hour', 'hora').replace('hours', 'horas')}</p>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                schoolResultsDiv.append(schoolCard);
+            });
+
+            // Add summary about user location if available
+            if (data.search_criteria && data.search_criteria.user_location) {
+                const locationInfo = `
+                    <div class="alert alert-info mt-3">
+                        <p><strong>Tu ubicación:</strong> ${data.search_criteria.address}</p>
+                        <p>Los centros están ordenados por distancia desde tu ubicación.</p>
+                    </div>
+                `;
+                schoolResultsDiv.append(locationInfo);
+            }
+        } else {
+            schoolResultsDiv.append('<p>No se encontraron centros que coincidan con tus criterios.</p>');
+        }
+        
+        // Show result
+        $('#result').removeClass('d-none');
+    };
+
+    // Function to save scroll position when clicking on a school
+    const saveScrollPosition = (schoolId) => {
+        try {
+            localStorage.setItem('lastViewedSchool', schoolId);
+        } catch (error) {
+            console.error('Error saving scroll position:', error);
+        }
+    };
+
+    // Function to restore scroll position
+    const restoreScrollPosition = () => {
+        try {
+            const lastViewedSchool = localStorage.getItem('lastViewedSchool');
+            if (lastViewedSchool) {
+                const schoolCard = document.querySelector(`[data-school-id="${lastViewedSchool}"]`);
+                if (schoolCard) {
+                    schoolCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    schoolCard.classList.add('highlight');
+                    setTimeout(() => {
+                        schoolCard.classList.remove('highlight');
+                    }, 2000);
+                }
+            }
+        } catch (error) {
+            console.error('Error restoring scroll position:', error);
+        }
+    };
+
     // Initialize Google Maps Place Autocomplete
     const initializeGoogleMaps = () => {
         const input = document.getElementById('address');
@@ -353,7 +489,34 @@ gmpx-place-picker {
         const withinLimits = await checkApiLimits();
         if (!withinLimits) {
             showApiLimitMessage();
-            return; // Don't initialize the form if we're over the limit
+            return;
+        }
+
+        // Try to load last search results
+        const lastResults = loadLastSearchResults();
+        if (lastResults) {
+            // Pre-fill the form with last search parameters
+            const { params } = lastResults;
+            if (params.address) {
+                $('#address').val(params.address);
+            }
+            if (params.region) {
+                $('#region').val(params.region).trigger('change');
+            }
+            if (params.provinces) {
+                $('#provinces').val(params.provinces).trigger('change');
+            }
+            if (params.school_types) {
+                params.school_types.forEach(type => {
+                    $(`#${type}Check`).prop('checked', true);
+                });
+            }
+            
+            // Display the results
+            displaySearchResults(lastResults.data);
+            
+            // Restore scroll position after a short delay to ensure the DOM is ready
+            setTimeout(restoreScrollPosition, 100);
         }
 
         let autocomplete = null;
@@ -498,7 +661,6 @@ gmpx-place-picker {
                         });
                     }
                     
-                    // Log the request for debugging
                     const requestUrl = `/api/nearest/?${params.toString()}`;
                     console.log('Sending request to:', requestUrl);
                     
@@ -519,73 +681,16 @@ gmpx-place-picker {
                     const data = await response.json();
                     console.log('Received data:', data);
                     
-                    // Clear previous results
-                    const schoolResultsDiv = $('#schoolResults');
-                    schoolResultsDiv.empty();
+                    // Save search results to local storage
+                    saveSearchResults(data, {
+                        address,
+                        region,
+                        provinces,
+                        school_types
+                    });
                     
-                    // Display total count
-                    schoolResultsDiv.append(`<p class="mb-3">Se encontraron ${data.total_count} centros que coinciden con tus criterios.</p>`);
-                    
-                    // Update result with all schools
-                    if (data.schools && data.schools.length > 0) {
-                        data.schools.forEach(school => {
-                            // Format distance
-                            let distanceText = '';
-                            if (school.distance !== null && school.distance !== undefined) {
-                                distanceText = `<p class="card-text text-success">Distancia: ${school.distance.toFixed(2)} km</p>`;
-                            } else {
-                                distanceText = `<p class="card-text text-muted">Distancia: No disponible</p>`;
-                            }
-
-                            // Format travel times
-                            let travelTimesHtml = '<div class="travel-times mt-2">';
-                            if (school.travel_times) {
-                                if (school.travel_times.walking) {
-                                    travelTimesHtml += `<p class="card-text"><i class="fas fa-walking"></i> A pie: ${school.travel_times.walking}</p>`;
-                                }
-                                if (school.travel_times.driving) {
-                                    travelTimesHtml += `<p class="card-text"><i class="fas fa-car"></i> En coche: ${school.travel_times.driving}</p>`;
-                                }
-                                if (school.travel_times.bicycling) {
-                                    travelTimesHtml += `<p class="card-text"><i class="fas fa-bicycle"></i> En bici: ${school.travel_times.bicycling}</p>`;
-                                }
-                                if (school.travel_times.transit) {
-                                    travelTimesHtml += `<p class="card-text"><i class="fas fa-bus"></i> En transporte público: ${school.travel_times.transit}</p>`;
-                                }
-                            }
-                            travelTimesHtml += '</div>';
-
-                            const schoolCard = `
-                                <div class="card result-card mb-3">
-                                    <div class="card-body">
-                                        <h5 class="card-title">${school.name}</h5>
-                                        <p class="card-text">${school.address}, ${school.municipality}, ${school.province}</p>
-                                        <p class="card-text">Tipo: ${school.nature || 'No especificado'}</p>
-                                        ${distanceText}
-                                        ${travelTimesHtml}
-                                        <a href="/centros/${school.id}/" class="btn btn-outline-primary">Ver Detalles</a>
-                                    </div>
-                                </div>
-                            `;
-                            schoolResultsDiv.append(schoolCard);
-                        });
-
-                        // Add summary about user location if available
-                        if (data.search_criteria && data.search_criteria.user_location) {
-                            const locationInfo = `
-                                <div class="alert alert-info mt-3">
-                                    <p><strong>Tu ubicación:</strong> ${data.search_criteria.address}</p>
-                                    <p>Los centros están ordenados por distancia desde tu ubicación.</p>
-                                </div>
-                            `;
-                            schoolResultsDiv.append(locationInfo);
-                        }
-                    } else {
-                        schoolResultsDiv.append('<p>No se encontraron centros que coincidan con tus criterios.</p>');
-                    }
-                    
-                    // Show result
-                    resultDiv.removeClass('d-none');
+                    // Display the results
+                    displaySearchResults(data);
                     
                 } catch (error) {
                     errorDiv.text(error.message);

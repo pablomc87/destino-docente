@@ -58,7 +58,7 @@
                             <input type="url" class="form-control" id="website" name="website" value="{{ school.website|default:'' }}">
                         </div>
                         <div class="mb-3">
-                            <label for="nature" class="form-label">Naturaleza</label>
+                            <label for="nature" class="form-label">Titularidad</label>
                             <select class="form-select" id="nature" name="nature" required>
                                 <option value="Público" {% if school.nature == "Público" %}selected{% endif %}>Público</option>
                                 <option value="Privado" {% if school.nature == "Privado" %}selected{% endif %}>Privado</option>

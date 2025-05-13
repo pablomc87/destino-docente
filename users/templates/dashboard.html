@@ -28,7 +28,7 @@
                                data-search-results='{{ search.results|json_script:"search-results"|safe }}'
                                data-autonomous-community="{{ search.autonomous_community }}">
                                 <i class="fas fa-star {% if search.is_favorite %}text-warning{% else %}text-muted{% endif %} me-2"></i>
-                                {{ search.location }} ({{ search.timestamp|date:"d M Y H:i" }})
+                                {{ search.location }} ({{ search.timestamp|date:"d F Y H:i" }})
                             </a>
                         </li>
                         {% endfor %}
@@ -61,7 +61,7 @@
                                         </div>
                                         <div class="col-md-3">
                                             <small class="text-muted d-block">Fecha de Búsqueda</small>
-                                            <span>{{ selected_search.timestamp|date:"d M Y H:i" }}</span>
+                                            <span>{{ selected_search.timestamp|date:"d F Y H:i" }}</span>
                                         </div>
                                         {% if selected_search.provinces %}
                                         <div class="col-md-3">
@@ -123,15 +123,6 @@
                                     {% endif %}
                                 </div>
                             </div>
-
-                            <div class="mt-4 text-end">
-                                <button onclick="confirmRepeatSearch({{ selected_search.latitude|stringformat:'f' }}, {{ selected_search.longitude|stringformat:'f' }}, {{ selected_search.provinces|safe }}, {{ selected_search.school_types|safe }})" 
-                                        class="btn btn-primary"
-                                        data-location="{{ selected_search.location }}"
-                                        data-search-id="{{ selected_search.id }}">
-                                    <i class="fas fa-search me-2"></i> Repetir Búsqueda
-                                </button>
-                            </div>
                         </div>
                     </div>
                     {% endwith %}
@@ -166,7 +157,7 @@
                             <tbody>
                                 {% for search in search_history %}
                                     <tr>
-                                        <td>{{ search.timestamp|date:"d M Y H:i" }}</td>
+                                        <td>{{ search.timestamp|date:"d F Y H:i" }}</td>
                                         <td>{{ search.location }}</td>
                                         <td>{{ search.results_count }} centros</td>
                                         <td>
@@ -182,12 +173,6 @@
                                                     data-search-results='{{ search.results|json_script:"search-results"|safe }}'
                                                     data-autonomous-community="{{ search.autonomous_community }}">
                                                 <i class="fas fa-eye me-1"></i> Ver
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-success"
-                                                    onclick="repeatSearch({{ search.latitude|stringformat:'f' }}, {{ search.longitude|stringformat:'f' }}, {{ search.provinces|safe }}, {{ search.school_types|safe }})"
-                                                    data-location="{{ search.location }}"
-                                                    data-search-id="{{ search.id }}">
-                                                <i class="fas fa-redo me-1"></i> Repetir
                                             </button>
                                             <button class="btn btn-sm btn-outline-warning"
                                                     onclick="toggleFavorite({{ search.id }}, this)"
@@ -219,54 +204,17 @@
     </div>
 </div>
 
-<!-- Search Details Modal -->
-<div class="modal fade" id="searchDetailsModal" tabindex="-1" aria-labelledby="searchDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="searchDetailsModalLabel">Detalles de la Búsqueda</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <h6>Parámetros de la Búsqueda</h6>
-                        <p><strong>Dirección:</strong> <span id="modalLocation"></span></p>
-                        <p><strong>Resultados:</strong> <span id="modalResults"></span> centros encontrados</p>
-                        <p><strong>Provincias:</strong> <span id="modalProvinces"></span></p>
-                        <p><strong>Tipos de Centro:</strong> <span id="modalSchoolTypes"></span></p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12">
-                        <h6>Resultados de la Búsqueda</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Centro</th>
-                                        <th>Distancia</th>
-                                        <th>Tiempos de Viaje</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="modalResultsList">
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                <button type="button" class="btn btn-primary" id="modalRepeatSearch" onclick="repeatSearch(this.getAttribute('data-lat'), this.getAttribute('data-lng'), this.getAttribute('data-provinces')?.split(', '), this.getAttribute('data-school-types')?.split(', '))">
-                    <i class="fas fa-redo me-1"></i> Repetir Búsqueda
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 {% block extra_js %}
+<style>
+    .selected-search-row {
+        background-color: rgba(0, 123, 255, 0.1) !important;
+    }
+    .selected-search-row td {
+        background-color: rgba(0, 123, 255, 0.1) !important;
+    }
+</style>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const searchDetailsModal = document.getElementById('searchDetailsModal');
@@ -325,155 +273,169 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Function to select a search from history
+    // School type translations
+    const SCHOOL_TYPE_TRANSLATIONS = {
+        'public': 'Público',
+        'private': 'Privado',
+        'concertado': 'Concertado',
+        'infantil': 'Infantil',
+        'primaria': 'Primaria',
+        'secundaria': 'Secundaria',
+        'bachillerato': 'Bachillerato',
+        'fp': 'Formación Profesional'
+    };
+
+    // Function to translate school types
+    function translateSchoolTypes(types) {
+        if (!types) return '';
+        return types.split(', ')
+            .map(type => SCHOOL_TYPE_TRANSLATIONS[type] || type)
+            .join(', ');
+    }
+
+    // Function to update row highlighting
+    function updateRowHighlighting(searchId) {
+        document.querySelectorAll('tbody tr').forEach(row => {
+            row.classList.remove('selected-search-row');
+        });
+        const rowToHighlight = document.querySelector(`tr button[data-search-id="${searchId}"]`).closest('tr');
+        if (rowToHighlight) {
+            rowToHighlight.classList.add('selected-search-row');
+        }
+    }
+
+    // Function to update search details section
+    function updateSearchDetails(search) {
+        const detailsSection = document.querySelector('.card-body .row:first-child');
+        if (!detailsSection) return;
+
+        detailsSection.innerHTML = `
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="mb-2">Detalles de la Búsqueda</h5>
+                        <div class="row g-2">
+                            <div class="col-6 mb-2">
+                                <small class="text-muted d-block">Dirección</small>
+                                <span>${search.location || 'N/A'}</span>
+                            </div>
+                            ${search.autonomous_community ? `
+                            <div class="col-6 mb-2">
+                                <small class="text-muted d-block">Comunidad Autónoma</small>
+                                <span>${search.autonomous_community}</span>
+                            </div>
+                            ` : ''}
+                            <div class="col-md-3">
+                                <small class="text-muted d-block">Resultados</small>
+                                <span>${search.results_count || 0} centros</span>
+                            </div>
+                            <div class="col-md-3">
+                                <small class="text-muted d-block">Fecha de Búsqueda</small>
+                                <span>${search.timestamp}</span>
+                            </div>
+                            ${search.provinces ? `
+                            <div class="col-md-3">
+                                <small class="text-muted d-block">Provincias</small>
+                                <span>${search.provinces}</span>
+                            </div>
+                            ` : ''}
+                            ${search.school_types ? `
+                            <div class="col-md-3">
+                                <small class="text-muted d-block">Tipos de Centro</small>
+                                <span>${translateSchoolTypes(search.school_types)}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <h5>Resultados de la Búsqueda</h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Centro</th>
+                                    <th>Distancia</th>
+                                    <th>Tiempos de Viaje</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${search.results.map((school, index) => `
+                                    <tr ${index > 0 ? 'class="d-none"' : ''}>
+                                        <td>
+                                            <strong>${school.name}</strong><br>
+                                            <small class="text-muted">${school.municipality}, ${school.province}</small>
+                                        </td>
+                                        <td>${Math.round(school.distance)} km</td>
+                                        <td>
+                                            ${school.travel_times ? `
+                                                <small>
+                                                    <div>🚶 ${school.travel_times.walking.replace('mins', 'minutos').replace('hour', 'hora').replace('hours', 'horas') || 'N/A'}</div>
+                                                    <div>🚗 ${school.travel_times.driving.replace('mins', 'minutos').replace('hour', 'hora').replace('hours', 'horas') || 'N/A'}</div>
+                                                    <div>🚲 ${school.travel_times.bicycling.replace('mins', 'minutos').replace('hour', 'hora').replace('hours', 'horas') || 'N/A'}</div>
+                                                    <div>🚌 ${school.travel_times.transit.replace('mins', 'minutos').replace('hour', 'hora').replace('hours', 'horas') || 'N/A'}</div>
+                                                </small>
+                                            ` : school.travel_times_error ? `
+                                                <small class="text-danger">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                                    ${school.travel_times_error}
+                                                </small>
+                                            ` : 'N/A'}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        ${search.results.length > 1 ? `
+                        <div class="text-center mt-2">
+                            <button class="btn btn-link" onclick="toggleMoreSchools(this)">
+                                <i class="fas fa-chevron-down me-1"></i> Mostrar Más Centros
+                            </button>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Main function to select a search
     window.selectSearch = function(searchId, event) {
-        // Get the search details from the button's data attributes
         const button = event.target.closest('button, a');
-        
-        // Parse the search results
-        let searchResults = [];
-        try {
-            const resultsStr = button.getAttribute('data-search-results');
-            if (resultsStr) {
-                // Remove any script tags and get the content
-                const cleanResults = resultsStr.replace(/<script[^>]*>|<\/script>/g, '');
-                searchResults = JSON.parse(cleanResults);
-            }
-        } catch (e) {
-            console.error('Error parsing search results:', e);
-        }
+        if (!button) return;
 
-        // Get timestamp based on element type
-        let timestamp;
-        if (button.classList.contains('dropdown-item')) {
-            // For dropdown items, timestamp is in the text content
-            const text = button.textContent.trim();
-            const match = text.match(/\((.*?)\)/);
-            timestamp = match ? match[1] : '';
-        } else {
-            // For view buttons, timestamp is in the first cell of the row
-            const row = button.closest('tr');
-            if (row) {
-                const firstCell = row.querySelector('td:first-child');
-                timestamp = firstCell ? firstCell.textContent.trim() : '';
-            }
-        }
+        // Update row highlighting
+        updateRowHighlighting(searchId);
 
+        // Get search data
         const search = {
             id: searchId,
             location: button.getAttribute('data-location'),
-            results: searchResults,
             results_count: button.getAttribute('data-results'),
             autonomous_community: button.getAttribute('data-autonomous-community'),
             provinces: button.getAttribute('data-provinces'),
             school_types: button.getAttribute('data-school-types'),
             latitude: button.getAttribute('data-lat'),
             longitude: button.getAttribute('data-lng'),
-            timestamp: timestamp
+            timestamp: button.classList.contains('dropdown-item') 
+                ? button.textContent.trim().match(/\((.*?)\)/)?.[1] || ''
+                : button.closest('tr')?.querySelector('td:first-child')?.textContent.trim() || ''
         };
 
-        // Update the search details section
-        const detailsSection = document.querySelector('.card-body .row:first-child');
-        if (detailsSection) {
-            detailsSection.innerHTML = `
-                <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                            <h5 class="mb-2">Detalles de la Búsqueda</h5>
-                            <div class="row g-2">
-                                <div class="col-6 mb-2">
-                                    <small class="text-muted d-block">Dirección</small>
-                                    <span>${search.location || 'N/A'}</span>
-                                </div>
-                                ${search.autonomous_community ? `
-                                <div class="col-6 mb-2">
-                                    <small class="text-muted d-block">Comunidad Autónoma</small>
-                                    <span>${search.autonomous_community}</span>
-                                </div>
-                                ` : ''}
-                                <div class="col-md-3">
-                                    <small class="text-muted d-block">Resultados</small>
-                                    <span>${search.results_count || 0} centros</span>
-                                </div>
-                                <div class="col-md-3">
-                                    <small class="text-muted d-block">Fecha de Búsqueda</small>
-                                    <span>${search.timestamp}</span>
-                                </div>
-                                ${search.provinces ? `
-                                <div class="col-md-3">
-                                    <small class="text-muted d-block">Provincias</small>
-                                    <span>${search.provinces}</span>
-                                </div>
-                                ` : ''}
-                                ${search.school_types ? `
-                                <div class="col-md-3">
-                                    <small class="text-muted d-block">Tipos de Centro</small>
-                                    <span>${search.school_types}</span>
-                                </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-4">
-                        <h5>Resultados de la Búsqueda</h5>
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Centro</th>
-                                        <th>Distancia</th>
-                                        <th>Tiempos de Viaje</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${search.results.map((school, index) => `
-                                        <tr ${index > 0 ? 'class="d-none"' : ''}>
-                                            <td>
-                                                <strong>${school.name}</strong><br>
-                                                <small class="text-muted">${school.municipality}, ${school.province}</small>
-                                            </td>
-                                            <td>${Math.round(school.distance)} km</td>
-                                            <td>
-                                                ${school.travel_times ? `
-                                                    <small>
-                                                        <div>🚶 ${school.travel_times.walking || 'N/A'}</div>
-                                                        <div>🚗 ${school.travel_times.driving || 'N/A'}</div>
-                                                        <div>🚲 ${school.travel_times.bicycling || 'N/A'}</div>
-                                                        <div>🚌 ${school.travel_times.transit || 'N/A'}</div>
-                                                    </small>
-                                                ` : school.travel_times_error ? `
-                                                    <small class="text-danger">
-                                                        <i class="fas fa-exclamation-triangle me-1"></i>
-                                                        ${school.travel_times_error}
-                                                    </small>
-                                                ` : 'N/A'}
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                            ${search.results.length > 1 ? `
-                            <div class="text-center mt-2">
-                                <button class="btn btn-link" onclick="toggleMoreSchools(this)">
-                                    <i class="fas fa-chevron-down me-1"></i> Mostrar Más Centros
-                                </button>
-                            </div>
-                            ` : ''}
-                        </div>
-                    </div>
-
-                    <div class="mt-4 text-end">
-                        <button onclick="confirmRepeatSearch(${search.latitude}, ${search.longitude}, ${JSON.stringify(search.provinces ? search.provinces.split(', ') : [])}, ${JSON.stringify(search.school_types ? search.school_types.split(', ') : [])})" 
-                                class="btn btn-primary"
-                                data-location="${search.location}"
-                                data-search-id="${search.id}">
-                            <i class="fas fa-search me-2"></i> Repetir Búsqueda
-                        </button>
-                    </div>
-                </div>
-            `;
+        // Parse search results
+        try {
+            const resultsStr = button.getAttribute('data-search-results');
+            if (resultsStr) {
+                search.results = JSON.parse(resultsStr.replace(/<script[^>]*>|<\/script>/g, ''));
+            }
+        } catch (e) {
+            console.error('Error parsing search results:', e);
+            search.results = [];
         }
+
+        // Update the UI
+        updateSearchDetails(search);
 
         // Scroll to the top section
         document.querySelector('.card.shadow.mb-4').scrollIntoView({ behavior: 'smooth' });
@@ -660,6 +622,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const firstSearch = document.querySelector('.dropdown-item');
         if (firstSearch) {
             selectSearch(firstSearch.getAttribute('data-search-id'), { target: firstSearch });
+        }
+    }
+
+    // Find the currently selected search ID from the details section
+    const selectedSearchButton = document.querySelector('.card-body .btn-primary[data-search-id]');
+    if (selectedSearchButton) {
+        const selectedSearchId = selectedSearchButton.getAttribute('data-search-id');
+        // Find and highlight the corresponding row
+        const rowToHighlight = document.querySelector(`tr button[data-search-id="${selectedSearchId}"]`).closest('tr');
+        if (rowToHighlight) {
+            // Remove any existing highlights
+            document.querySelectorAll('tbody tr').forEach(row => {
+                row.classList.remove('selected-search-row');
+            });
+            rowToHighlight.classList.add('selected-search-row');
         }
     }
 });

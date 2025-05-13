@@ -15,7 +15,7 @@ urlpatterns = [
     path('contacto/', views.contact, name='contact'),
     path('buscar-cercanos/', views.find_nearest, name='find_nearest'),
     path('sugerir-centro/', views.suggest_school, name='suggest_school'),
-    path('search/', views.search, name='search'),
+    path('buscar/', views.search, name='search'),
     
     # Search history actions
     path('api/historial-busquedas/<int:pk>/favorito/', views.toggle_search_favorite, name='toggle_search_favorite'),

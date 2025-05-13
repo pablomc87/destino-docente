@@ -40,6 +40,10 @@ def index(request):
 def school_detail(request, pk):
     """Render the school detail page"""
     try:
+        # Store search parameters in session if coming from search
+        if request.META.get('HTTP_REFERER', '').startswith(request.build_absolute_uri('/buscar/')):
+            request.session['search_params'] = request.META.get('HTTP_REFERER', '').split('?', 1)[1] if '?' in request.META.get('HTTP_REFERER', '') else ''
+
         school = School.objects.get(pk=pk)
         context = {
             'school': school,
@@ -688,16 +692,14 @@ def check_api_limits(request):
 
 def search(request):
     """Search view for schools with filters."""
-    # Get search parameters
-    search_query = request.GET.get('search', '')
-    autonomous_community = request.GET.get('autonomous_community', '')
-    province = request.GET.get('province', '')
-    municipality = request.GET.get('municipality', '')
-    center_type = request.GET.get('center_type', '')
-    nature = request.GET.get('nature', '')
-    distance = request.GET.get('distance', '')
-    sort_by = request.GET.get('sort', 'relevance')
-    page = request.GET.get('page', 1)
+    # Get search parameters with Spanish names
+    search_query = request.GET.get('buscar', '')
+    autonomous_community = request.GET.get('comunidad', '')
+    province = request.GET.get('provincia', '')
+    municipality = request.GET.get('municipio', '')
+    center_type = request.GET.get('tipo', '')
+    nature = request.GET.get('titularidad', '')
+    page = request.GET.get('pagina', 1)
 
     # Start with all schools
     schools = School.objects.all()
@@ -725,13 +727,8 @@ def search(request):
     if nature:
         schools = schools.filter(nature=nature)
 
-    # Apply sorting
-    if sort_by == 'name':
-        schools = schools.order_by('name')
-    elif sort_by == 'distance':
-        schools = schools.order_by('distance')
-    else:  # relevance
-        schools = schools.order_by('-id')  # Default sorting by newest first
+    # Sort by relevance (newest first)
+    schools = schools.order_by('-id')
 
     # Get unique values for filters
     autonomous_communities = School.objects.values_list('autonomous_community', flat=True).distinct().order_by('autonomous_community')
@@ -756,8 +753,6 @@ def search(request):
         'municipality': municipality,
         'center_type': center_type,
         'nature': nature,
-        'distance': distance,
-        'sort_by': sort_by,
     }
 
     return render(request, 'schools/search.html', context)
@@ -801,7 +796,7 @@ def school_list(request):
 def province_list(request):
     """API endpoint to list provinces, optionally filtered by autonomous community."""
     try:
-        community = request.GET.get('community', '')
+        community = request.GET.get('comunidad', '')  # Changed from 'community'
         provinces = School.objects.values_list('province', flat=True).distinct()
         
         if community:
@@ -815,7 +810,7 @@ def province_list(request):
 def municipality_list(request):
     """API endpoint to list municipalities, optionally filtered by province."""
     try:
-        province = request.GET.get('province', '')
+        province = request.GET.get('provincia', '')  # Changed from 'province'
         municipalities = School.objects.values_list('municipality', flat=True).distinct()
         
         if province:
