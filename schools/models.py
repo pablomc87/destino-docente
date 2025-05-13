@@ -192,8 +192,8 @@ class SchoolEditSuggestion(models.Model):
     municipality = models.CharField(_("Municipality"), max_length=100, blank=True)
     province = models.CharField(_("Province"), max_length=100, blank=True)
     autonomous_community = models.CharField(_("Autonomous community"), max_length=100, blank=True)
-    latitude = models.DecimalField(_("Latitude"), max_digits=9, decimal_places=6, null=True, blank=True)
-    longitude = models.DecimalField(_("Longitude"), max_digits=9, decimal_places=6, null=True, blank=True)
+    latitude = models.FloatField(_("Latitude"), null=True, blank=True)
+    longitude = models.FloatField(_("Longitude"), null=True, blank=True)
     
     # Status and timestamps
     status = models.CharField(_("Status"), max_length=30, choices=STATUS_CHOICES, default='pending')

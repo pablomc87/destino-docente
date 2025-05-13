@@ -452,14 +452,26 @@ def edit_school(request, pk):
             raise
         return render(request, 'schools/error.html', {'error': str(e)})
 
-class SchoolEditSuggestionView(generics.CreateAPIView):
+class SchoolEditSuggestionView(APIView):
     """API endpoint for creating school edit suggestions"""
-    queryset = SchoolEditSuggestion.objects.all()
-    serializer_class = SchoolEditSuggestionSerializer
     permission_classes = []  # Remove authentication requirement
 
-    def perform_create(self, serializer):
-        serializer.save()
+    def post(self, request):
+        """Create a new school edit suggestion."""
+        print("=== SchoolEditSuggestionView.post called ===")  # Debug print
+        print("Request method:", request.method)  # Debug print
+        print("Received data:", request.data)  # Debug print
+        print("Data types:", {k: type(v) for k, v in request.data.items()})  # Debug data types
+        
+        serializer = SchoolEditSuggestionSerializer(data=request.data)
+        if serializer.is_valid():
+            print("Validated data:", serializer.validated_data)  # Debug validated data
+            instance = serializer.save()
+            print("Created instance:", instance.__dict__)  # Debug created instance
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print("Validation errors:", serializer.errors)  # Debug validation errors
+        print("Error details:", {k: str(v) for k, v in serializer.errors.items()})  # Debug error details
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class SchoolEditSuggestionListView(generics.ListAPIView):
     """API endpoint for listing school edit suggestions"""

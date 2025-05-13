@@ -134,11 +134,13 @@ document.getElementById('editSchoolForm').addEventListener('submit', function(e)
     
     const formData = new FormData(this);
     const data = Object.fromEntries(formData.entries());
+    const position = marker.getLatLng();
+        $('#latitude').val(position.lat);
+        $('#longitude').val(position.lng);
     data.school = "{{ school.id }}";  // Add the school ID to the data
     
-    // Convert empty strings to null for latitude and longitude
-    if (data.latitude === '') data.latitude = null;
-    if (data.longitude === '') data.longitude = null;
+    data.latitude = position.lat;
+    data.longitude = position.lng;
     
     // Log the data being sent
     console.log('Submitting data:', data);
