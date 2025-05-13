@@ -9,9 +9,9 @@ app_name = 'api'
 urlpatterns = [
     # API endpoints
     path('schools/', views.SchoolListView.as_view(), name='school_list'),
-    path('schools/<int:pk>/', views.SchoolDetailView.as_view(), name='school_detail'),
+    path('schools/<str:pk>/', views.SchoolDetailView.as_view(), name='school_detail'),
     path('schools/search/', views.SchoolSearchView.as_view(), name='school_search'),
     path('nearest/', views.NearestSchoolView.as_view(), name='nearest_school'),
     path('edit-suggestions/', views.SchoolEditSuggestionView.as_view(), name='edit_suggestion'),
-    path('sugerir-centro/', views.suggest_school, name='suggest_school'),
+    path('sugerir-centro/', views.SchoolSuggestionView.as_view(), name='suggest_school'),
 ] 

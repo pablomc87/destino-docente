@@ -201,13 +201,12 @@
             updateElementText('postalCode', school.postal_code || 'No especificado');
             updateElementText('phone', school.phone || 'No especificado');
             updateElementText('email', school.email || 'No especificado');
-            
             // Update web link
             const webLink = document.getElementById('web');
             if (webLink) {
-                if (school.web) {
-                    webLink.href = school.web;
-                    webLink.textContent = school.web;
+                if (school.website) {
+                    webLink.href = school.website;
+                    webLink.textContent = school.website;
                 } else {
                     webLink.textContent = 'No disponible';
                     webLink.removeAttribute('href');
@@ -259,16 +258,16 @@
             // Update services
             const servicesContainer = document.getElementById('services');
             if (servicesContainer) {
-                if (school.services && school.services.length > 0) {
+                if (school.services && Object.keys(school.services).length > 0) {
                     servicesContainer.innerHTML = ''; // Clear existing content
-                    school.services.forEach(service => {
+                    Object.entries(school.services).forEach(([key, value]) => {
                         const serviceBadge = document.createElement('span');
-                        serviceBadge.className = `service-badge ${service.type || 'other'}`;
-                        serviceBadge.textContent = service.name || 'Servicio sin nombre';
+                        serviceBadge.className = 'service-badge other';  // Use a default style for all services
+                        serviceBadge.textContent = value || key;
                         servicesContainer.appendChild(serviceBadge);
                     });
                 } else {
-                    servicesContainer.innerHTML = '<p>No hay información disponible sobre los servicios ofrecidos.</p>';
+                    servicesContainer.innerHTML = '<span class="text-muted">No hay servicios especificados</span>';
                 }
             }
         } catch (error) {

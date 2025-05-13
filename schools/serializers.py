@@ -19,12 +19,61 @@ class SchoolSerializer(serializers.ModelSerializer):
         ]
 
 class SchoolSuggestionSerializer(serializers.ModelSerializer):
-    studies = StudySerializer(many=True, read_only=True)
+    studies = serializers.ListField(
+        child=serializers.CharField(),
+        write_only=True,
+        required=False
+    )
+    is_concerted = serializers.BooleanField(required=False, default=False)
     
     class Meta:
         model = SchoolSuggestion
         fields = '__all__'
         read_only_fields = ('status', 'created_at', 'updated_at')
+
+    def validate_latitude(self, value):
+        print(f"Validating latitude: {value} (type: {type(value)})")  # Debug print
+        if value is not None:
+            try:
+                value = float(value)
+                if not -90 <= value <= 90:
+                    raise serializers.ValidationError("Latitude must be between -90 and 90 degrees")
+            except (TypeError, ValueError) as e:
+                print(f"Latitude validation error: {str(e)}")  # Debug print
+                raise serializers.ValidationError("Invalid latitude value")
+        return value
+
+    def validate_longitude(self, value):
+        print(f"Validating longitude: {value} (type: {type(value)})")  # Debug print
+        if value is not None:
+            try:
+                value = float(value)
+                if not -180 <= value <= 180:
+                    raise serializers.ValidationError("Longitude must be between -180 and 180 degrees")
+            except (TypeError, ValueError) as e:
+                print(f"Longitude validation error: {str(e)}")  # Debug print
+                raise serializers.ValidationError("Invalid longitude value")
+        return value
+
+    def create(self, validated_data):
+        print("Creating suggestion with data:", validated_data)  # Debug print
+        studies = validated_data.pop('studies', [])
+        instance = super().create(validated_data)
+        
+        # Add studies if provided
+        if studies:
+            for study_name in studies:
+                # Get the first study with this name
+                study = ImpartedStudy.objects.filter(name=study_name).first()
+                if study:
+                    instance.studies.add(study)
+                else:
+                    # Create a new study if none exists
+                    study = ImpartedStudy.objects.create(name=study_name)
+                    instance.studies.add(study)
+        
+        print("Created instance:", instance.__dict__)  # Debug print
+        return instance
 
 class SchoolEditSuggestionSerializer(serializers.ModelSerializer):
     """Serializer for school edit suggestions"""

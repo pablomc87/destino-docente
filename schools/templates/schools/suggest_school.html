@@ -371,11 +371,17 @@ $(document).ready(function() {
     // Prevent double submission
     let isSubmitting = false;
     $('#suggestionForm').on('submit', function(e) {
+        e.preventDefault(); // Prevent the default form submission
+        
         if (isSubmitting) {
-            e.preventDefault();
             return;
         }
         isSubmitting = true;
+        
+        // Get current marker position
+        const position = marker.getLatLng();
+        $('#latitude').val(position.lat);
+        $('#longitude').val(position.lng);
         
         const formData = new FormData(this);
         const data = Object.fromEntries(formData.entries());
@@ -383,7 +389,11 @@ $(document).ready(function() {
         // Convert studies to array
         data.studies = $('#studies').val();
         
-        fetch('/api/suggestions/', {
+        // Ensure coordinates are included
+        data.latitude = position.lat;
+        data.longitude = position.lng;
+        
+        fetch('{% url "api:suggest_school" %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

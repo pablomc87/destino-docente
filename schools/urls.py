@@ -10,8 +10,8 @@ urlpatterns = [
     # Page routes
     path('', views.index, name='index'),
     path('centros/', views.SchoolListView.as_view(), name='school_list'),
-    path('centros/<int:pk>/', views.school_detail, name='school_detail'),
-    path('centros/<int:pk>/editar/', views.edit_school, name='edit_school'),
+    path('centros/<str:pk>/', views.school_detail, name='school_detail'),
+    path('centros/<str:pk>/editar/', views.edit_school, name='edit_school'),
     path('buscar-cercanos/', views.find_nearest, name='find_nearest'),
     path('sugerir-centro/', views.suggest_school, name='suggest_school'),
     path('search/', views.search, name='search'),
@@ -22,8 +22,6 @@ urlpatterns = [
     path('api/stats/', views.api_stats, name='api_stats'),
     path('api/track-google-api/', views.track_google_api, name='track_google_api'),
     path('api/check-limits/', views.check_api_limits, name='check_api_limits'),
-    path('api/schools/', views.SchoolListView.as_view(), name='api_school_list'),
-    path('api/schools/<int:pk>/', views.SchoolDetailView.as_view(), name='api_school_detail'),
     path('api/provinces/', views.province_list, name='province_list'),
     path('api/municipalities/', views.municipality_list, name='municipality_list'),
 ] 

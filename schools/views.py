@@ -378,10 +378,16 @@ def find_nearest(request):
 class SchoolSuggestionView(APIView):
     def post(self, request):
         """Create a new school suggestion."""
+        print("Received data:", request.data)  # Debug print
+        print("Data types:", {k: type(v) for k, v in request.data.items()})  # Debug data types
         serializer = SchoolSuggestionSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            print("Validated data:", serializer.validated_data)  # Debug validated data
+            instance = serializer.save()
+            print("Created instance:", instance.__dict__)  # Debug created instance
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print("Validation errors:", serializer.errors)  # Debug validation errors
+        print("Error details:", {k: str(v) for k, v in serializer.errors.items()})  # Debug error details
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class SchoolSuggestionListView(APIView):

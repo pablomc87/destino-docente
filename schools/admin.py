@@ -60,6 +60,8 @@ class SchoolSuggestionAdmin(admin.ModelAdmin):
     list_filter = ('status', 'autonomous_community', 'province', 'nature', 'is_concerted')
     search_fields = ('name', 'municipality', 'province', 'email', 'phone')
     readonly_fields = ('created_at', 'updated_at')
+    filter_horizontal = ('studies',)
+    actions = ['accept_suggestions', 'reject_suggestions']
     fieldsets = (
         (_('Core Information'), {
             'fields': ('name', 'email', 'phone', 'website')
@@ -71,8 +73,8 @@ class SchoolSuggestionAdmin(admin.ModelAdmin):
         (_('School Details'), {
             'fields': ('nature', 'is_concerted', 'center_type')
         }),
-        (_('Relationships'), {
-            'fields': ('school', 'studies')
+        (_('Studies'), {
+            'fields': ('studies',)
         }),
         (_('Status'), {
             'fields': ('status', 'notes')
@@ -81,6 +83,63 @@ class SchoolSuggestionAdmin(admin.ModelAdmin):
             'fields': ('created_at', 'updated_at')
         }),
     )
+
+    @admin.action(description=_('Accept selected suggestions'))
+    def accept_suggestions(self, request, queryset):
+        for suggestion in queryset.filter(status='pending'):
+            # Generate ID based on postal code
+            postal_prefix = suggestion.postal_code[:2] if suggestion.postal_code else '00'
+            
+            # Find the highest existing ID with this prefix
+            highest_id = School.objects.filter(
+                id__startswith=postal_prefix
+            ).order_by('-id').values_list('id', flat=True).first()
+            
+            if highest_id:
+                # Extract the numeric part and increment
+                numeric_part = int(highest_id[2:])
+                new_id = f"{postal_prefix}{numeric_part + 1:06d}"  # Use 8 digits to make total length 8
+            else:
+                # If no existing ID with this prefix, start with 1
+                new_id = f"{postal_prefix}000001"  # 8 digits to make total length 8
+            
+            # Create a new school from the suggestion
+            school = School.objects.create(
+                id=new_id,
+                name=suggestion.name,
+                email=suggestion.email,
+                phone=suggestion.phone,
+                website=suggestion.website,
+                address=suggestion.address,
+                postal_code=suggestion.postal_code,
+                municipality=suggestion.municipality,
+                province=suggestion.province,
+                autonomous_community=suggestion.autonomous_community,
+                latitude=suggestion.latitude,
+                longitude=suggestion.longitude,
+                nature=suggestion.nature,
+                is_concerted=suggestion.is_concerted,
+                center_type=suggestion.center_type
+            )
+            
+            # Add the studies after the school is created
+            if suggestion.studies.exists():
+                school.studies.set(suggestion.studies.all())
+            
+            # Update suggestion status
+            suggestion.status = 'approved'
+            suggestion.save()
+
+        self.message_user(request, _('%(count)d suggestions were successfully accepted.') % {
+            'count': queryset.count()
+        })
+
+    @admin.action(description=_('Reject selected suggestions'))
+    def reject_suggestions(self, request, queryset):
+        updated = queryset.filter(status='pending').update(status='rejected')
+        self.message_user(request, _('%(count)d suggestions were successfully rejected.') % {
+            'count': updated
+        })
 
 
 @admin.register(SchoolEditSuggestion)
@@ -124,37 +183,28 @@ class SchoolEditSuggestionAdmin(admin.ModelAdmin):
 
     def get_changes_comparison(self, obj):
         """Display a side-by-side comparison of current and suggested values"""
-        template = '''
-        <style>
-            .changes-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            .changes-table th, .changes-table td { 
-                padding: 8px; 
-                border: 1px solid #ddd; 
-                text-align: left; 
-            }
-            .changes-table th { background-color: #f5f5f5; }
-            .changes-row:nth-child(even) { background-color: #f9f9f9; }
-            .different { background-color: #fff3cd; }
-        </style>
-        <table class="changes-table">
-            <thead>
-                <tr>
-                    <th>{field}</th>
-                    <th>{current}</th>
-                    <th>{suggested}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {rows}
-            </tbody>
-        </table>
-        '''.format(
-            field=_('Field'),
-            current=_('Current Value'),
-            suggested=_('Suggested Value'),
-            rows=self._get_comparison_rows(obj)
-        )
-        return mark_safe(template)
+        html = [
+            '<style>',
+            '.changes-table { width: 100%; border-collapse: collapse; margin-top: 10px; }',
+            '.changes-table th, .changes-table td { padding: 8px; border: 1px solid #ddd; text-align: left; }',
+            '.changes-table th { background-color: #f5f5f5; }',
+            '.changes-row:nth-child(even) { background-color: #f9f9f9; }',
+            '.different { background-color: #fff3cd; }',
+            '</style>',
+            '<table class="changes-table">',
+            '<thead>',
+            '<tr>',
+            f'<th>{_("Field")}</th>',
+            f'<th>{_("Current Value")}</th>',
+            f'<th>{_("Suggested Value")}</th>',
+            '</tr>',
+            '</thead>',
+            '<tbody>',
+            self._get_comparison_rows(obj),
+            '</tbody>',
+            '</table>'
+        ]
+        return mark_safe('\n'.join(html))
     get_changes_comparison.short_description = _('Changes Comparison')
 
     def _get_comparison_rows(self, obj):

@@ -142,8 +142,8 @@ class SchoolSuggestion(models.Model):
     municipality = models.CharField(_("Municipality"), max_length=100)
     province = models.CharField(_("Province"), max_length=100)
     autonomous_community = models.CharField(_("Autonomous community"), max_length=100)
-    latitude = models.DecimalField(_("Latitude"), max_digits=9, decimal_places=6, null=True, blank=True)
-    longitude = models.DecimalField(_("Longitude"), max_digits=9, decimal_places=6, null=True, blank=True)
+    latitude = models.FloatField(_("Latitude"), null=True, blank=True)
+    longitude = models.FloatField(_("Longitude"), null=True, blank=True)
     
     # School characteristics
     nature = models.CharField(_("Nature"), max_length=100, choices=NATURE_CHOICES)

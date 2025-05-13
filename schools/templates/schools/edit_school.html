@@ -161,7 +161,7 @@ document.getElementById('editSchoolForm').addEventListener('submit', function(e)
     })
     .then(data => {
         alert('Sugerencia enviada correctamente. Un administrador la revisará pronto.');
-        window.location.href = `/schools/{{ school.id }}/`;
+        window.location.href = `/centros/{{ school.id }}/`;
     })
     .catch(error => {
         console.error('Error:', error);
