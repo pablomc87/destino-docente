@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'django_redis',
+    'django_js_reverse',
 
     'schools',
     'users',

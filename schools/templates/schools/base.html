@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -103,8 +104,15 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
-    
-    <script>
+    <!-- Include our JavaScript modules -->
+    <script src="{% url 'js_reverse' %}" type="text/javascript"></script>
+    <script type="module">
+        import { initializePlaces, getAutocomplete, getPlaceDetails } from "{% static 'schools/js/modules/places.js' %}";
+        import { getTrackingState, updateTrackingState, resetSession } from "{% static 'schools/js/modules/state.js' %}";
+        import { checkApiLimits, showApiLimitMessage, shouldTrack, trackApiCalls } from "{% static 'schools/js/modules/api-tracking.js' %}";
+        import { saveSearchResults, loadLastSearchResults, displaySearchResults } from "{% static 'schools/js/modules/search-results.js' %}";
+        import { showLoading, hideLoading, showError, hideError, restoreScrollPosition } from "{% static 'schools/js/modules/ui.js' %}";
+        
         // Session handling
         document.addEventListener('DOMContentLoaded', function() {
             const loadingOverlay = document.getElementById('loadingOverlay');
@@ -123,7 +131,7 @@
             // Check session status
             async function checkSession() {
                 try {
-                    const response = await fetch('/usuarios/comprobar-sesion/', {
+                    const response = await fetch(Urls.users_check_session(), {
                         method: 'GET',
                         credentials: 'include',
                         headers: {
