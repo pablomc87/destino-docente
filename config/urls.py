@@ -19,7 +19,6 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from schools import views
-from django_js_reverse.views import urls_js
 
 urlpatterns = [
     # Admin URLs
@@ -32,9 +31,6 @@ urlpatterns = [
     
     # API routes
     path('api/', include('schools.api_urls', namespace='api')),
-    
-    # JS Reverse URL
-    path('jsreverse/', urls_js, name='js_reverse'),
 ]
 
 # Serve static and media files in development

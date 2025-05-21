@@ -105,28 +105,13 @@
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
     <!-- Include our JavaScript modules -->
-    <script src="{% url 'js_reverse' %}" type="text/javascript"></script>
     <script type="module">
-        import { initializePlaces, getAutocomplete, getPlaceDetails } from "{% static 'schools/js/modules/places.js' %}";
-        import { getTrackingState, updateTrackingState, resetSession } from "{% static 'schools/js/modules/state.js' %}";
-        import { checkApiLimits, showApiLimitMessage, shouldTrack, trackApiCalls } from "{% static 'schools/js/modules/api-tracking.js' %}";
-        import { saveSearchResults, loadLastSearchResults, displaySearchResults } from "{% static 'schools/js/modules/search-results.js' %}";
-        import { showLoading, hideLoading, showError, hideError, restoreScrollPosition } from "{% static 'schools/js/modules/ui.js' %}";
+        import { showLoading, hideLoading } from "{% static 'schools/js/ui.js' %}";
         
         // Session handling
         document.addEventListener('DOMContentLoaded', function() {
             const loadingOverlay = document.getElementById('loadingOverlay');
             const authLinks = document.querySelectorAll('[data-requires-auth="true"]');
-            
-            // Show loading overlay
-            function showLoading() {
-                loadingOverlay.style.display = 'flex';
-            }
-            
-            // Hide loading overlay
-            function hideLoading() {
-                loadingOverlay.style.display = 'none';
-            }
             
             // Check session status
             async function checkSession() {
