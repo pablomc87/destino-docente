@@ -106,7 +106,14 @@
             crossorigin=""></script>
     <!-- Include our JavaScript modules -->
     <script type="module">
-        import { showLoading, hideLoading } from "{% static 'schools/js/ui.js' %}";
+        const showLoading = () => {
+            $('#loading').removeClass('d-none');
+            $('#result').addClass('d-none');
+        };
+
+        const hideLoading = () => {
+            $('#loading').addClass('d-none');
+        };
         
         // Session handling
         document.addEventListener('DOMContentLoaded', function() {
