@@ -1,63 +1,10 @@
 {% extends "schools/base.html" %}
+{% load static %}
 
 {% block title %}Encuentra Tu Próximo Destino{% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-{% endblock %}
-
-{% block custom_css %}
-.search-container {
-    max-width: 700px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background-color: #f8f9fa;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-.result-card {
-    margin-top: 2rem;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-.result-card:hover {
-    transform: translateY(-2px);
-}
-.result-card.highlight {
-    box-shadow: 0 0 0 3px #0d6efd;
-    animation: pulse 2s ease-out;
-}
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(13, 110, 253, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0); }
-}
-.select2-container {
-    width: 100% !important;
-}
-.select2-selection--multiple {
-    min-height: 38px !important;
-}
-/* Style for the Google Places picker */
-gmpx-place-picker {
-    width: 100%;
-    margin-bottom: 1rem;
-}
-/* Style for travel times */
-.travel-times {
-    border-top: 1px solid #eee;
-    padding-top: 0.5rem;
-    margin-top: 0.5rem;
-    width: 100%;
-}
-.travel-times p {
-    margin-bottom: 0.25rem;
-    font-size: 0.9rem;
-}
-.travel-times i {
-    width: 20px;
-    text-align: center;
-    margin-right: 5px;
-}
+<link href="{% static 'schools/css/find_nearest.css' %}" rel="stylesheet" />
 {% endblock %}
 
 {% block content %}
@@ -80,626 +27,161 @@ gmpx-place-picker {
     {% endif %}
     
     <form id="searchForm" class="mb-4">
-        <div class="mb-3">
-            <label for="address" class="form-label">Tu Dirección</label>
-            <div id="placePickerContainer">
-                <input type="text" id="address" class="form-control" placeholder="Introduce tu dirección completa" required>
+        <!-- Step 1: Choose Origin Address -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Paso 1: Elige tu ubicación</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="address" class="form-label">Tu Dirección</label>
+                    <div id="placePickerContainer">
+                        <input type="text" id="address" class="form-control" placeholder="Introduce tu dirección completa" required>
+                    </div>
+                    <small class="form-text text-muted">Selecciona tu dirección actual para encontrar los centros más cercanos</small>
+                </div>
             </div>
         </div>
-        
-        <div class="mb-3">
-            <label for="region" class="form-label">Comunidad Autónoma</label>
-            <select class="form-select" id="region">
-                <option value="" selected>Selecciona una comunidad autónoma</option>
-                <option value="andalucia">Andalucía</option>
-                <option value="aragon">Aragón</option>
-                <option value="asturias">Asturias</option>
-                <option value="baleares">Islas Baleares</option>
-                <option value="canarias">Canarias</option>
-                <option value="cantabria">Cantabria</option>
-                <option value="castilla_la_mancha">Castilla-La Mancha</option>
-                <option value="castilla_y_leon">Castilla y León</option>
-                <option value="cataluna">Cataluña</option>
-                <option value="comunidad_valenciana">Comunidad Valenciana</option>
-                <option value="extremadura">Extremadura</option>
-                <option value="galicia">Galicia</option>
-                <option value="madrid">Madrid</option>
-                <option value="murcia">Murcia</option>
-                <option value="navarra">Navarra</option>
-                <option value="pais_vasco">País Vasco</option>
-                <option value="la_rioja">La Rioja</option>
-                <option value="ceuta">Ceuta</option>
-                <option value="melilla">Melilla</option>
-            </select>
-        </div>
-        
-        <div class="mb-3">
-            <label for="provinces" class="form-label">Provincias</label>
-            <select class="form-select" id="provinces" multiple disabled>
-                <!-- Provinces will be populated based on selected region -->
-            </select>
-            <small class="form-text text-muted">Selecciona una o más provincias de la comunidad seleccionada</small>
-        </div>
-        
-        <div class="mb-3">
-            <label class="form-label">Tipo de Centro</label>
-            <div class="btn-group-vertical w-100" role="group">
-                <input type="checkbox" class="btn-check" id="publicCheck" name="school_types" value="public">
-                <label class="btn btn-outline-primary text-start" for="publicCheck">Público</label>
-                
-                <input type="checkbox" class="btn-check" id="privateCheck" name="school_types" value="private">
-                <label class="btn btn-outline-primary text-start" for="privateCheck">Privado</label>
-                
-                <input type="checkbox" class="btn-check" id="concertadoCheck" name="school_types" value="concertado">
-                <label class="btn btn-outline-primary text-start" for="concertadoCheck">Concertado</label>
+
+        <!-- Step 2: Search Options -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Paso 2: Define tus criterios de búsqueda</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="region" class="form-label">Comunidad Autónoma</label>
+                    <select class="form-select" id="region" name="region">
+                        <option value="">Selecciona una comunidad autónoma</option>
+                        <option value="Andalucía">Andalucía</option>
+                        <option value="Aragón">Aragón</option>
+                        <option value="Asturias">Asturias</option>
+                        <option value="Islas Baleares">Islas Baleares</option>
+                        <option value="Canarias">Canarias</option>
+                        <option value="Cantabria">Cantabria</option>
+                        <option value="Castilla-La Mancha">Castilla-La Mancha</option>
+                        <option value="Castilla y León">Castilla y León</option>
+                        <option value="Cataluña">Cataluña</option>
+                        <option value="Comunidad Valenciana">Comunidad Valenciana</option>
+                        <option value="Extremadura">Extremadura</option>
+                        <option value="Galicia">Galicia</option>
+                        <option value="Madrid">Madrid</option>
+                        <option value="Murcia">Murcia</option>
+                        <option value="Navarra">Navarra</option>
+                        <option value="País Vasco">País Vasco</option>
+                        <option value="La Rioja">La Rioja</option>
+                        <option value="Ceuta">Ceuta</option>
+                        <option value="Melilla">Melilla</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Tipo de Centro</label>
+                    <div class="btn-group-vertical w-100" role="group">
+                        <input type="checkbox" class="btn-check" id="publicCheck" name="school_types" value="public">
+                        <label class="btn btn-outline-primary text-start" for="publicCheck">Público</label>
+                        
+                        <input type="checkbox" class="btn-check" id="privateCheck" name="school_types" value="private">
+                        <label class="btn btn-outline-primary text-start" for="privateCheck">Privado</label>
+                        
+                        <input type="checkbox" class="btn-check" id="concertadoCheck" name="school_types" value="concertado">
+                        <label class="btn btn-outline-primary text-start" for="concertadoCheck">Concertado</label>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Niveles Educativos</label>
+                    <div class="btn-group-vertical w-100" role="group">
+                        <input type="checkbox" class="btn-check" id="infantilCheck" name="school_types" value="infantil">
+                        <label class="btn btn-outline-primary text-start" for="infantilCheck">Infantil</label>
+                        
+                        <input type="checkbox" class="btn-check" id="primariaCheck" name="school_types" value="primaria">
+                        <label class="btn btn-outline-primary text-start" for="primariaCheck">Primaria</label>
+                        
+                        <input type="checkbox" class="btn-check" id="secundariaCheck" name="school_types" value="secundaria">
+                        <label class="btn btn-outline-primary text-start" for="secundariaCheck">Secundaria</label>
+
+                        <input type="checkbox" class="btn-check" id="bachilleratoCheck" name="school_types" value="bachillerato">
+                        <label class="btn btn-outline-primary text-start" for="bachilleratoCheck">Bachillerato</label>
+                        
+                        <input type="checkbox" class="btn-check" id="fpCheck" name="school_types" value="fp">
+                        <label class="btn btn-outline-primary text-start" for="fpCheck">Formación Profesional</label>
+                    </div>
+                </div>
             </div>
         </div>
-        
-        <div class="mb-3">
-            <label class="form-label">Niveles Educativos</label>
-            <div class="btn-group-vertical w-100" role="group">
-                <input type="checkbox" class="btn-check" id="infantilCheck" name="school_types" value="infantil">
-                <label class="btn btn-outline-primary text-start" for="infantilCheck">Infantil</label>
-                
-                <input type="checkbox" class="btn-check" id="primariaCheck" name="school_types" value="primaria">
-                <label class="btn btn-outline-primary text-start" for="primariaCheck">Primaria</label>
-                
-                <input type="checkbox" class="btn-check" id="secundariaCheck" name="school_types" value="secundaria">
-                <label class="btn btn-outline-primary text-start" for="secundariaCheck">Secundaria</label>
-                
-                <input type="checkbox" class="btn-check" id="bachilleratoCheck" name="school_types" value="bachillerato">
-                <label class="btn btn-outline-primary text-start" for="bachilleratoCheck">Bachillerato</label>
-                
-                <input type="checkbox" class="btn-check" id="fpCheck" name="school_types" value="fp">
-                <label class="btn btn-outline-primary text-start" for="fpCheck">Formación Profesional</label>
-            </div>
+
+        <!-- Action Buttons -->
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search me-2"></i>Encontrar Centros Cercanos
+            </button>
+            <button type="button" id="clearSearch" class="btn btn-outline-secondary">
+                <i class="fas fa-eraser me-2"></i>Limpiar Búsqueda
+            </button>
         </div>
-        
-        <button type="submit" class="btn btn-primary w-100">Encontrar Centros Cercanos</button>
     </form>
     
     <div id="result" class="d-none">
         <h3 class="mb-3">Centros Encontrados:</h3>
         <div id="schoolResults" class="school-results">
-            <!-- School cards will be added here dynamically -->
+            <!-- Results count -->
+            <div id="resultsCount" class="alert alert-info mb-3">
+                <p><strong>Tu ubicación:</strong> <span id="userLocation"></span></p>
+                <p><strong>Centros encontrados:</strong> <span id="resultsNumber"></span>
+                <p>Los centros están ordenados por distancia desde tu ubicación.</p>
+            </div>
+            
+            <!-- School cards container -->
+            <div id="schoolCards"></div>
+            
+            <!-- No results message -->
+            <p id="noResults" class="d-none">No se encontraron centros que coincidan con tus criterios.</p>
         </div>
     </div>
+
+    <!-- School card template -->
+    <template id="schoolCardTemplate">
+        <div class="card result-card mb-3">
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-9">
+                        <h5 class="card-title"></h5>
+                        <p class="card-text">
+                            <span class="badge bg-primary me-2"></span>
+                            <span class="text-muted location"></span><br>
+                            <strong>Distancia:</strong> <span class="text-success distance"></span>
+                        </p>
+                    </div>
+                    <div class="col-3 text-end">
+                        <a href="#" class="btn btn-primary details-link">Ver Detalles</a>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="travel-times">
+                            <p><i class="fas fa-walking"></i> A pie: <span class="walking-time"></span></p>
+                            <p><i class="fas fa-car"></i> En coche: <span class="driving-time"></span></p>
+                            <p><i class="fas fa-bicycle"></i> En bici: <span class="bicycling-time"></span></p>
+                            <p><i class="fas fa-bus"></i> En transporte público: <span class="transit-time"></span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
 
     <div id="error" class="alert alert-danger d-none"></div>
     <div id="loading" class="text-center d-none">
         <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Cargando...</span>
         </div>
+        <p class="mt-2">Buscando centros educativos...</p>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<!-- Add Google Maps API -->
-<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places&callback=Function.prototype"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-<script>
-    // Debug log for API key
-    console.log('Google Maps API Key:', '{{ google_maps_api_key }}');
-    
-    // Function to get cookie value by name
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-    
-    // Function to check API limits
-    async function checkApiLimits() {
-        try {
-            const response = await fetch('/api/check-limits/');
-            const data = await response.json();
-            
-            if (!data.within_limits) {
-                showApiLimitMessage();
-                return false;
-            }
-            
-            // Store max schools limit
-            window.maxSchoolsPerSearch = data.max_schools || 10;
-            
-            // If user has unlimited API calls, remove any existing limit message
-            if (data.unlimited_api_calls) {
-                const limitMessage = document.getElementById('apiLimitMessage');
-                if (limitMessage) {
-                    limitMessage.style.display = 'none';
-                }
-            }
-            
-            return true;
-        } catch (error) {
-            console.error('Error checking API limits:', error);
-            return true; // Allow API calls if limit check fails
-        }
-    }
-
-    // Function to show API limit message
-    const showApiLimitMessage = () => {
-        const messageDiv = document.getElementById('apiLimitMessage');
-        messageDiv.style.display = 'block';
-        // Disable the form
-        document.getElementById('searchForm').querySelectorAll('input, select, button').forEach(el => {
-            el.disabled = true;
-        });
-    };
-
-    // Function to reset session
-    const resetSession = () => {
-        totalApiCalls = 0;
-        placeSelected = false;
-        hasTracked = false;
-        totalResponseTimeMs = 0;
-        lastInputTime = Date.now();
-    };
-    
-    // Function to save search results to local storage
-    const saveSearchResults = (data, searchParams) => {
-        try {
-            localStorage.setItem('lastSearchResults', JSON.stringify({
-                timestamp: Date.now(),
-                data: data,
-                params: searchParams
-            }));
-        } catch (error) {
-            console.error('Error saving search results:', error);
-        }
-    };
-
-    // Function to load last search results
-    const loadLastSearchResults = () => {
-        try {
-            const savedResults = localStorage.getItem('lastSearchResults');
-            if (savedResults) {
-                const { timestamp, data, params } = JSON.parse(savedResults);
-                // Check if results are less than 24 hours old
-                if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
-                    return { data, params };
-                }
-            }
-        } catch (error) {
-            console.error('Error loading saved results:', error);
-        }
-        return null;
-    };
-
-    // Function to display search results
-    const displaySearchResults = (data) => {
-        const schoolResultsDiv = $('#schoolResults');
-        schoolResultsDiv.empty();
-        
-        // Display total count
-        schoolResultsDiv.append(`<p class="mb-3">Se encontraron ${data.total_count} centros que coinciden con tus criterios. Están ordenados por distancia desde tu ubicación.</p>`);
-        
-        if (data.schools && data.schools.length > 0) {
-            data.schools.forEach(school => {
-                const schoolCard = `
-                    <div class="card result-card mb-3" data-school-id="${school.id}">
-                        <div class="card-body">
-                            <div class="row mb-2">
-                                <div class="col-9">
-                                    <h5 class="card-title">${school.name}</h5>
-                                    <p class="card-text">
-                                        <span class="badge bg-primary me-2">${school.nature || 'No especificado'}</span>
-                                        <span class="text-muted">${school.municipality}, ${school.province}</span><br>
-                                        <strong>Distancia:</strong> <span class="text-success">${school.distance ? school.distance.toFixed(1) : 'No disponible'} km</span>
-                                    </p>
-                                </div>
-                                <div class="col-3 text-end">
-                                    <a href="/centros/${school.id}/" class="btn btn-primary" onclick="saveScrollPosition(${school.id})">Ver Detalles</a>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="travel-times">
-                                        ${school.travel_times && school.travel_times.walking ? `
-                                        <p><i class="fas fa-walking"></i> A pie: ${school.travel_times.walking.replace('mins', 'minutos').replace('hour', 'hora').replace('hours', 'horas')}</p>
-                                        ` : ''}
-                                        ${school.travel_times && school.travel_times.driving ? `
-                                        <p><i class="fas fa-car"></i> En coche: ${school.travel_times.driving.replace('mins', 'minutos').replace('hour', 'hora').replace('hours', 'horas')}</p>
-                                        ` : ''}
-                                        ${school.travel_times && school.travel_times.bicycling ? `
-                                        <p><i class="fas fa-bicycle"></i> En bici: ${school.travel_times.bicycling.replace('mins', 'minutos').replace('hour', 'hora').replace('hours', 'horas')}</p>
-                                        ` : ''}
-                                        ${school.travel_times && school.travel_times.transit ? `
-                                        <p><i class="fas fa-bus"></i> En transporte: ${school.travel_times.transit.replace('mins', 'minutos').replace('hour', 'hora').replace('hours', 'horas')}</p>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                schoolResultsDiv.append(schoolCard);
-            });
-
-            // Add summary about user location if available
-            if (data.search_criteria && data.search_criteria.user_location) {
-                const locationInfo = `
-                    <div class="alert alert-info mt-3">
-                        <p><strong>Tu ubicación:</strong> ${data.search_criteria.address}</p>
-                        <p>Los centros están ordenados por distancia desde tu ubicación.</p>
-                    </div>
-                `;
-                schoolResultsDiv.append(locationInfo);
-            }
-        } else {
-            schoolResultsDiv.append('<p>No se encontraron centros que coincidan con tus criterios.</p>');
-        }
-        
-        // Show result
-        $('#result').removeClass('d-none');
-    };
-
-    // Function to save scroll position when clicking on a school
-    const saveScrollPosition = (schoolId) => {
-        try {
-            localStorage.setItem('lastViewedSchool', schoolId);
-        } catch (error) {
-            console.error('Error saving scroll position:', error);
-        }
-    };
-
-    // Function to restore scroll position
-    const restoreScrollPosition = () => {
-        try {
-            const lastViewedSchool = localStorage.getItem('lastViewedSchool');
-            if (lastViewedSchool) {
-                const schoolCard = document.querySelector(`[data-school-id="${lastViewedSchool}"]`);
-                if (schoolCard) {
-                    schoolCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    schoolCard.classList.add('highlight');
-                    setTimeout(() => {
-                        schoolCard.classList.remove('highlight');
-                    }, 2000);
-                }
-            }
-        } catch (error) {
-            console.error('Error restoring scroll position:', error);
-        }
-    };
-
-    // Initialize Google Maps Place Autocomplete
-    const initializeGoogleMaps = () => {
-        const input = document.getElementById('address');
-        if (!input) {
-            console.error('Address input element not found');
-            return;
-        }
-
-        // Create the autocomplete
-        const autocomplete = new google.maps.places.Autocomplete(input, {
-            componentRestrictions: { country: 'es' },
-            fields: ['formatted_address', 'geometry', 'address_components'],
-            types: ['address']
-        });
-
-        // Track API calls
-        let totalApiCalls = 0;
-        let placeSelected = false;
-        let hasTracked = false;
-        let totalResponseTimeMs = 0;
-        let lastInputTime = Date.now();
-        const SESSION_TIMEOUT = 5 * 60 * 1000;
-
-        // Count API calls when suggestions are shown
-        input.addEventListener('input', async () => {
-            if (input.value.trim()) {
-                // Check API limits before proceeding
-                const withinLimits = await checkApiLimits();
-                if (!withinLimits) {
-                    showApiLimitMessage();
-                    return;
-                }
-
-                // Check if we need to reset the session
-                if (hasTracked) {
-                    resetSession();
-                }
-                const startTime = performance.now();
-                totalApiCalls++;
-                totalResponseTimeMs += performance.now() - startTime;
-                lastInputTime = Date.now();
-                console.log('API call counted, total:', totalApiCalls, 'Total response time (ms):', totalResponseTimeMs);
-            }
-        });
-
-        // Track when a place is selected
-        autocomplete.addListener('place_changed', () => {
-            placeSelected = true;
-        });
-
-        // Track API calls when user leaves without selecting
-        input.addEventListener('blur', () => {
-            if (totalApiCalls > 0 && !placeSelected && !hasTracked) {
-                resetSession();
-            }
-        });
-
-        // Handle page visibility changes
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') {
-                if (totalApiCalls > 0 && !hasTracked) {
-                    resetSession();
-                }
-            }
-        });
-
-        // Handle page unload
-        window.addEventListener('beforeunload', () => {
-            if (totalApiCalls > 0 && !hasTracked) {
-                // Use synchronous request for beforeunload
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', '/api/track-google-api/', false);
-                xhr.setRequestHeader('Content-Type', 'application/json');
-                xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
-                xhr.send(JSON.stringify({
-                    api_type: 'places',
-                    endpoint: 'session_summary',
-                    method: 'GET',
-                    total_calls: totalApiCalls,
-                    place_selected: false,
-                    response_time: totalResponseTimeMs  // Response time in milliseconds
-                }));
-            }
-        });
-
-        // Handle place selection
-        autocomplete.addListener('place_changed', () => {
-            const place = autocomplete.getPlace();
-            if (!place) return;
-
-            // Try to automatically fill the region based on the selected place
-            for (const component of place.address_components) {
-                if (component.types.includes('administrative_area_level_1')) {
-                    const regionSelect = $('#region');
-                    const regionName = component.longName;
-                    
-                    // Find and select the matching region option
-                    regionSelect.find('option').each(function() {
-                        if ($(this).text().includes(regionName)) {
-                            regionSelect.val($(this).val()).trigger('change');
-                            return false; // Break the loop
-                        }
-                    });
-                }
-            }
-        });
-
-        return autocomplete;
-    };
-
-    // Initialize the page
-    window.addEventListener('load', async () => {
-        // Check API limits before initializing anything
-        const withinLimits = await checkApiLimits();
-        if (!withinLimits) {
-            showApiLimitMessage();
-            return;
-        }
-
-        // Try to load last search results
-        const lastResults = loadLastSearchResults();
-        if (lastResults) {
-            // Pre-fill the form with last search parameters
-            const { params } = lastResults;
-            if (params.address) {
-                $('#address').val(params.address);
-            }
-            if (params.region) {
-                $('#region').val(params.region).trigger('change');
-            }
-            if (params.provinces) {
-                $('#provinces').val(params.provinces).trigger('change');
-            }
-            if (params.school_types) {
-                params.school_types.forEach(type => {
-                    $(`#${type}Check`).prop('checked', true);
-                });
-            }
-            
-            // Display the results
-            displaySearchResults(lastResults.data);
-            
-            // Restore scroll position after a short delay to ensure the DOM is ready
-            setTimeout(restoreScrollPosition, 100);
-        }
-
-        let autocomplete = null;
-        try {
-            autocomplete = initializeGoogleMaps();
-        } catch (error) {
-            console.error('Failed to initialize Google Maps:', error);
-            $('#error').text('Error al inicializar el buscador de direcciones. Por favor, recarga la página.');
-            $('#error').removeClass('d-none');
-        }
-        
-        // Regional provinces data
-        const provincesData = {
-            andalucia: ['Almería', 'Cádiz', 'Córdoba', 'Granada', 'Huelva', 'Jaén', 'Málaga', 'Sevilla'],
-            aragon: ['Huesca', 'Teruel', 'Zaragoza'],
-            asturias: ['Asturias'],
-            baleares: ['Islas Baleares'],
-            canarias: ['Las Palmas', 'Santa Cruz de Tenerife'],
-            cantabria: ['Cantabria'],
-            castilla_la_mancha: ['Albacete', 'Ciudad Real', 'Cuenca', 'Guadalajara', 'Toledo'],
-            castilla_y_leon: ['Ávila', 'Burgos', 'León', 'Palencia', 'Salamanca', 'Segovia', 'Soria', 'Valladolid', 'Zamora'],
-            cataluna: ['Barcelona', 'Girona', 'Lleida', 'Tarragona'],
-            comunidad_valenciana: ['Alicante', 'Castellón', 'Valencia'],
-            extremadura: ['Badajoz', 'Cáceres'],
-            galicia: ['A Coruña', 'Lugo', 'Ourense', 'Pontevedra'],
-            madrid: ['Madrid'],
-            murcia: ['Murcia'],
-            navarra: ['Navarra'],
-            pais_vasco: ['Álava', 'Guipúzcoa', 'Vizcaya'],
-            la_rioja: ['La Rioja'],
-            ceuta: ['Ceuta'],
-            melilla: ['Melilla'],
-        };
-
-        $(document).ready(function() {
-            // Initialize Select2
-            $('#provinces').select2({
-                placeholder: 'Selecciona provincias',
-                allowClear: true
-            });
-
-            // When region changes, update provinces
-            $('#region').change(function() {
-                const region = $(this).val();
-                const $provinces = $('#provinces');
-                
-                // Clear provinces
-                $provinces.empty();
-                
-                if (region) {
-                    // Enable provinces selector
-                    $provinces.prop('disabled', false);
-                    
-                    // Add provinces for selected region
-                    provincesData[region].forEach(province => {
-                        $provinces.append(new Option(province, province));
-                    });
-                } else {
-                    // If no region selected, disable provinces
-                    $provinces.prop('disabled', true);
-                }
-                
-                // Trigger change for Select2 to update
-                $provinces.trigger('change');
-            });
-
-            // Form submission
-            $('#searchForm').submit(async function(e) {
-                e.preventDefault();
-                
-                if (!await checkApiLimits()) {
-                    return;
-                }
-                
-                if (!autocomplete) {
-                    $('#error').text('El buscador de direcciones no está disponible. Por favor, recarga la página.');
-                    $('#error').removeClass('d-none');
-                    return;
-                }
-
-                const place = autocomplete.getPlace();
-                if (!place || !place.formatted_address || !place.geometry) {
-                    $('#error').text('Por favor, selecciona una dirección válida.');
-                    $('#error').removeClass('d-none');
-                    return;
-                }
-
-                const address = place.formatted_address;
-                const latitude = place.geometry.location.lat();
-                const longitude = place.geometry.location.lng();
-                const region = $('#region').val();
-                let provinces = $('#provinces').val();
-                
-                // Get school ownership types
-                const ownershipTypes = [];
-                if ($('#publicCheck').is(':checked')) ownershipTypes.push('public');
-                if ($('#privateCheck').is(':checked')) ownershipTypes.push('private');
-                if ($('#concertadoCheck').is(':checked')) ownershipTypes.push('concertado');
-                
-                // Get education levels
-                const educationLevels = [];
-                if ($('#infantilCheck').is(':checked')) educationLevels.push('infantil');
-                if ($('#primariaCheck').is(':checked')) educationLevels.push('primaria');
-                if ($('#secundariaCheck').is(':checked')) educationLevels.push('secundaria');
-                if ($('#bachilleratoCheck').is(':checked')) educationLevels.push('bachillerato');
-                if ($('#fpCheck').is(':checked')) educationLevels.push('fp');
-                
-                // Combine all school_types
-                const school_types = [...ownershipTypes, ...educationLevels];
-                
-                // If a region is selected but no provinces, use all provinces from that region
-                if (region && (!provinces || provinces.length === 0)) {
-                    provinces = provincesData[region];
-                }
-                
-                const resultDiv = $('#result');
-                const errorDiv = $('#error');
-                const loadingDiv = $('#loading');
-                
-                // Show loading, hide other elements
-                loadingDiv.removeClass('d-none');
-                resultDiv.addClass('d-none');
-                errorDiv.addClass('d-none');
-                
-                try {
-                    // Build URL with parameters
-                    const params = new URLSearchParams({ 
-                        address,
-                        latitude,
-                        longitude
-                    });
-                    
-                    if (provinces && provinces.length > 0) {
-                        provinces.forEach(province => {
-                            params.append('provinces', province);
-                        });
-                    }
-                    
-                    if (school_types && school_types.length > 0) {
-                        school_types.forEach(type => {
-                            params.append('school_types', type);
-                        });
-                    }
-                    
-                    const requestUrl = `/api/nearest/?${params.toString()}`;
-                    console.log('Sending request to:', requestUrl);
-                    
-                    const response = await fetch(requestUrl);
-                    console.log('Response status:', response.status);
-                    
-                    if (!response.ok) {
-                        let errorMessage = 'No se pudieron encontrar centros';
-                        try {
-                            const data = await response.json();
-                            errorMessage = data.error || errorMessage;
-                        } catch (jsonError) {
-                            console.error('Failed to parse error response:', jsonError);
-                        }
-                        throw new Error(errorMessage);
-                    }
-                    
-                    const data = await response.json();
-                    console.log('Received data:', data);
-                    
-                    // Save search results to local storage
-                    saveSearchResults(data, {
-                        address,
-                        region,
-                        provinces,
-                        school_types
-                    });
-                    
-                    // Display the results
-                    displaySearchResults(data);
-                    
-                } catch (error) {
-                    errorDiv.text(error.message);
-                    errorDiv.removeClass('d-none');
-                } finally {
-                    loadingDiv.addClass('d-none');
-                }
-            });
-        });
-    });
-</script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places"></script>
+<script type="module" src="{% static 'schools/js/find_nearest.js' %}"></script>
 {% endblock %} 

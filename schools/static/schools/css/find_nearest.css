@@ -1,0 +1,61 @@
+.search-container {
+    max-width: 700px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.result-card {
+    margin-top: 2rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.result-card:hover {
+    transform: translateY(-2px);
+}
+
+.result-card.highlight {
+    box-shadow: 0 0 0 3px #0d6efd;
+    animation: pulse 2s ease-out;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(13, 110, 253, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0); }
+}
+
+.select2-container {
+    width: 100% !important;
+}
+
+.select2-selection--multiple {
+    min-height: 38px !important;
+}
+
+/* Style for the Google Places picker */
+gmpx-place-picker {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+/* Style for travel times */
+.travel-times {
+    border-top: 1px solid #eee;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+    width: 100%;
+}
+
+.travel-times p {
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.travel-times i {
+    width: 20px;
+    text-align: center;
+    margin-right: 5px;
+} 

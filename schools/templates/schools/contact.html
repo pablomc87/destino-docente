@@ -19,7 +19,7 @@
                         {% endfor %}
                     {% endif %}
                     
-                    <form method="post">
+                    <form method="post" id="contactForm">
                         {% csrf_token %}
                         <div class="mb-3">
                             <label for="name" class="form-label">Nombre</label>
@@ -37,6 +37,12 @@
                             <label for="message" class="form-label">Mensaje</label>
                             <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
                         </div>
+                        <div class="mb-3">
+                            <div class="h-captcha" data-sitekey="{{ hcaptcha_site_key }}"></div>
+                            <div class="invalid-feedback">
+                                Por favor, verifica que no eres un robot.
+                            </div>
+                        </div>
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary">Enviar mensaje</button>
                         </div>
@@ -46,4 +52,17 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+<script>
+document.getElementById('contactForm').addEventListener('submit', function(e) {
+    const hcaptchaResponse = hcaptcha.getResponse();
+    if (!hcaptchaResponse) {
+        e.preventDefault();
+        document.querySelector('.h-captcha').classList.add('is-invalid');
+    }
+});
+</script>
 {% endblock %} 

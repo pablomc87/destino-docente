@@ -27,6 +27,7 @@ from django.core.paginator import Paginator
 from django.core.mail import send_mail
 from django.contrib import messages
 from django.urls import reverse
+import requests
 
 logger = logging.getLogger(__name__)
 api_key = settings.GOOGLE_MAPS_API_KEY
@@ -833,6 +834,25 @@ def handler500(request):
 def contact(request):
     """Handle contact form submissions."""
     if request.method == 'POST':
+        # Verify hCaptcha
+        hcaptcha_response = request.POST.get('h-captcha-response')
+        if not hcaptcha_response:
+            messages.error(request, 'Por favor, verifica que no eres un robot.')
+            return redirect('schools:contact')
+            
+        # Verify with hCaptcha
+        verify_url = 'https://hcaptcha.com/siteverify'
+        values = {
+            'secret': settings.HCAPTCHA_SECRET_KEY,
+            'response': hcaptcha_response
+        }
+        response = requests.post(verify_url, data=values)
+        result = response.json()
+        
+        if not result.get('success', False):
+            messages.error(request, 'Error en la verificación. Por favor, inténtalo de nuevo.')
+            return redirect('schools:contact')
+        
         name = request.POST.get('name')
         email = request.POST.get('email')
         subject = request.POST.get('subject')
@@ -854,7 +874,7 @@ def contact(request):
                 subject=email_subject,
                 message=email_message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[settings.CONTACT_EMAIL],  # Add this to settings.py
+                recipient_list=[settings.CONTACT_EMAIL],
                 fail_silently=False,
             )
             messages.success(request, '¡Mensaje enviado con éxito! Te responderemos lo antes posible.')
@@ -865,4 +885,7 @@ def contact(request):
         
         return redirect('schools:contact')
     
-    return render(request, 'schools/contact.html')
+    context = {
+        'hcaptcha_site_key': settings.HCAPTCHA_SITE_KEY
+    }
+    return render(request, 'schools/contact.html', context)

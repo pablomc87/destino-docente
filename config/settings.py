@@ -252,3 +252,7 @@ def google_maps_api_key(request):
     return {'google_maps_api_key': GOOGLE_MAPS_API_KEY}
 
 SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
+
+# hCaptcha settings
+HCAPTCHA_SITE_KEY = os.environ.get('HCAPTCHA_SITE_KEY', '')  # Replace with your hCaptcha site key
+HCAPTCHA_SECRET_KEY = os.environ.get('HCAPTCHA_SECRET_KEY', '')  # Replace with your hCaptcha secret key

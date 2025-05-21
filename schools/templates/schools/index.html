@@ -179,14 +179,16 @@
             <div class="col-lg-8">
                 <div class="card">
                     <div class="card-body">
-                        <h2 class="text-center mb-4">Buscar Centros</h2>
-                        <form action="{% url 'schools:search' %}" method="get">
+                        <h2 class="text-center mb-4">Encuentra tu próximo destino</h2>
+                        <div id="messageContainer" class="alert d-none mb-3"></div>
+                        <form id="searchForm" class="mb-4">
                             <div class="mb-3">
-                                <input type="text" class="form-control form-control-lg" name="search" placeholder="Introduce nombre del centro, municipio o provincia...">
+                                <label for="address" class="form-label">Tu Dirección</label>
+                                <div id="placePickerContainer">
+                                    <input type="text" id="address" class="form-control" placeholder="Introduce tu dirección completa">
+                                </div>
                             </div>
-                            <div class="text-center">
-                                <button type="submit" class="btn btn-primary btn-lg">Buscar</button>
-                            </div>
+                            <button type="submit" class="btn btn-primary w-100">¡Encuentra tu próximo destino!</button>
                         </form>
                     </div>
                 </div>
@@ -268,7 +270,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    // Search form now redirects to search page
-</script>
+<!-- Add Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places"></script>
+<script type="module" src="{% static 'schools/js/index.js' %}"></script>
 {% endblock %} 
