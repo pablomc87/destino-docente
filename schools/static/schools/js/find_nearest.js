@@ -379,7 +379,57 @@ $(document).ready(function() {
     const urlParams = new URLSearchParams(window.location.search);
     const direccion = urlParams.get('direccion');
     if (direccion) {
-        $('#address').val(decodeURIComponent(direccion));
+        const decodedAddress = decodeURIComponent(direccion);
+        $('#address').val(decodedAddress);
+        
+        // Create a geocoder request to get place details
+        const geocoder = new google.maps.Geocoder();
+        geocoder.geocode({ address: decodedAddress }, (results, status) => {
+            if (status === 'OK' && results[0]) {
+                // Create a place object that matches the Autocomplete format
+                const place = {
+                    geometry: results[0].geometry,
+                    address_components: results[0].address_components,
+                    formatted_address: results[0].formatted_address
+                };
+                
+                // Set the place in the Autocomplete
+                autocomplete.set('place', place);
+
+                // Find and set the autonomous community
+                const addressComponents = results[0].address_components;
+                for (const component of addressComponents) {
+                    if (component.types.includes('administrative_area_level_1')) {
+                        let community = component.long_name;
+                        
+                        // Map special cases
+                        const communityMap = {
+                            'Comunidad de Madrid': 'Madrid',
+                            'Comunidad Valenciana': 'Comunidad Valenciana',
+                            'Comunidad Foral de Navarra': 'Navarra',
+                            'Comunidad Autónoma de las Islas Baleares': 'Islas Baleares',
+                            'Comunidad Autónoma de Canarias': 'Canarias',
+                            'Comunidad Autónoma de Castilla-La Mancha': 'Castilla-La Mancha',
+                            'Comunidad Autónoma de Castilla y León': 'Castilla y León',
+                            'Comunidad Autónoma de Cataluña': 'Cataluña',
+                            'Comunidad Autónoma de Galicia': 'Galicia',
+                            'Comunidad Autónoma de La Rioja': 'La Rioja',
+                            'Comunidad Autónoma del País Vasco': 'País Vasco',
+                            'Comunidad Autónoma de Murcia': 'Murcia',
+                            'Comunidad Autónoma de Extremadura': 'Extremadura',
+                            'Comunidad Autónoma de Cantabria': 'Cantabria',
+                            'Comunidad Autónoma de Asturias': 'Asturias',
+                            'Comunidad Autónoma de Aragón': 'Aragón',
+                            'Comunidad Autónoma de Andalucía': 'Andalucía'
+                        };
+                        
+                        community = communityMap[community] || community;
+                        $('#region').val(community);
+                        break;
+                    }
+                }
+            }
+        });
     }
 
     // Handle input changes and count API calls
