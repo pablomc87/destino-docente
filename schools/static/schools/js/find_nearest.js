@@ -1,7 +1,7 @@
-import { getTrackingState, setTrackingState, updateTrackingState, resetSession } from './modules/state.js';
+import { getTrackingState, updateTrackingState, resetSession } from './modules/state.js';
 import { checkApiLimits, showApiLimitMessage, shouldTrack, trackApiCalls } from './modules/api-tracking.js';
 import { saveSearchResults, loadLastSearchResults, displaySearchResults } from './modules/search-results.js';
-import { showLoading, hideLoading, showError, hideError, disableSearchForm, enableSearchForm, saveScrollPosition, restoreScrollPosition } from './modules/ui.js';
+import { showLoading, hideLoading, showError, hideError, restoreScrollPosition } from './modules/ui.js';
 import { initializePlaces, getPlaceDetails, getAutocomplete } from './modules/places.js';
 
 // Function to get cookie value by name
@@ -41,30 +41,7 @@ $(document).ready(function() {
     const urlParams = new URLSearchParams(window.location.search);
     const direccion = urlParams.get('direccion');
     if (direccion) {
-        const decodedAddress = decodeURIComponent(direccion);
-        $('#address').val(decodedAddress);
-        
-        // Create a geocoder to get place details
-        const geocoder = new google.maps.Geocoder();
-        geocoder.geocode({ address: decodedAddress }, (results, status) => {
-            if (status === 'OK' && results[0]) {
-                // Create a place object that matches the Places API format
-                const place = {
-                    geometry: results[0].geometry,
-                    formatted_address: results[0].formatted_address,
-                    address_components: results[0].address_components
-                };
-                
-                // Set the place in the autocomplete
-                getAutocomplete().set('place', place);
-                
-                // Update the region if available
-                const placeDetails = getPlaceDetails(place);
-                if (placeDetails.region) {
-                    $('#region').val(placeDetails.region);
-                }
-            }
-        });
+        $('#address').val(decodeURIComponent(direccion));
     }
 
     // Handle input changes and count API calls

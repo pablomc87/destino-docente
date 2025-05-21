@@ -1,6 +1,6 @@
-import { getTrackingState, setTrackingState, updateTrackingState, resetSession } from './modules/state.js';
+import { initializePlaces, getAutocomplete, getPlaceDetails } from './modules/places.js';
+import { getTrackingState, updateTrackingState, resetSession } from './modules/state.js';
 import { checkApiLimits, showApiLimitMessage, shouldTrack, trackApiCalls } from './modules/api-tracking.js';
-import { initializePlaces, getPlaceDetails, getAutocomplete } from './modules/places.js';
 
 // Function to get cookie value by name
 function getCookie(name) {
