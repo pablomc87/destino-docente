@@ -1,8 +1,39 @@
-import { getTrackingState, updateTrackingState, resetSession } from '/static/schools/js/state.js';
-import { checkApiLimits, showApiLimitMessage, shouldTrack, trackApiCalls } from '/static/schools/js/api-tracking.js';
-import { saveSearchResults, loadLastSearchResults, displaySearchResults } from '/static/schools/js/search-results.js';
-import { showLoading, hideLoading, showError, hideError, restoreScrollPosition } from '/static/schools/js/ui.js';
-import { initializePlaces, getPlaceDetails, getAutocomplete } from '/static/schools/js/places.js';
+// State management functions
+const getTrackingState = () => {
+    const state = sessionStorage.getItem('trackingState');
+    return state ? JSON.parse(state) : {
+        totalApiCalls: 0,
+        placeSelected: false,
+        totalResponseTimeMs: 0,
+        lastInputTime: Date.now()
+    };
+};
+
+const setTrackingState = (state) => {
+    sessionStorage.setItem('trackingState', JSON.stringify(state));
+};
+
+const updateTrackingState = (updates) => {
+    const state = getTrackingState();
+    const newState = { ...state, ...updates };
+    setTrackingState(newState);
+    return newState;
+};
+
+const resetSession = () => {
+    setTrackingState({
+        totalApiCalls: 0,
+        placeSelected: false,
+        totalResponseTimeMs: 0,
+        lastInputTime: Date.now()
+    });
+}; 
+
+// Constants
+const API_CALLS_THRESHOLD = 10;
+const TRACKING_INTERVAL = 60000; // 1 minute
+
+let lastTrackingTime = Date.now();
 
 // Function to get cookie value by name
 function getCookie(name) {
@@ -19,6 +50,313 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+// Function to check API limits
+async function checkApiLimits() {
+    try {
+        console.log('Checking API limits...');
+        const response = await fetch('/api/check-limits/');
+        const data = await response.json();
+        console.log('API limits response:', data);
+        
+        if (!data.within_limits) {
+            console.warn('API limits reached:', data);
+            showApiLimitMessage();
+            return false;
+        }
+        
+        // Store max schools limit
+        window.maxSchoolsPerSearch = data.max_schools || 10;
+        
+        // If user has unlimited API calls, remove any existing limit message
+        if (data.unlimited_api_calls) {
+            const limitMessage = document.getElementById('apiLimitMessage');
+            if (limitMessage) {
+                limitMessage.style.display = 'none';
+            }
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error checking API limits:', error);
+        // If we can't check limits, allow the request but log the error
+        return true;
+    }
+}
+
+// Function to show API limit message
+const showApiLimitMessage = () => {
+    console.log('Showing API limit message');
+    const messageDiv = document.getElementById('apiLimitMessage');
+    if (messageDiv) {
+        messageDiv.style.display = 'block';
+        // Disable the form
+        const form = document.getElementById('searchForm');
+        if (form) {
+            form.querySelectorAll('input, select, button').forEach(el => {
+                el.disabled = true;
+            });
+        }
+    }
+};
+
+// Function to check if we should track
+const shouldTrack = () => {
+    const state = getTrackingState();
+    const now = Date.now();
+    const shouldTrack = state.totalApiCalls >= API_CALLS_THRESHOLD || 
+                       (now - state.lastInputTime >= TRACKING_INTERVAL);
+    
+    console.log('Checking if should track:', {
+        totalApiCalls: state.totalApiCalls,
+        threshold: API_CALLS_THRESHOLD,
+        timeSinceLastInput: now - state.lastInputTime,
+        trackingInterval: TRACKING_INTERVAL,
+        shouldTrack: shouldTrack
+    });
+    
+    return shouldTrack;
+};
+
+// Function to track API calls
+const trackApiCalls = (source) => {
+    const state = getTrackingState();
+    console.log('trackApiCalls called with source:', source);
+    console.log('Current tracking state:', {
+        totalApiCalls: state.totalApiCalls,
+        placeSelected: state.placeSelected,
+        totalResponseTimeMs: state.totalResponseTimeMs,
+        lastInputTime: new Date(state.lastInputTime).toISOString()
+    });
+
+    if (state.totalApiCalls > 0) {
+        console.log('Making tracking request to /api/track-google-api/');
+        
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/track-google-api/', false);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
+        
+        const trackingData = {
+            api_type: 'places',
+            endpoint: 'session_summary',
+            method: 'GET',
+            total_calls: state.totalApiCalls,
+            place_selected: state.placeSelected,
+            response_time: state.totalResponseTimeMs,
+            source: source
+        };
+        
+        console.log('Sending tracking data:', trackingData);
+        
+        try {
+            xhr.send(JSON.stringify(trackingData));
+            console.log('Tracking request completed with status:', xhr.status);
+            if (xhr.status === 200) {
+                console.log('Successfully tracked API calls in database');
+                // Reset API calls counter after successful tracking
+                updateTrackingState({
+                    totalApiCalls: 0,
+                    totalResponseTimeMs: 0
+                });
+                console.log('Reset API calls counter to 0');
+            } else {
+                console.error('Failed to track API calls. Status:', xhr.status, 'Response:', xhr.responseText);
+            }
+        } catch (error) {
+            console.error('Error during tracking request:', error);
+        }
+    } else {
+        console.log('Skipping tracking because totalApiCalls is 0');
+    }
+}; 
+
+// Function to save search results to local storage
+const saveSearchResults = (data, searchParams) => {
+    try {
+        localStorage.setItem('lastSearchResults', JSON.stringify({
+            timestamp: Date.now(),
+            data: data,
+            params: searchParams
+        }));
+    } catch (error) {
+        console.error('Error saving search results:', error);
+    }
+};
+
+// Function to load last search results
+const loadLastSearchResults = () => {
+    try {
+        const savedResults = localStorage.getItem('lastSearchResults');
+        if (savedResults) {
+            const { timestamp, data, params } = JSON.parse(savedResults);
+            // Check if results are less than 24 hours old
+            if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+                return { data, params };
+            }
+        }
+    } catch (error) {
+        console.error('Error loading saved results:', error);
+    }
+    return null;
+};
+
+// Function to display search results
+const displaySearchResults = (data) => {
+    // Update results count
+    $('#resultsNumber').text(data.total_count);
+    
+    const schoolCardsDiv = $('#schoolCards');
+    schoolCardsDiv.empty();
+    
+    if (data.schools && data.schools.length > 0) {
+        data.schools.forEach(school => {
+            // Clone the template
+            const template = document.getElementById('schoolCardTemplate');
+            const card = $(template.content.cloneNode(true));
+            
+            // Set school data
+            card.find('.card-title').text(school.name);
+            card.find('.badge').text(school.nature || 'No especificado');
+            card.find('.location').text(`${school.municipality}, ${school.province}`);
+            card.find('.distance').text(school.distance ? `${school.distance.toFixed(1)} km` : 'No disponible');
+            
+            // Set travel times
+            if (school.travel_times) {
+                card.find('.walking-time').text(school.travel_times.walking || 'No disponible');
+                card.find('.driving-time').text(school.travel_times.driving || 'No disponible');
+                card.find('.bicycling-time').text(school.travel_times.bicycling || 'No disponible');
+                card.find('.transit-time').text(school.travel_times.transit || 'No disponible');
+            }
+            
+            // Set details link
+            const detailsLink = card.find('.details-link');
+            detailsLink.attr('href', `/centros/${school.id}/`);
+            detailsLink.attr('onclick', `saveScrollPosition(${school.id})`);
+            
+            // Add school ID to card
+            card.find('.result-card').attr('data-school-id', school.id);
+            
+            schoolCardsDiv.append(card);
+        });
+        
+        // Show/hide location info
+        if (data.search_criteria?.user_location) {
+            $('#userLocation').text(data.search_criteria.address);
+            $('#locationInfo').removeClass('d-none');
+        } else {
+            $('#locationInfo').addClass('d-none');
+        }
+        
+        $('#noResults').addClass('d-none');
+    } else {
+        $('#noResults').removeClass('d-none');
+        $('#locationInfo').addClass('d-none');
+    }
+    
+    // Show results section
+    $('#result').removeClass('d-none');
+    
+    // Calculate responsive scroll offset and duration
+    const viewportHeight = window.innerHeight;
+    const scrollOffset = Math.max(viewportHeight * 0.1, 40); // 10% of viewport height, minimum 40px
+    const scrollDuration = Math.min(viewportHeight * 0.5, 800); // 0.5ms per pixel, maximum 800ms
+    
+    // Scroll to results with a smooth animation
+    $('html, body').animate({
+        scrollTop: $('#result').offset().top - scrollOffset
+    }, scrollDuration);
+}; 
+
+// UI-related functions
+const showLoading = () => {
+    $('#loading').removeClass('d-none');
+    $('#result').addClass('d-none');
+};
+
+const hideLoading = () => {
+    $('#loading').addClass('d-none');
+};
+
+const showError = (message) => {
+    const errorDiv = $('#error');
+    errorDiv.text(message);
+    errorDiv.removeClass('d-none');
+    hideLoading();
+};
+
+const hideError = () => {
+    $('#error').addClass('d-none');
+};
+
+const disableSearchForm = () => {
+    $('#searchForm input, #searchForm select, #searchForm button').prop('disabled', true);
+};
+
+const enableSearchForm = () => {
+    $('#searchForm input, #searchForm select, #searchForm button').prop('disabled', false);
+};
+
+const saveScrollPosition = (schoolId) => {
+    sessionStorage.setItem('scrollPosition', window.scrollY);
+    sessionStorage.setItem('lastViewedSchool', schoolId);
+};
+
+const restoreScrollPosition = () => {
+    const scrollPosition = sessionStorage.getItem('scrollPosition');
+    const lastViewedSchool = sessionStorage.getItem('lastViewedSchool');
+    
+    if (scrollPosition && lastViewedSchool) {
+        window.scrollTo(0, parseInt(scrollPosition));
+        sessionStorage.removeItem('scrollPosition');
+        sessionStorage.removeItem('lastViewedSchool');
+    }
+}; 
+
+// Google Places integration
+let autocomplete = null;
+
+const initializePlaces = () => {
+    const input = document.getElementById('address');
+    if (!input) return;
+
+    autocomplete = new google.maps.places.Autocomplete(input, {
+        componentRestrictions: { country: 'es' },
+        fields: ['address_components', 'geometry', 'formatted_address'],
+        types: ['address']
+    });
+
+    return autocomplete;
+};
+
+const getPlaceDetails = (place) => {
+    if (!place || !place.geometry) {
+        throw new Error('No se ha seleccionado una ubicación válida');
+    }
+
+    const addressComponents = place.address_components || [];
+    let region = '';
+    let province = '';
+
+    for (const component of addressComponents) {
+        if (component.types.includes('administrative_area_level_1')) {
+            region = component.long_name;
+        }
+        if (component.types.includes('administrative_area_level_2')) {
+            province = component.long_name;
+        }
+    }
+
+    return {
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng(),
+        address: place.formatted_address,
+        region,
+        province
+    };
+};
+
+const getAutocomplete = () => autocomplete; 
 
 // Initialize the page
 $(document).ready(function() {

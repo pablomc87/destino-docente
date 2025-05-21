@@ -1,6 +1,29 @@
-import { initializePlaces, getAutocomplete, getPlaceDetails } from '/static/schools/js/places.js';
-import { getTrackingState, updateTrackingState, resetSession } from '/static/schools/js/state.js';
-import { checkApiLimits, showApiLimitMessage, shouldTrack, trackApiCalls } from '/static/schools/js/api-tracking.js';
+// State management functions
+const getTrackingState = () => {
+    const state = sessionStorage.getItem('trackingState');
+    return state ? JSON.parse(state) : {
+        totalApiCalls: 0,
+        placeSelected: false,
+        totalResponseTimeMs: 0,
+        lastInputTime: Date.now()
+    };
+};
+
+const setTrackingState = (state) => {
+    sessionStorage.setItem('trackingState', JSON.stringify(state));
+};
+
+const updateTrackingState = (updates) => {
+    const state = getTrackingState();
+    const newState = { ...state, ...updates };
+    setTrackingState(newState);
+    return newState;
+};
+
+const API_CALLS_THRESHOLD = 10;
+const TRACKING_INTERVAL = 60000; // 1 minute
+
+let lastTrackingTime = Date.now();
 
 // Function to get cookie value by name
 function getCookie(name) {
@@ -17,6 +40,179 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+// Function to check API limits
+async function checkApiLimits() {
+    try {
+        console.log('Checking API limits...');
+        const response = await fetch('/api/check-limits/');
+        const data = await response.json();
+        console.log('API limits response:', data);
+        
+        if (!data.within_limits) {
+            console.warn('API limits reached:', data);
+            showApiLimitMessage();
+            return false;
+        }
+        
+        // Store max schools limit
+        window.maxSchoolsPerSearch = data.max_schools || 10;
+        
+        // If user has unlimited API calls, remove any existing limit message
+        if (data.unlimited_api_calls) {
+            const limitMessage = document.getElementById('apiLimitMessage');
+            if (limitMessage) {
+                limitMessage.style.display = 'none';
+            }
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error checking API limits:', error);
+        // If we can't check limits, allow the request but log the error
+        return true;
+    }
+}
+
+// Function to show API limit message
+const showApiLimitMessage = () => {
+    console.log('Showing API limit message');
+    const messageDiv = document.getElementById('apiLimitMessage');
+    if (messageDiv) {
+        messageDiv.style.display = 'block';
+        // Disable the form
+        const form = document.getElementById('searchForm');
+        if (form) {
+            form.querySelectorAll('input, select, button').forEach(el => {
+                el.disabled = true;
+            });
+        }
+    }
+};
+
+// Function to check if we should track
+const shouldTrack = () => {
+    const state = getTrackingState();
+    const now = Date.now();
+    const shouldTrack = state.totalApiCalls >= API_CALLS_THRESHOLD || 
+                       (now - state.lastInputTime >= TRACKING_INTERVAL);
+    
+    console.log('Checking if should track:', {
+        totalApiCalls: state.totalApiCalls,
+        threshold: API_CALLS_THRESHOLD,
+        timeSinceLastInput: now - state.lastInputTime,
+        trackingInterval: TRACKING_INTERVAL,
+        shouldTrack: shouldTrack
+    });
+    
+    return shouldTrack;
+};
+
+// Function to track API calls
+const trackApiCalls = (source) => {
+    const state = getTrackingState();
+    console.log('trackApiCalls called with source:', source);
+    console.log('Current tracking state:', {
+        totalApiCalls: state.totalApiCalls,
+        placeSelected: state.placeSelected,
+        totalResponseTimeMs: state.totalResponseTimeMs,
+        lastInputTime: new Date(state.lastInputTime).toISOString()
+    });
+
+    if (state.totalApiCalls > 0) {
+        console.log('Making tracking request to /api/track-google-api/');
+        
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/track-google-api/', false);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
+        
+        const trackingData = {
+            api_type: 'places',
+            endpoint: 'session_summary',
+            method: 'GET',
+            total_calls: state.totalApiCalls,
+            place_selected: state.placeSelected,
+            response_time: state.totalResponseTimeMs,
+            source: source
+        };
+        
+        console.log('Sending tracking data:', trackingData);
+        
+        try {
+            xhr.send(JSON.stringify(trackingData));
+            console.log('Tracking request completed with status:', xhr.status);
+            if (xhr.status === 200) {
+                console.log('Successfully tracked API calls in database');
+                // Reset API calls counter after successful tracking
+                updateTrackingState({
+                    totalApiCalls: 0,
+                    totalResponseTimeMs: 0
+                });
+                console.log('Reset API calls counter to 0');
+            } else {
+                console.error('Failed to track API calls. Status:', xhr.status, 'Response:', xhr.responseText);
+            }
+        } catch (error) {
+            console.error('Error during tracking request:', error);
+        }
+    } else {
+        console.log('Skipping tracking because totalApiCalls is 0');
+    }
+}; 
+
+const resetSession = () => {
+    setTrackingState({
+        totalApiCalls: 0,
+        placeSelected: false,
+        totalResponseTimeMs: 0,
+        lastInputTime: Date.now()
+    });
+}; 
+
+let autocomplete = null;
+
+const initializePlaces = () => {
+    const input = document.getElementById('address');
+    if (!input) return;
+
+    autocomplete = new google.maps.places.Autocomplete(input, {
+        componentRestrictions: { country: 'es' },
+        fields: ['address_components', 'geometry', 'formatted_address'],
+        types: ['address']
+    });
+
+    return autocomplete;
+};
+
+const getPlaceDetails = (place) => {
+    if (!place || !place.geometry) {
+        throw new Error('No se ha seleccionado una ubicación válida');
+    }
+
+    const addressComponents = place.address_components || [];
+    let region = '';
+    let province = '';
+
+    for (const component of addressComponents) {
+        if (component.types.includes('administrative_area_level_1')) {
+            region = component.long_name;
+        }
+        if (component.types.includes('administrative_area_level_2')) {
+            province = component.long_name;
+        }
+    }
+
+    return {
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng(),
+        address: place.formatted_address,
+        region,
+        province
+    };
+};
+
+const getAutocomplete = () => autocomplete; 
 
 // Function to show message in the interface
 function showMessage(message, type = 'danger') {
