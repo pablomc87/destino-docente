@@ -889,3 +889,7 @@ def contact(request):
         'hcaptcha_site_key': settings.HCAPTCHA_SITE_KEY
     }
     return render(request, 'schools/contact.html', context)
+
+def about(request):
+    """Render the about page."""
+    return render(request, 'schools/about.html')

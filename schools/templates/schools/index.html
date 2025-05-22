@@ -68,6 +68,12 @@
                 <div class="card">
                     <div class="card-body">
                         <h2 class="text-center mb-4">Encuentra tu próximo destino</h2>
+                        <p class="text-center text-muted mb-4">
+                            Introduce tu dirección y te mostraremos los centros educativos más cercanos, 
+                            con información detallada sobre cada uno y los tiempos de desplazamiento. 
+                            Podrás filtrar por tipo de centro, titularidad y otras características 
+                            para encontrar el lugar perfecto para tu carrera docente.
+                        </p>
                         <div id="messageContainer" class="alert d-none mb-3"></div>
                         <form id="searchForm" class="mb-4">
                             <div class="mb-3">
@@ -80,6 +86,31 @@
                         </form>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- About Section -->
+<section class="about-section py-5 bg-light">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h2 class="mb-4">¿Por qué Destino Docente?</h2>
+                <p class="lead mb-4">
+                    Somos un grupo de docentes que conocemos de primera mano las dificultades que supone 
+                    encontrar y elegir el mejor destino para tu carrera profesional. Por eso, hemos creado 
+                    esta plataforma para ayudarte a tomar decisiones informadas sobre tu futuro como docente.
+                </p>
+                <p class="mb-4">
+                    Nuestra misión es simplificar el proceso de búsqueda y selección de destinos, 
+                    proporcionando información detallada y actualizada sobre cada centro educativo. 
+                    Queremos que puedas encontrar el lugar perfecto donde desarrollar tu vocación docente.
+                </p>
+                <a href="{% url 'schools:about' %}" class="btn btn-outline-primary">
+                    Conoce más sobre nosotros
+                    <i class="fas fa-arrow-right ms-2"></i>
+                </a>
             </div>
         </div>
     </div>

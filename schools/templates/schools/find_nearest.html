@@ -10,7 +10,12 @@
 {% block content %}
 <div class="search-container">
     <h1 class="text-center mb-4">Encuentra Tu Próximo Destino</h1>
-    
+    <p class="text-center text-muted mb-4">
+        Introduce tu dirección y te mostraremos los centros educativos más cercanos, 
+        con información detallada sobre cada uno y los tiempos de desplazamiento. 
+        Podrás filtrar por tipo de centro, titularidad y otras características 
+        para encontrar el lugar perfecto para tu carrera docente.
+    </p>
     <!-- API Limit Message -->
     <div id="apiLimitMessage" class="alert alert-warning" style="display: none;">
         <h4>Límite de búsquedas alcanzado</h4>
@@ -52,7 +57,7 @@
                 <div class="mb-3">
                     <label for="region" class="form-label">Comunidad Autónoma</label>
                     <select class="form-select" id="region" name="region">
-                        <option value="">Selecciona una comunidad autónoma</option>
+                        <option value="">Todas</option>
                         <option value="Andalucía">Andalucía</option>
                         <option value="Aragón">Aragón</option>
                         <option value="Asturias">Asturias</option>

@@ -1,0 +1,75 @@
+{% extends "schools/base.html" %}
+{% load static %}
+
+{% block title %}Quiénes Somos - Destino Docente{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'schools/css/about.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="about-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <h1 class="about-title text-center">Quiénes Somos</h1>
+                
+                <div class="mission-section">
+                    <h2 class="about-subtitle">Nuestra Misión</h2>
+                    <p class="about-text">
+                        Somos una asociación dedicada a facilitar a los interinos y funcionarios de los cuerpos docentes 
+                        el proceso de ordenar sus solicitudes de destino en las distintas convocatorias de empleo público. 
+                        Nuestro objetivo es simplificar y optimizar este proceso, proporcionando herramientas y recursos 
+                        que ayuden a los docentes a tomar decisiones informadas sobre sus futuros destinos.
+                    </p>
+                </div>
+
+                <div class="mission-section">
+                    <h2 class="about-subtitle">Financiación</h2>
+                    <p class="about-text">
+                        Nuestra asociación se financia principalmente a través de las cuotas de nuestros miembros y 
+                        donaciones privadas. También contamos con el apoyo de instituciones educativas y organizaciones 
+                        que comparten nuestra visión de mejorar el sistema de asignación de destinos docentes. 
+                        Nos comprometemos a mantener la transparencia en el uso de nuestros recursos y a destinar 
+                        los fondos principalmente al desarrollo y mantenimiento de nuestras herramientas y servicios.
+                    </p>
+                </div>
+
+                <div class="team-section">
+                    <h2 class="about-subtitle text-center mb-4">Fundadores</h2>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="team-member">
+                                <img src="{% static 'schools/img/placeholder.jpg' %}" alt="Fundador 1">
+                                <h4>Nombre Apellido</h4>
+                                <p>Presidente</p>
+                                <p class="small">Profesor de [Especialidad] con más de [X] años de experiencia en el sector educativo.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="team-member">
+                                <img src="{% static 'schools/img/placeholder.jpg' %}" alt="Fundador 2">
+                                <h4>Nombre Apellido</h4>
+                                <p>Vicepresidente</p>
+                                <p class="small">Especialista en [Área] y docente con amplia experiencia en [Campo].</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="team-member">
+                                <img src="{% static 'schools/img/placeholder.jpg' %}" alt="Fundador 3">
+                                <h4>Nombre Apellido</h4>
+                                <p>Secretario</p>
+                                <p class="small">Experto en [Campo] y comprometido con la mejora del sistema educativo.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'schools/js/about.js' %}"></script>
+{% endblock %} 
