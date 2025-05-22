@@ -27,7 +27,7 @@
         <div class="col-lg-3">
             <div class="filter-section sticky-filters">
                 <h4 class="mb-4">Filtros</h4>
-                <form id="filterForm">
+                <form id="filterForm" method="get" action="{% url 'schools:search' %}">
                     <!-- Search Input -->
                     <div class="mb-3">
                         <label for="searchInput" class="form-label">Buscar</label>
@@ -37,10 +37,10 @@
                     <!-- Autonomous Community -->
                     <div class="mb-3">
                         <label for="autonomousCommunity" class="form-label">Comunidad Autónoma</label>
-                        <select class="form-select" id="autonomousCommunity" name="comunidad_autonoma">
+                        <select class="form-select" id="autonomousCommunity" name="comunidad">
                             <option value="">Todas</option>
                             {% for community in autonomous_communities %}
-                            <option value="{{ community }}" {% if request.GET.comunidad_autonoma == community %}selected{% endif %}>{{ community }}</option>
+                            <option value="{{ community }}" {% if request.GET.comunidad == community %}selected{% endif %}>{{ community }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -83,9 +83,8 @@
                         <label for="nature" class="form-label">Titularidad</label>
                         <select class="form-select" id="nature" name="titularidad">
                             <option value="">Todas</option>
-                            <option value="Público" {% if request.GET.titularidad == 'Público' %}selected{% endif %}>Público</option>
-                            <option value="Privado" {% if request.GET.titularidad == 'Privado' %}selected{% endif %}>Privado</option>
-                            <option value="Concertado" {% if request.GET.titularidad == 'Concertado' %}selected{% endif %}>Concertado</option>
+                            <option value="Centro público" {% if request.GET.titularidad == 'Centro público' %}selected{% endif %}>Centro público</option>
+                            <option value="Centro privado" {% if request.GET.titularidad == 'Centro privado' %}selected{% endif %}>Centro privado</option>
                         </select>
                     </div>
 

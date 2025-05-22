@@ -797,13 +797,13 @@ def school_list(request):
 def province_list(request):
     """API endpoint to list provinces, optionally filtered by autonomous community."""
     try:
-        community = request.GET.get('comunidad', '')  # Changed from 'community'
+        community = request.GET.get('comunidad_autonoma', '')  # Changed from 'community'
         provinces = School.objects.values_list('province', flat=True).distinct()
         
         if community:
             provinces = provinces.filter(autonomous_community=community)
         
-        return Response(list(provinces))
+        return Response(list(provinces.order_by('province')))
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
