@@ -1,0 +1,19 @@
+.concerted-toggle {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1rem 0;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+}
+.concerted-toggle label {
+    margin: 0;
+    font-weight: bold;
+}
+.concerted-toggle .form-check {
+    margin: 0;
+}
+.form-control:disabled {
+    background-color: #e9ecef;
+}

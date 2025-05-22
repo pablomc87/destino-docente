@@ -1,0 +1,83 @@
+.search-section {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    color: white;
+    padding: 60px 0;
+    margin-bottom: 40px;
+    border-radius: 1rem;
+}
+
+.search-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.search-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+.filter-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+}
+
+.school-card {
+    border: 1px solid rgba(0,0,0,0.125);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.school-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.school-card a {
+    display: block;
+    height: 100%;
+}
+
+.school-card .btn-primary {
+    pointer-events: none;
+}
+
+.school-type-badge {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 20px;
+    margin-right: 0.5rem;
+}
+
+.school-type-badge.public {
+    background-color: #198754;
+    color: white;
+}
+
+.school-type-badge.private {
+    background-color: #dc3545;
+    color: white;
+}
+
+.school-type-badge.concerted {
+    background-color: #0dcaf0;
+    color: white;
+}
+
+.location-badge {
+    background-color: #e9ecef;
+    color: #495057;
+    padding: 0.25rem 0.5rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    margin-right: 0.5rem;
+}
+
+.sticky-filters {
+    position: sticky;
+    top: 20px;
+}

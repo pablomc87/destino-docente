@@ -2,12 +2,9 @@
 
 {% block title %}Sugerir Cambios al Centro{% endblock %}
 
-{% block custom_css %}
-#map {
-    height: 400px;
-    width: 100%;
-    margin-bottom: 1rem;
-}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'schools/css/edit_school.css' %}">
 {% endblock %}
 
 {% block content %}
