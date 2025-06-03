@@ -17,6 +17,12 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Cookie Disclaimer Banner -->
+    <div id="cookieDisclaimer" class="alert alert-info text-center mb-0" style="display:none; position:fixed; top:0; left:0; width:100%; z-index:2000; border-radius:0;">
+        Este sitio utiliza cookies solo para mejorar el rendimiento del sitio. No almacenamos datos personales salvo los que usted proporciona al crear su perfil. No vendemos ni compartimos sus datos de navegación.
+        <button type="button" class="btn btn-sm btn-primary ms-3" id="dismissCookieDisclaimer">Entendido</button>
+    </div>
+    <!-- End Cookie Disclaimer Banner -->
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading">
         <div class="spinner-border loading-spinner text-primary" role="status">
@@ -140,6 +146,19 @@
         });
     </script>
     
+    <script>
+    // Cookie Disclaimer logic
+    $(document).ready(function() {
+        if (!sessionStorage.getItem('cookieDisclaimerAccepted')) {
+            $('#cookieDisclaimer').show();
+        }
+        $('#dismissCookieDisclaimer').on('click', function() {
+            $('#cookieDisclaimer').slideUp();
+            sessionStorage.setItem('cookieDisclaimerAccepted', 'true');
+        });
+    });
+    </script>
+    
     {% block extra_js %}{% endblock %}
 
     <!-- Footer -->
@@ -163,6 +182,10 @@
                         <li><a href="{% url 'schools:find_nearest' %}" class="text-decoration-none">Buscar próximo destino</a></li>
                         <li><a href="{% url 'schools:search' %}" class="text-decoration-none">Ver todos los centros</a></li>
                         <li><a href="{% url 'schools:about' %}" class="text-decoration-none">Quiénes Somos</a></li>
+                        <li><a href="/política-cookies" class="text-decoration-none">Política de Cookies</a></li>
+                        <li><a href="/política-privacidad" class="text-decoration-none">Política de Privacidad</a></li>
+                        <li><a href="/aviso-legal" class="text-decoration-none">Aviso Legal</a></li>
+                        <li><a href="/terminos-condiciones" class="text-decoration-none">Términos y Condiciones</a></li>
                     </ul>
                 </div>
             </div>

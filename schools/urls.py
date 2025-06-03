@@ -3,6 +3,7 @@ URL configuration for schools app.
 """
 from django.urls import path
 from . import views
+from django.views.generic import TemplateView
 
 app_name = 'schools'
 
@@ -26,4 +27,8 @@ urlpatterns = [
     path('api/check-limits/', views.check_api_limits, name='check_api_limits'),
     path('api/provinces/', views.province_list, name='province_list'),
     path('api/municipalities/', views.municipality_list, name='municipality_list'),
+    path('política-cookies', TemplateView.as_view(template_name='schools/politica_cookies.html'), name='politica_cookies'),
+    path('política-privacidad', TemplateView.as_view(template_name='schools/politica_privacidad.html'), name='politica_privacidad'),
+    path('aviso-legal', TemplateView.as_view(template_name='schools/aviso_legal.html'), name='aviso_legal'),
+    path('terminos-condiciones', TemplateView.as_view(template_name='schools/terminos_condiciones.html'), name='terminos_condiciones'),
 ] 
