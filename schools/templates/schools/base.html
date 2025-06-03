@@ -169,23 +169,28 @@
                     <h6 class="mb-2">Destino Docente</h6>
                     <p class="text-muted small mb-0">Tu herramienta para encontrar tu próximo destino como docente.</p>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <h6 class="mb-2">Contacto</h6>
                     <ul class="list-unstyled small mb-0">
                         <li><i class="fas fa-envelope me-1"></i> <a href="{% url 'schools:contact' %}" class="text-decoration-none">Envíanos un mensaje</a></li>
                     </ul>
                 </div>
-                <div class="col-md-4">
-                    <h6 class="mb-2">Enlaces útiles</h6>
+                <div class="col-md-3">
+                    <h6 class="mb-2">Acceso rápido</h6>
                     <ul class="list-unstyled small mb-0">
-                        <li><a href="{% url 'schools:suggest_school' %}" class="text-decoration-none">Añadir un centro</a></li>
+                        <li><a href="{% url 'schools:about' %}" class="text-decoration-none">Quiénes Somos</a></li>
                         <li><a href="{% url 'schools:find_nearest' %}" class="text-decoration-none">Buscar próximo destino</a></li>
                         <li><a href="{% url 'schools:search' %}" class="text-decoration-none">Ver todos los centros</a></li>
-                        <li><a href="{% url 'schools:about' %}" class="text-decoration-none">Quiénes Somos</a></li>
-                        <li><a href="/política-cookies" class="text-decoration-none">Política de Cookies</a></li>
-                        <li><a href="/política-privacidad" class="text-decoration-none">Política de Privacidad</a></li>
-                        <li><a href="/aviso-legal" class="text-decoration-none">Aviso Legal</a></li>
-                        <li><a href="/terminos-condiciones" class="text-decoration-none">Términos y Condiciones</a></li>
+                        <li><a href="{% url 'schools:suggest_school' %}" class="text-decoration-none">Añadir un centro</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2">
+                    <h6 class="mb-2">Información legal</h6>
+                    <ul class="list-unstyled small mb-0">
+                        <li><a href="{% url 'schools:politica_cookies' %}" class="text-decoration-none">Política de Cookies</a></li>
+                        <li><a href="{% url 'schools:politica_privacidad' %}" class="text-decoration-none">Política de Privacidad</a></li>
+                        <li><a href="{% url 'schools:aviso_legal' %}" class="text-decoration-none">Aviso Legal</a></li>
+                        <li><a href="{% url 'schools:terminos_condiciones' %}" class="text-decoration-none">Términos y Condiciones</a></li>
                     </ul>
                 </div>
             </div>

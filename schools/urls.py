@@ -27,6 +27,8 @@ urlpatterns = [
     path('api/check-limits/', views.check_api_limits, name='check_api_limits'),
     path('api/provinces/', views.province_list, name='province_list'),
     path('api/municipalities/', views.municipality_list, name='municipality_list'),
+    
+    # Policy pages
     path('política-cookies', TemplateView.as_view(template_name='schools/politica_cookies.html'), name='politica_cookies'),
     path('política-privacidad', TemplateView.as_view(template_name='schools/politica_privacidad.html'), name='politica_privacidad'),
     path('aviso-legal', TemplateView.as_view(template_name='schools/aviso_legal.html'), name='aviso_legal'),
