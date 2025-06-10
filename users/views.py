@@ -208,12 +208,22 @@ def dashboard(request):
         # Get user's search history
         search_history = SearchHistory.objects.filter(user=request.user).order_by('-timestamp')[:10]
         
+        # Get the selected search if search_id is provided
+        selected_search = None
+        search_id = request.GET.get('search_id')
+        if search_id:
+            try:
+                selected_search = SearchHistory.objects.get(id=search_id, user=request.user)
+            except SearchHistory.DoesNotExist:
+                messages.warning(request, 'La búsqueda seleccionada no existe.')
+        
         context = {
             'user': request.user,
             'email': request.user.email,
             'date_joined': request.user.date_joined,
             'last_login': request.user.last_login,
-            'search_history': search_history
+            'search_history': search_history,
+            'selected_search': selected_search
         }
         return render(request, 'dashboard.html', context)
     except Exception as e:
@@ -346,7 +356,14 @@ def profile(request):
     """
     Display user profile information.
     """
-    return render(request, 'profile.html')
+    # Get user's search history
+    search_history = SearchHistory.objects.filter(user=request.user).order_by('-timestamp')[:3]
+    
+    context = {
+        'user': request.user,
+        'search_history': search_history
+    }
+    return render(request, 'profile.html', context)
 
 @login_required
 def check_session(request):

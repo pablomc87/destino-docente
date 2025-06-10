@@ -38,8 +38,8 @@
             </div>
             <div class="card-body">
                 {% if search_history %}
-                    {% with selected_search=search_history.0 %}
-                    <div class="row">
+                    {% with selected_search=selected_search|default:search_history.0 %}
+                    <div class="row" id="search-details">
                         <div class="col-12">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 <div>
@@ -639,6 +639,53 @@ document.addEventListener('DOMContentLoaded', function() {
             rowToHighlight.classList.add('selected-search-row');
         }
     }
+
+    // Function to handle search selection
+    function handleSearchSelection(searchId) {
+        // Find the button with the search ID
+        const button = document.querySelector(`[data-search-id="${searchId}"]`);
+        if (button) {
+            selectSearch(searchId, { target: button });
+        }
+    }
+
+    // Check for search_id in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchId = urlParams.get('search_id');
+    
+    if (searchId) {
+        // If there's a search_id in the URL, select that search
+        handleSearchSelection(searchId);
+    } else {
+        // Try to find the last favorite search
+        const favoriteSearch = document.querySelector('.dropdown-item .fa-star.text-warning');
+        if (favoriteSearch) {
+            const searchItem = favoriteSearch.closest('.dropdown-item');
+            handleSearchSelection(searchItem.getAttribute('data-search-id'));
+        } else {
+            // If no favorite, select the first (most recent) search
+            const firstSearch = document.querySelector('.dropdown-item');
+            if (firstSearch) {
+                handleSearchSelection(firstSearch.getAttribute('data-search-id'));
+            }
+        }
+    }
+
+    // Add click handlers for dropdown items
+    document.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleSearchSelection(this.getAttribute('data-search-id'));
+        });
+    });
+
+    // Add click handlers for view buttons
+    document.querySelectorAll('.show-search-details').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleSearchSelection(this.getAttribute('data-search-id'));
+        });
+    });
 });
 
 // Function to toggle favorite status

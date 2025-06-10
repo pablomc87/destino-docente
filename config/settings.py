@@ -27,10 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    default=secrets.token_urlsafe(nbytes=64),
-)
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY",)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("ENVIRONMENT") == "development"
@@ -216,6 +213,11 @@ LOGGING = {
             "propagate": False,
         },
         "django.mail": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "schools": {
             "handlers": ["console"],
             "level": "DEBUG",
             "propagate": False,

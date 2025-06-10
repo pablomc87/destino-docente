@@ -1,37 +1,49 @@
 {% extends 'schools/base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <div class="col-md-3 col-lg-2">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <div class="mb-4">
-                        <p class="mb-0 small text-truncate">{{ user.email }}</p>
-                        <small class="text-muted">Desde {{ user.date_joined|date:"F Y" }}</small>
-                    </div>
-                    
-                    <div class="list-group list-group-flush">
-                        <a href="{% url 'users:profile' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
-                            <i class="fas fa-user me-2"></i> Perfil
+        <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" href="{% url 'users:profile' %}">
+                            <i class="fas fa-user me-2"></i>
+                            Mi Perfil
                         </a>
-                        <a href="{% url 'users:dashboard' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                            <i class="fas fa-tachometer-alt me-2"></i> Actividad
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'users:dashboard' %}">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Búsquedas recientes
                         </a>
-                        <a href="{% url 'users:settings' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
-                            <i class="fas fa-cog me-2"></i> Ajustes
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'premium_distance_search' %}active{% endif %}" href="{% url 'schools:premium_distance_search' %}">
+                            <i class="fas fa-search me-2"></i>
+                            Buscar Centros
                         </a>
-                        <a href="{% url 'users:signout' %}" class="list-group-item list-group-item-action text-danger">
-                            <i class="fas fa-sign-out-alt me-2"></i> Salir
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}" href="{% url 'users:settings' %}">
+                            <i class="fas fa-cog me-2"></i>
+                            Ajustes
                         </a>
-                    </div>
-                </div>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:signout' %}">
+                            <i class="fas fa-sign-out-alt me-2"></i>
+                            Cerrar Sesión
+                        </a>
+                    </li>
+                </ul>
             </div>
-        </div>
-        
-        <!-- Main Content -->
-        <div class="col-md-9 col-lg-10">
+        </nav>
+
+        <!-- Main content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             {% if messages %}
                 {% for message in messages %}
                     <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show" role="alert">
@@ -42,7 +54,7 @@
             {% endif %}
             
             {% block user_content %}{% endblock %}
-        </div>
+        </main>
     </div>
 </div>
 {% endblock %} 

@@ -1,85 +1,74 @@
 {% extends 'base_user.html' %}
+{% load static %}
 
-{% block title %}Profile - School Finder{% endblock %}
+{% block title %}Perfil - Destino Docente{% endblock %}
 
 {% block user_content %}
 <div class="container py-4">
     <div class="row">
-        <!-- Account Details -->
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Detalles de la Cuenta</h5>
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-user-circle fa-5x text-primary"></i>
+                    </div>
+                    <h5 class="card-title">{{ user.email }}</h5>
+                    <p class="text-muted">Miembro desde {{ user.date_joined|date:"F Y" }}</p>
                 </div>
+            </div>
+            
+            <!-- Quick Actions Card -->
+            <div class="card shadow-sm">
                 <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label text-muted">Email</label>
-                        <p class="mb-0">{{ user.email }}</p>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted">Miembro desde</label>
-                        <p class="mb-0">{{ user.date_joined|date:"j F Y" }}</p>
-                    </div>
+                    <h6 class="card-title mb-3">Acciones Rápidas</h6>
+                    <a href="{% url 'schools:premium_distance_search' %}" class="btn btn-primary w-100 mb-2">
+                        <i class="fas fa-search me-2"></i>Buscar Centros
+                    </a>
+                    <a href="{% url 'users:settings' %}" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-cog me-2"></i>Editar Perfil
+                    </a>
                 </div>
             </div>
         </div>
-
-        <!-- Account Statistics -->
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Estadísticas de la cuenta</h5>
+        
+        <div class="col-md-8">
+            <!-- Activity Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Últimas Búsquedas</h5>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label text-muted">Último acceso</label>
-                        <p class="mb-0">{{ user.last_login|date:"j F Y H:i" }}</p>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted">Estado de la cuenta</label>
-                        <p class="mb-0">
-                            <span class="badge bg-success">Activo</span>
+                    {% if search_history %}
+                        <div class="list-group list-group-flush">
+                            {% for search in search_history %}
+                                <a href="{% url 'users:dashboard' %}?search_id={{ search.id }}" 
+                                   class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ search.location }}</h6>
+                                        <small class="text-muted">{{ search.timestamp|timesince }}</small>
+                                    </div>
+                                    <p class="mb-1">
+                                        <span class="badge bg-primary">{{ search.search_type }}</span>
+                                        {% if search.includes_travel_times %}
+                                            <span class="badge bg-info">Incluye tiempos de viaje</span>
+                                        {% endif %}
+                                    </p>
+                                    <small class="text-muted">
+                                        {{ search.results_count }} centros encontrados
+                                    </small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center my-4">
+                            No hay actividad reciente. ¡Comienza a buscar centros!
                         </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Links -->
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Enlaces rápidos</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'users:settings' %}" class="btn btn-outline-primary">
-                            <i class="bi bi-gear me-2"></i>Ajustes de la cuenta
-                        </a>
-                        <a href="{% url 'users:password_reset' %}" class="btn btn-outline-primary">
-                            <i class="bi bi-key me-2"></i>Cambiar contraseña
-                        </a>
-                        <a href="{% url 'schools:find_nearest' %}" class="btn btn-outline-primary">
-                            <i class="bi bi-search me-2"></i>Buscar centros
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Account Security -->
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Seguridad de la cuenta</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label text-muted">Autenticación de dos factores</label>
-                        <p class="mb-0">
-                            <span class="badge bg-secondary">No está habilitado</span>
-                        </p>
-                    </div>
+                        <div class="text-center">
+                            <a href="{% url 'schools:premium_distance_search' %}" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>Buscar Centros
+                            </a>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

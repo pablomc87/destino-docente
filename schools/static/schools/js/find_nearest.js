@@ -35,6 +35,43 @@ const TRACKING_INTERVAL = 60000; // 1 minute
 
 let lastTrackingTime = Date.now();
 
+// Add this mapping at the top or before its use
+const regionMainWordToOfficial = {
+    'madrid': 'COMUNIDAD DE MADRID',
+    'valencia': 'COMUNIDAD VALENCIANA',
+    'navarra': 'COMUNIDAD FORAL DE NAVARRA',
+    'baleares': 'COMUNIDAD AUTÓNOMA DE LAS ISLAS BALEARES',
+    'canarias': 'COMUNIDAD AUTÓNOMA DE CANARIAS',
+    'mancha': 'COMUNIDAD AUTÓNOMA DE CASTILLA-LA MANCHA',
+    'león': 'COMUNIDAD AUTÓNOMA DE CASTILLA Y LEÓN',
+    'cataluña': 'COMUNIDAD AUTÓNOMA DE CATALUÑA',
+    'catalunya': 'COMUNIDAD AUTÓNOMA DE CATALUÑA',
+    'galicia': 'COMUNIDAD AUTÓNOMA DE GALICIA',
+    'rioja': 'COMUNIDAD AUTÓNOMA DE LA RIOJA',
+    'vasco': 'COMUNIDAD AUTÓNOMA DEL PAÍS VASCO',
+    'euskadi': 'COMUNIDAD AUTÓNOMA DEL PAÍS VASCO',
+    'murcia': 'COMUNIDAD AUTÓNOMA DE MURCIA',
+    'extremadura': 'COMUNIDAD AUTÓNOMA DE EXTREMADURA',
+    'cantabria': 'COMUNIDAD AUTÓNOMA DE CANTABRIA',
+    'asturias': 'COMUNIDAD AUTÓNOMA DE ASTURIAS',
+    'aragon': 'COMUNIDAD AUTÓNOMA DE ARAGÓN',
+    'aragón': 'COMUNIDAD AUTÓNOMA DE ARAGÓN',
+    'andalucía': 'COMUNIDAD AUTÓNOMA DE ANDALUCÍA',
+    'ceuta': 'CIUDAD AUTÓNOMA DE CEUTA',
+    'melilla': 'CIUDAD AUTÓNOMA DE MELILLA'
+};
+
+function getOfficialRegion(regionStr) {
+    if (!regionStr) return '';
+    const n = regionStr.trim().toLowerCase();
+    for (const mainWord in regionMainWordToOfficial) {
+        if (n.includes(mainWord)) {
+            return regionMainWordToOfficial[mainWord];
+        }
+    }
+    return '';
+}
+
 // Function to get cookie value by name
 function getCookie(name) {
     let cookieValue = null;
@@ -480,7 +517,14 @@ $(document).ready(function() {
         if (place && place.geometry) {
             try {
                 const placeDetails = getPlaceDetails(place);
-                $('#region').val(placeDetails.region);
+                const officialRegion = getOfficialRegion(placeDetails.region);
+                if (officialRegion) {
+                    $('#region').val(officialRegion);
+                    console.log('Region set to official value:', officialRegion);
+                } else {
+                    $('#region').val('');
+                    console.log('No matching region found for:', placeDetails.region);
+                }
                 const state = updateTrackingState({
                     placeSelected: true,
                     lastInputTime: Date.now()
@@ -539,20 +583,23 @@ $(document).ready(function() {
             hideError();
 
             // Make the search request
+            const ajaxData = {
+                address: placeDetails.address,
+                latitude: placeDetails.lat,
+                longitude: placeDetails.lng,
+                provinces: placeDetails.region ? [placeDetails.region] : [],
+                school_types: [
+                    ...$('input[name="school_types"]:checked').map(function() {
+                        return this.value;
+                    }).get()
+                ]
+            };
+            console.log('AJAX data being sent:', ajaxData);
+
             const response = await $.ajax({
                 url: '/api/nearest/',
                 method: 'GET',
-                data: {
-                    address: placeDetails.address,
-                    latitude: placeDetails.lat,
-                    longitude: placeDetails.lng,
-                    provinces: placeDetails.region ? [placeDetails.region] : [],
-                    school_types: [
-                        ...$('input[name="school_types"]:checked').map(function() {
-                            return this.value;
-                        }).get()
-                    ]
-                },
+                data: ajaxData,
                 headers: {
                     'X-CSRFToken': getCookie('csrftoken')
                 }

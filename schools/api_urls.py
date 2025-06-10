@@ -2,7 +2,7 @@
 API URL configuration for schools app.
 """
 from django.urls import path
-from . import views
+from schools import views
 
 app_name = 'api'
 
@@ -11,7 +11,8 @@ urlpatterns = [
     path('schools/', views.SchoolListView.as_view(), name='school_list'),
     path('schools/<str:pk>/', views.SchoolDetailView.as_view(), name='school_detail'),
     path('schools/search/', views.SchoolSearchView.as_view(), name='school_search'),
-    path('nearest/', views.NearestSchoolView.as_view(), name='nearest_school'),
+    path('nearest/', views.FreeSchoolTravelSearch.as_view(), name='nearest_school'),
     path('edit-suggestions/', views.SchoolEditSuggestionView.as_view(), name='edit_suggestion'),
     path('sugerir-centro/', views.SchoolSuggestionView.as_view(), name='suggest_school'),
+    path('profile/search/', views.ProfileSchoolSearch.as_view(), name='profile_search'),
 ] 

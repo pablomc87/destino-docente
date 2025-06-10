@@ -224,6 +224,8 @@ class SearchHistory(models.Model):
     results = models.JSONField(_("Search results"), default=list, blank=True)
     timestamp = models.DateTimeField(_("Search timestamp"), auto_now_add=True)
     is_favorite = models.BooleanField(default=False)
+    includes_travel_times = models.BooleanField(_("Includes travel times"), default=False,
+                                              help_text="Whether this search includes travel times for the schools")
 
     class Meta:
         db_table = 'search_history'

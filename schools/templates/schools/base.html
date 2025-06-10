@@ -101,46 +101,25 @@
             const loadingOverlay = document.getElementById('loadingOverlay');
             const authLinks = document.querySelectorAll('[data-requires-auth="true"]');
             
-            // Check session status
-            async function checkSession() {
-                try {
-                    const response = await fetch(Urls.users_check_session(), {
-                        method: 'GET',
-                        credentials: 'include',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-                    
-                    if (!response.ok) {
-                        // Only redirect if we're on a protected page
-                        if (window.location.pathname.startsWith('/usuarios/')) {
-                            window.location.href = '/usuarios/conectarse/';
-                        }
-                        return;
-                    }
-                } catch (error) {
-                    console.error('Session check failed:', error);
-                    // Don't redirect on network errors
-                }
-            }
-            
             // Add click handlers to auth-required links
             authLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
                     showLoading();
-                    checkSession().then(() => {
-                        window.location.href = this.href;
-                    });
+                    window.location.href = this.href;
                 });
             });
             
-            // Only check session on protected pages and if user is authenticated
-            {% if user.is_authenticated %}
-                if (window.location.pathname.startsWith('/usuarios/')) {
-                    // Add a small delay to ensure session is ready
-                    setTimeout(checkSession, 100);
+            // Only check on protected pages
+            {% if not user.is_authenticated %}
+                const protectedPaths = [
+                    '/usuarios/panel/',
+                    '/usuarios/perfil/',
+                    '/usuarios/historial/'
+                ];
+                
+                if (protectedPaths.some(path => window.location.pathname.startsWith(path))) {
+                    window.location.href = "{% url 'users:signin' %}";
                 }
             {% endif %}
         });
