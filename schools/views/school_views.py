@@ -53,8 +53,11 @@ class FreeSchoolTravelSearch(APIView):
         address = request.GET.get('address')
         latitude = request.GET.get('latitude')
         longitude = request.GET.get('longitude')
-        provinces = request.GET.getlist('provinces')
+        # Handle both array and single value formats
+        autonomous_communities = request.GET.getlist('autonomous_communities[]') or request.GET.getlist('autonomous_communities')
         school_types = request.GET.getlist('school_types')
+        
+        logger.debug(f"Received autonomous_communities: {autonomous_communities}")
         
         if not address or not latitude or not longitude:
             return Response({'error': 'Se requieren dirección y coordenadas'},
@@ -66,7 +69,7 @@ class FreeSchoolTravelSearch(APIView):
             user_lon = float(longitude)
             
             # Find nearest schools using the utility function
-            top_schools = find_nearest_schools(user_lat, user_lon, provinces, school_types, limit=3)
+            top_schools = find_nearest_schools(user_lat, user_lon, autonomous_communities, school_types, limit=3)
             
             if not top_schools:
                 return Response({
@@ -99,7 +102,7 @@ class FreeSchoolTravelSearch(APIView):
                     latitude=user_lat,
                     longitude=user_lon,
                     results_count=len(top_schools),
-                    provinces=provinces,
+                    autonomous_community=autonomous_communities[0] if autonomous_communities else '',  # Store first community if any
                     school_types=school_types,
                     results=school_data,
                     includes_travel_times=True
@@ -111,7 +114,7 @@ class FreeSchoolTravelSearch(APIView):
                 'search_criteria': {
                     'address': address,
                     'user_location': {'latitude': user_lat, 'longitude': user_lon},
-                    'provinces': provinces,
+                    'autonomous_communities': autonomous_communities,
                     'school_types': school_types
                 }
             })
@@ -123,7 +126,8 @@ class FreeSchoolTravelSearch(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
-            logger.error(f"Error in FreeSchoolTravelSearch: {e}")
+            logger.error(f"Error in FreeSchoolTravelSearch: {str(e)}")
+            logger.error(f"Request data: {request.GET}")
             return Response(
                 {'error': 'Ha ocurrido un error al procesar la búsqueda'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -177,7 +181,7 @@ class ProfileSchoolSearch(APIView):
         address = request.GET.get('address')
         latitude = request.GET.get('latitude')
         longitude = request.GET.get('longitude')
-        provinces = request.GET.getlist('provinces')
+        autonomous_communities = request.GET.getlist('autonomous_communities')
         school_types = request.GET.getlist('school_types')
         include_travel_times = request.GET.get('include_travel_times', 'false').lower() == 'true'
         school_ids = request.GET.getlist('school_ids')  # Get selected school IDs
@@ -230,7 +234,7 @@ class ProfileSchoolSearch(APIView):
                         'search_criteria': {
                             'address': address,
                             'user_location': {'latitude': user_lat, 'longitude': user_lon},
-                            'provinces': provinces,
+                            'autonomous_communities': autonomous_communities,
                             'school_types': school_types,
                             'include_travel_times': True
                         },
@@ -248,7 +252,7 @@ class ProfileSchoolSearch(APIView):
             # Find nearest schools using the utility function
             top_schools = find_nearest_schools(
                 user_lat, user_lon,
-                provinces, school_types,
+                autonomous_communities, school_types,
                 limit=limit
             )
             
@@ -272,11 +276,13 @@ class ProfileSchoolSearch(APIView):
                     latitude=user_lat,
                     longitude=user_lon,
                     results_count=len(top_schools),
-                    provinces=provinces,
+                    autonomous_community=autonomous_communities[0] if autonomous_communities else '',  # Store first community if any
+                    provinces=autonomous_communities,  # Store all communities in provinces field
                     school_types=school_types,
                     results=school_data,
                     includes_travel_times=False
                 )
+                logger.info(f"Created new search history entry {search_history.id}")
                 
                 # Include search history ID in response
                 response_data = {
@@ -285,7 +291,7 @@ class ProfileSchoolSearch(APIView):
                     'search_criteria': {
                         'address': address,
                         'user_location': {'latitude': user_lat, 'longitude': user_lon},
-                        'provinces': provinces,
+                        'autonomous_communities': autonomous_communities,
                         'school_types': school_types,
                         'include_travel_times': False
                     },
@@ -303,7 +309,7 @@ class ProfileSchoolSearch(APIView):
                     'search_criteria': {
                         'address': address,
                         'user_location': {'latitude': user_lat, 'longitude': user_lon},
-                        'provinces': provinces,
+                        'autonomous_communities': autonomous_communities,
                         'school_types': school_types,
                         'include_travel_times': False
                     }

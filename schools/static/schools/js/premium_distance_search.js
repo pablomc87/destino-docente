@@ -139,14 +139,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const latitude = location.lat();
             const longitude = location.lng();
             
-            // Build provinces array based on autonomous community
-            const provinces = autonomousCommunity ? [autonomousCommunity] : [];
+            // Build autonomous communities array
+            const autonomousCommunities = autonomousCommunity ? [autonomousCommunity] : [];
             
             // Build school types array
             const schoolTypes = Array.from(selectedSchoolTypes);
             
             // Make API request to profile_search endpoint
-            const response = await fetch(`/api/profile/search/?address=${encodeURIComponent(address)}&latitude=${latitude}&longitude=${longitude}&provinces=${provinces.join(',')}&school_types=${schoolTypes.join(',')}&include_travel_times=false`);
+            const response = await fetch(`/api/profile/search/?address=${encodeURIComponent(address)}&latitude=${latitude}&longitude=${longitude}&autonomous_communities=${autonomousCommunities.join(',')}&school_types=${schoolTypes.join(',')}&include_travel_times=false`);
             
             const data = await response.json();
             
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const address = addressInput.value;
             const autonomousCommunity = document.getElementById('autonomous_community').value;
-            const provinces = autonomousCommunity ? [autonomousCommunity] : [];
+            const autonomousCommunities = autonomousCommunity ? [autonomousCommunity] : [];
             const schoolTypes = Array.from(selectedSchoolTypes);
             
             // Get coordinates
@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
             url.searchParams.append('address', address);
             url.searchParams.append('latitude', latitude);
             url.searchParams.append('longitude', longitude);
-            url.searchParams.append('provinces', provinces.join(','));
+            url.searchParams.append('autonomous_communities', autonomousCommunities.join(','));
             url.searchParams.append('school_types', schoolTypes.join(','));
             url.searchParams.append('include_travel_times', 'true');
             url.searchParams.append('school_ids', selectedSchoolIds.join(','));

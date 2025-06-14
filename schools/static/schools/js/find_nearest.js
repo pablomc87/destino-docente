@@ -587,7 +587,7 @@ $(document).ready(function() {
                 address: placeDetails.address,
                 latitude: placeDetails.lat,
                 longitude: placeDetails.lng,
-                provinces: placeDetails.region ? [placeDetails.region] : [],
+                autonomous_communities: $('#region').val() ? [$('#region').val()] : [],
                 school_types: [
                     ...$('input[name="school_types"]:checked').map(function() {
                         return this.value;
