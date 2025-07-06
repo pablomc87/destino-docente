@@ -1,0 +1,302 @@
+{% load static %}
+
+<div class="search-container">
+    <h1 class="text-center mb-4">Encuentra Tu Próximo Destino</h1>
+    <p class="text-center text-muted mb-4">
+        Introduce tu dirección y te mostraremos los centros educativos más cercanos, 
+        con información detallada sobre cada uno y los tiempos de desplazamiento. 
+        Podrás filtrar por tipo de centro, titularidad y otras características 
+        para encontrar el lugar perfecto para tu carrera docente.
+    </p>
+    <!-- API Limit Message -->
+    <div id="apiLimitMessage" class="alert alert-warning" style="display: none;">
+        <h4>Límite de búsquedas alcanzado</h4>
+        <p>Hemos alcanzado el límite de búsquedas gratuitas. </p>
+        <p>Por favor, <a href="{% url 'users:signin' %}">inicia sesión</a> si tienes una cuenta de pago, o considera <a href="#" class="alert-link">contribuir al proyecto</a> si quieres seguir usando la herramienta.</p>
+    </div>
+    
+    <form id="searchForm" class="mb-4">
+        <!-- Step 1: Choose Origin Address -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Paso 1: Elige tu ubicación</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="address" class="form-label">Tu Dirección</label>
+                    <div id="placePickerContainer">
+                        <input type="text" id="address" class="form-control" placeholder="Introduce tu dirección completa" required>
+                    </div>
+                    <small class="form-text text-muted">Selecciona tu dirección actual para encontrar los centros más cercanos</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Search Options -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Paso 2: Define tus criterios de búsqueda</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="region" class="form-label">Comunidad Autónoma</label>
+                    <select class="form-select" id="region" name="region">
+                        <option value="">Todas</option>
+                        <option value="COMUNIDAD AUTÓNOMA DE ANDALUCÍA">Andalucía</option>
+                        <option value="COMUNIDAD AUTÓNOMA DE ARAGÓN">Aragón</option>
+                        <option value="COMUNIDAD AUTÓNOMA DE ASTURIAS">Asturias</option>
+                        <option value="COMUNIDAD AUTÓNOMA DE LAS ISLAS BALEARES">Islas Baleares</option>
+                        <option value="COMUNIDAD AUTÓNOMA DE CANARIAS">Canarias</option>
+                        <option value="COMUNIDAD AUTÓNOMA DE CANTABRIA">Cantabria</option>
+                        <option value="COMUNIDAD AUTÓNOMA DE CASTILLA-LA MANCHA">Castilla-La Mancha</option>
+                        <option value="COMUNIDAD AUTÓNOMA DE CASTILLA Y LEÓN">Castilla y León</option>
+                        <option value="COMUNIDAD AUTÓNOMA DE CATALUÑA">Cataluña</option>
+                        <option value="COMUNIDAD VALENCIANA">Comunidad Valenciana</option>
+                        <option value="COMUNIDAD AUTÓNOMA DE EXTREMADURA">Extremadura</option>
+                        <option value="COMUNIDAD AUTÓNOMA DE GALICIA">Galicia</option>
+                        <option value="COMUNIDAD DE MADRID">Madrid</option>
+                        <option value="COMUNIDAD AUTÓNOMA DE MURCIA">Murcia</option>
+                        <option value="COMUNIDAD FORAL DE NAVARRA">Navarra</option>
+                        <option value="COMUNIDAD AUTÓNOMA DEL PAÍS VASCO">País Vasco</option>
+                        <option value="COMUNIDAD AUTÓNOMA DE LA RIOJA">La Rioja</option>
+                        <option value="CIUDAD AUTÓNOMA DE CEUTA">Ceuta</option>
+                        <option value="CIUDAD AUTÓNOMA DE MELILLA">Melilla</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Titularidad</label>
+                    <div class="btn-group-vertical w-100" role="group">
+                        <input type="checkbox" class="btn-check" id="publicCheck" name="school_types" value="public">
+                        <label class="btn btn-outline-primary text-start" for="publicCheck">Público</label>
+                        
+                        <input type="checkbox" class="btn-check" id="privateCheck" name="school_types" value="private">
+                        <label class="btn btn-outline-primary text-start" for="privateCheck">Privado (Sin Financiación Pública)</label>
+                        
+                        <input type="checkbox" class="btn-check" id="concertadoCheck" name="school_types" value="concertado">
+                        <label class="btn btn-outline-primary text-start" for="concertadoCheck">Concertado (Con Financiación Pública)</label>
+                    </div>
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Puedes seleccionar múltiples tipos. Los centros concertados son privados que reciben financiación pública.
+                    </small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Niveles Educativos</label>
+                    <div class="btn-group-vertical w-100" role="group">
+                        <input type="checkbox" class="btn-check" id="infantilCheck" name="school_types" value="infantil">
+                        <label class="btn btn-outline-primary text-start" for="infantilCheck">Infantil</label>
+                        
+                        <input type="checkbox" class="btn-check" id="primariaCheck" name="school_types" value="primaria">
+                        <label class="btn btn-outline-primary text-start" for="primariaCheck">Primaria</label>
+                        
+                        <input type="checkbox" class="btn-check" id="secundariaCheck" name="school_types" value="secundaria">
+                        <label class="btn btn-outline-primary text-start" for="secundariaCheck">Secundaria</label>
+
+                        <input type="checkbox" class="btn-check" id="bachilleratoCheck" name="school_types" value="bachillerato">
+                        <label class="btn btn-outline-primary text-start" for="bachilleratoCheck">Bachillerato</label>
+                        
+                        <input type="checkbox" class="btn-check" id="fpCheck" name="school_types" value="fp">
+                        <label class="btn btn-outline-primary text-start" for="fpCheck">Formación Profesional</label>
+                    </div>
+                </div>
+
+                <!-- Advanced School Type Filter (Dashboard only) -->
+                {% if school_types %}
+                <div class="mb-3">
+                    <label class="form-label">Tipos de Centro Específicos</label>
+                    <div class="mb-2">
+                        <select class="form-select" id="advanced_school_type" name="advanced_school_type">
+                            <option value="">Selecciona un tipo de centro...</option>
+                            {% for type in school_types %}
+                            <option value="{{ type }}">{{ type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div id="selectedAdvancedTypes" class="mb-2">
+                        <!-- Selected types will be displayed here -->
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Advanced Options -->
+                <div class="mb-3">
+                    <div class="card border-primary">
+                        <div class="card-body" data-user-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}" data-user-limit="{% if request.user.is_authenticated %}{{ request.user.subscription.max_schools_per_search|default:10 }}{% else %}300{% endif %}" data-free-limit="3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="include_travel_times" name="include_travel_times">
+                                <label class="form-check-label fw-bold" for="include_travel_times">
+                                    <i class="fas fa-clock me-2 text-primary"></i>
+                                    Incluir tiempos de viaje en los resultados
+                                </label>
+                                <div class="form-text text-muted mt-1">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Calcula tiempos de viaje a pie, en coche, en bicicleta y en transporte público
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search me-2"></i>Encontrar Centros Cercanos
+            </button>
+            <button type="button" id="clearSearch" class="btn btn-outline-secondary">
+                <i class="fas fa-eraser me-2"></i>Limpiar Búsqueda
+            </button>
+        </div>
+    </form>
+    
+    <div id="result" class="d-none">
+        <h3 class="mb-3">Última búsqueda:</h3>
+        <div id="schoolResults" class="school-results">
+            <!-- Results count -->
+            <div id="resultsCount" class="alert alert-info mb-3">
+                <p><strong>Tu ubicación:</strong> <span id="userLocation"></span></p>
+                <p><strong>Centros encontrados:</strong> <span id="resultsNumber"></span>
+                <p>Los centros están ordenados por distancia desde tu ubicación.</p>
+            </div>
+            
+            <!-- School cards container -->
+            <div id="schoolCards"></div>
+            
+            <!-- Pagination container -->
+            <div id="paginationContainer" class="mt-4 d-none">
+                <nav aria-label="Navegación de resultados">
+                    <ul class="pagination justify-content-center" id="paginationList">
+                        <!-- Pagination will be generated by JavaScript -->
+                    </ul>
+                </nav>
+            </div>
+            
+            <!-- No results message -->
+            <p id="noResults" class="d-none">No se encontraron centros que coincidan con tus criterios.</p>
+        </div>
+    </div>
+
+    <!-- School card template -->
+    <template id="schoolCardTemplate">
+        <div class="card result-card mb-3">
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-9">
+                        <h5 class="card-title"></h5>
+                        <p class="card-text">
+                            <span class="badge bg-primary me-2"></span>
+                            <span class="text-muted location"></span><br>
+                            <strong>Distancia:</strong> <span class="text-success distance"></span>
+                        </p>
+                    </div>
+                    <div class="col-3 text-end">
+                        <a href="#" class="btn btn-primary details-link">Ver Detalles</a>
+                    </div>
+                </div>
+                <div class="row travel-times-row" style="display: none;">
+                    <div class="col-12">
+                        <div class="travel-times">
+                            <p><i class="fas fa-walking"></i> A pie: <span class="walking-time"></span></p>
+                            <p><i class="fas fa-car"></i> En coche: <span class="driving-time"></span></p>
+                            <p><i class="fas fa-bicycle"></i> En bici: <span class="bicycling-time"></span></p>
+                            <p><i class="fas fa-bus"></i> En transporte público: <span class="transit-time"></span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <div id="error" class="alert alert-danger d-none"></div>
+    <div id="loading" class="text-center d-none">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-2">Buscando centros educativos...</p>
+    </div>
+</div>
+
+<script>
+// Travel times checkbox functionality (works for both standalone and dashboard)
+document.addEventListener('DOMContentLoaded', function() {
+    const includeTravelTimesCheckbox = document.getElementById('include_travel_times');
+    
+    if (includeTravelTimesCheckbox) {
+        includeTravelTimesCheckbox.addEventListener('change', function() {
+            showTravelTimesMessage();
+        });
+        
+        // Show message on page load if checkbox is already checked
+        // Use setTimeout to ensure DOM is fully ready and handle different scenarios
+        setTimeout(() => {
+            // Check multiple ways the checkbox might be checked
+            const isChecked = includeTravelTimesCheckbox.checked || 
+                             includeTravelTimesCheckbox.hasAttribute('checked') ||
+                             includeTravelTimesCheckbox.getAttribute('checked') === 'checked';
+            
+            if (isChecked) {
+                showTravelTimesMessage();
+            }
+        }, 100);
+        
+        // Also check after a longer delay to handle browser form restoration
+        setTimeout(() => {
+            if (includeTravelTimesCheckbox.checked && !document.getElementById('travelTimesMessage')) {
+                showTravelTimesMessage();
+            }
+        }, 500);
+    }
+    
+    // Show appropriate message when travel times checkbox is checked
+    function showTravelTimesMessage() {
+        const isChecked = includeTravelTimesCheckbox.checked;
+        const cardBody = includeTravelTimesCheckbox.closest('.card-body');
+        const isAuthenticated = cardBody.getAttribute('data-user-authenticated') === 'true';
+        
+        // Remove any existing messages
+        const existingMessage = document.getElementById('travelTimesMessage');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+        
+        if (isChecked) {
+            const messageDiv = document.createElement('div');
+            messageDiv.id = 'travelTimesMessage';
+            messageDiv.className = 'alert alert-info mt-2';
+            
+            if (isAuthenticated) {
+                // For authenticated users, show API call count for their subscription limit
+                const userLimit = parseInt(cardBody.getAttribute('data-user-limit')) || 10;
+                const apiCallsPerSchool = 4; // 4 travel modes per school
+                const totalApiCalls = userLimit * apiCallsPerSchool;
+                
+                messageDiv.innerHTML = `
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Información de API:</strong> Esta búsqueda realizará ${totalApiCalls} llamadas a la API de Google Maps 
+                    (${apiCallsPerSchool} por cada uno de los ${userLimit} centros más cercanos con tiempos de viaje).
+                    <br><small class="text-muted">Se mostrarán hasta 300 centros, pero solo los ${userLimit} primeros tendrán tiempos de viaje,
+                        que es el límite de tu suscripción. Si quieres aumentar el límite, <a href="/usuarios/ajustes/" class="alert-link">actualiza tu suscripción</a>.</small>
+                `;
+            } else {
+                // For non-authenticated users, show upgrade message
+                const freeLimit = parseInt(cardBody.getAttribute('data-free-limit')) || 3;
+                messageDiv.innerHTML = `
+                    <i class="fas fa-star me-2"></i>
+                    <strong>Función Premium:</strong> Los tiempos de viaje están incluidos en tu búsqueda gratuita de ${freeLimit} centros. 
+                    Sin tiempos de viaje puedes obtener hasta 300 centros. Para obtener más centros con tiempos de viaje, 
+                    <a href="/usuarios/registrarse/" class="alert-link">regístrate</a> 
+                    o <a href="/usuarios/conectarse/" class="alert-link">inicia sesión</a>.
+                `;
+            }
+            
+            // Insert message after the checkbox
+            cardBody.appendChild(messageDiv);
+        }
+    }
+    
+
+});
+</script> 

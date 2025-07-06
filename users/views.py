@@ -205,8 +205,18 @@ def dashboard(request):
     Display user dashboard.
     """
     try:
-        # Get user's search history
-        search_history = SearchHistory.objects.filter(user=request.user).order_by('-timestamp')[:10]
+        # Get user's search history with pagination
+        search_history_queryset = SearchHistory.objects.filter(user=request.user).order_by('-timestamp')
+        
+        # Pagination
+        from django.core.paginator import Paginator
+        page = request.GET.get('page', 1)
+        paginator = Paginator(search_history_queryset, 10)  # Show 20 searches per page
+        
+        try:
+            search_history = paginator.page(page)
+        except (ValueError, TypeError):
+            search_history = paginator.page(1)
         
         # Get the selected search if search_id is provided
         selected_search = None

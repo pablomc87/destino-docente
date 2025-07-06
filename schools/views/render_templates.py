@@ -26,7 +26,6 @@ def school_detail(request, pk):
         context = {
             'school': school,
             'school_id': school.id,
-            'debug': settings.DEBUG
         }
         return render(request, 'schools/school_detail.html', context)
     except School.DoesNotExist:
@@ -39,7 +38,20 @@ def school_detail(request, pk):
 
 def find_nearest(request):
     """Render the find nearest school page."""
-    return render(request, 'schools/find_nearest.html')
+    # Get unique values for advanced filters (same as dashboard)
+    school_types = School.objects.exclude(
+        center_type__isnull=True
+    ).exclude(
+        center_type=''
+    ).values_list(
+        'center_type', flat=True
+    ).distinct().order_by('center_type')
+    
+    context = {
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+        'school_types': school_types,
+    }
+    return render(request, 'schools/find_nearest.html', context)
 
 def suggest_school(request):
     """Render the school suggestion form page."""
@@ -215,16 +227,8 @@ def about(request):
 
 @login_required(login_url='users:signin')
 def premium_distance_search(request):
-    """Render the premium distance search page."""
-    # Get unique values for dropdowns
-    autonomous_communities = School.objects.exclude(
-        autonomous_community__isnull=True
-    ).exclude(
-        autonomous_community=''
-    ).values_list(
-        'autonomous_community', flat=True
-    ).distinct().order_by('autonomous_community')
-    
+    """Render the find nearest schools page."""
+    # Get unique values for advanced filters
     school_types = School.objects.exclude(
         center_type__isnull=True
     ).exclude(
@@ -234,8 +238,8 @@ def premium_distance_search(request):
     ).distinct().order_by('center_type')
     
     context = {
-        'autonomous_communities': autonomous_communities,
-        'school_types': school_types,
         'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+        'debug': settings.DEBUG,
+        'school_types': school_types,
     }
-    return render(request, 'schools/premium_distance_search.html', context)
+    return render(request, 'schools/find_nearest_dashboard.html', context)

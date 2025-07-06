@@ -1,0 +1,120 @@
+{% extends 'base_user.html' %}
+{% load static %}
+
+{% block title %}Encuentra Tu Próximo Destino - Destino Docente{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'schools/css/find_nearest.css' %}" rel="stylesheet" />
+<style>
+/* Override search-container styles for dashboard */
+.search-container {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+/* Advanced type badge hover styles */
+.badge-advanced-type {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.badge-advanced-type:hover {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+}
+</style>
+{% endblock %}
+
+{% block user_content %}
+{% include 'schools/find_nearest_base.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places"></script>
+<script type="module" src="{% static 'schools/js/find_nearest.js' %}"></script>
+
+<script>
+// Advanced search functionality for dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    const advancedSchoolTypeSelect = document.getElementById('advanced_school_type');
+    const selectedAdvancedTypesDiv = document.getElementById('selectedAdvancedTypes');
+    const includeTravelTimesCheckbox = document.getElementById('include_travel_times');
+    
+    let selectedAdvancedTypes = [];
+
+    // Handle advanced school type selection
+    if (advancedSchoolTypeSelect) {
+        advancedSchoolTypeSelect.addEventListener('change', function() {
+            const selectedValue = this.value;
+            if (selectedValue && !selectedAdvancedTypes.includes(selectedValue)) {
+                selectedAdvancedTypes.push(selectedValue);
+                updateSelectedTypesDisplay();
+                this.value = ''; // Reset select
+            }
+        });
+    }
+
+    // Update the display of selected types
+    function updateSelectedTypesDisplay() {
+        if (selectedAdvancedTypesDiv) {
+            selectedAdvancedTypesDiv.innerHTML = '';
+            selectedAdvancedTypes.forEach((type, index) => {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-primary me-2 mb-2 badge-advanced-type';
+                badge.innerHTML = type;
+                
+                // Make entire badge clickable
+                badge.addEventListener('click', function() {
+                    removeAdvancedType(index);
+                });
+                
+                selectedAdvancedTypesDiv.appendChild(badge);
+            });
+        }
+    }
+
+    // Remove advanced type from selection
+    window.removeAdvancedType = function(index) {
+        selectedAdvancedTypes.splice(index, 1);
+        updateSelectedTypesDisplay();
+        storeAdvancedFilters();
+    };
+
+    // Store advanced filters in session storage
+    function storeAdvancedFilters() {
+        const filters = {
+            advancedSchoolTypes: selectedAdvancedTypes,
+            includeTravelTimes: includeTravelTimesCheckbox ? includeTravelTimesCheckbox.checked : false
+        };
+        sessionStorage.setItem('advancedFilters', JSON.stringify(filters));
+    }
+
+    // Load advanced filters from session storage
+    function loadAdvancedFilters() {
+        const storedFilters = sessionStorage.getItem('advancedFilters');
+        if (storedFilters) {
+            const filters = JSON.parse(storedFilters);
+            selectedAdvancedTypes = filters.advancedSchoolTypes || [];
+            if (includeTravelTimesCheckbox) {
+                includeTravelTimesCheckbox.checked = filters.includeTravelTimes || false;
+            }
+            updateSelectedTypesDisplay();
+        }
+    }
+
+    // Load filters on page load
+    loadAdvancedFilters();
+
+    // Store filters when they change
+    if (includeTravelTimesCheckbox) {
+        includeTravelTimesCheckbox.addEventListener('change', function() {
+            storeAdvancedFilters();
+        });
+    }
+});
+</script>
+{% endblock %} 

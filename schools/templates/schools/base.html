@@ -48,9 +48,9 @@
                     <li class="nav-item">
                         <a class="nav-link {% if '/buscar/' in request.path %}active{% endif %}" href="{% url 'schools:search' %}">Explorar centros</a>
                     </li>
-                    <li class="nav-item">
+                    <!-- <li class="nav-item">
                         <a class="nav-link {% if '/sugerir-centro/' in request.path %}active{% endif %}" href="/sugerir-centro/">Añadir Centro</a>
-                    </li>
+                    </li> -->
                 </ul>
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
@@ -62,10 +62,10 @@
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link {% if '/users/signin/' in request.path %}active{% endif %}" href="{% url 'users:signin' %}">Iniciar sesión</a>
+                            <a class="nav-link {% if '/usuarios/conectarse/' in request.path %}active{% endif %}" href="{% url 'users:signin' %}">Iniciar sesión</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if '/users/signup/' in request.path %}active{% endif %}" href="{% url 'users:signup' %}">Registrarse</a>
+                            <a class="nav-link {% if '/usuarios/registrarse/' in request.path %}active{% endif %}" href="{% url 'users:signup' %}">Registrarse</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -160,7 +160,7 @@
                         <li><a href="{% url 'schools:about' %}" class="text-decoration-none">Quiénes Somos</a></li>
                         <li><a href="{% url 'schools:find_nearest' %}" class="text-decoration-none">Buscar próximo destino</a></li>
                         <li><a href="{% url 'schools:search' %}" class="text-decoration-none">Ver todos los centros</a></li>
-                        <li><a href="{% url 'schools:suggest_school' %}" class="text-decoration-none">Añadir un centro</a></li>
+                        <!-- <li><a href="{% url 'schools:suggest_school' %}" class="text-decoration-none">Añadir un centro</a></li> -->
                     </ul>
                 </div>
                 <div class="col-md-2">

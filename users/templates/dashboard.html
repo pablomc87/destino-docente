@@ -17,7 +17,7 @@
                         {% for search in search_history %}
                         <li>
                             <a class="dropdown-item" href="#" 
-                               onclick="event.preventDefault(); selectSearch({{ search.id }}, event)"
+                               onclick="event.preventDefault(); selectSearch('{{ search.id }}', event)"
                                data-search-id="{{ search.id }}"
                                data-location="{{ search.location }}"
                                data-results="{{ search.results_count }}"
@@ -25,7 +25,7 @@
                                data-school-types="{{ search.school_types|join:', ' }}"
                                data-lat="{{ search.latitude }}"
                                data-lng="{{ search.longitude }}"
-                               data-search-results='{{ search.results|json_script:"search-results"|safe }}'
+                               data-search-results="{{ search.results|escapejs }}"
                                data-autonomous-community="{{ search.autonomous_community }}">
                                 <i class="fas fa-star {% if search.is_favorite %}text-warning{% else %}text-muted{% endif %} me-2"></i>
                                 {{ search.location }} ({{ search.timestamp|date:"d F Y H:i" }})
@@ -162,7 +162,7 @@
                                         <td>{{ search.results_count }} centros</td>
                                         <td>
                                             <button class="btn btn-sm btn-outline-primary show-search-details" 
-                                                    onclick="selectSearch({{ search.id }}, event)"
+                                                    onclick="selectSearch('{{ search.id }}', event)"
                                                     data-search-id="{{ search.id }}"
                                                     data-location="{{ search.location }}"
                                                     data-results="{{ search.results_count }}"
@@ -170,17 +170,17 @@
                                                     data-school-types="{{ search.school_types|join:', ' }}"
                                                     data-lat="{{ search.latitude }}"
                                                     data-lng="{{ search.longitude }}"
-                                                    data-search-results='{{ search.results|json_script:"search-results"|safe }}'
+                                                    data-search-results="{{ search.results|escapejs }}"
                                                     data-autonomous-community="{{ search.autonomous_community }}">
                                                 <i class="fas fa-eye me-1"></i> Ver
                                             </button>
                                             <button class="btn btn-sm btn-outline-warning"
-                                                    onclick="toggleFavorite({{ search.id }}, this)"
+                                                    onclick="toggleFavorite('{{ search.id }}', this)"
                                                     data-search-id="{{ search.id }}">
                                                 <i class="fas fa-star {% if search.is_favorite %}text-warning{% else %}text-muted{% endif %}"></i>
                                             </button>
                                             <button class="btn btn-sm btn-outline-danger"
-                                                    onclick="deleteSearch({{ search.id }}, this)"
+                                                    onclick="deleteSearch('{{ search.id }}', this)"
                                                     data-search-id="{{ search.id }}">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -189,6 +189,47 @@
                                 {% endfor %}
                             </tbody>
                         </table>
+                        
+                        <!-- Pagination for search history -->
+                        {% if search_history.has_other_pages %}
+                        <nav aria-label="Navegación del historial" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if search_history.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ search_history.previous_page_number }}{% if request.GET.search_id %}&search_id={{ request.GET.search_id }}{% endif %}" aria-label="Anterior">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                {% with ''|center:search_history.paginator.num_pages as range %}
+                                {% for _ in range %}
+                                    {% with forloop.counter as i %}
+                                        {% if i == 1 or i == search_history.paginator.num_pages or i >= search_history.number|add:"-2" and i <= search_history.number|add:"2" %}
+                                            {% if search_history.number == i %}
+                                            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                                            {% else %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ i }}{% if request.GET.search_id %}&search_id={{ request.GET.search_id }}{% endif %}">{{ i }}</a>
+                                            </li>
+                                            {% endif %}
+                                        {% elif i == search_history.number|add:"-3" or i == search_history.number|add:"3" %}
+                                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endfor %}
+                                {% endwith %}
+
+                                {% if search_history.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ search_history.next_page_number }}{% if request.GET.search_id %}&search_id={{ request.GET.search_id }}{% endif %}" aria-label="Siguiente">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
                     </div>
                 {% else %}
                     <div class="text-center py-4">
@@ -227,7 +268,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const schoolTypes = button.getAttribute('data-school-types');
             const lat = button.getAttribute('data-lat');
             const lng = button.getAttribute('data-lng');
-            const searchResults = JSON.parse(button.getAttribute('data-search-results') || '[]');
+            let searchResults = [];
+            try {
+                const resultsStr = button.getAttribute('data-search-results');
+                if (resultsStr && resultsStr.trim() !== '') {
+                    searchResults = JSON.parse(resultsStr);
+                }
+            } catch (e) {
+                console.error('Error parsing search results in modal:', e);
+                console.error('Raw data:', button.getAttribute('data-search-results'));
+            }
 
             document.getElementById('modalLocation').textContent = location;
             document.getElementById('modalResults').textContent = results;
@@ -413,7 +463,7 @@ document.addEventListener('DOMContentLoaded', function() {
             id: searchId,
             location: button.getAttribute('data-location'),
             results_count: button.getAttribute('data-results'),
-            autonomous_community: button.getAttribute('data-autonomous-community'),
+            autonomous_community: button.getAttribute('data-autonomous-community') || null,
             provinces: button.getAttribute('data-provinces'),
             school_types: button.getAttribute('data-school-types'),
             latitude: button.getAttribute('data-lat'),
@@ -426,11 +476,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Parse search results
         try {
             const resultsStr = button.getAttribute('data-search-results');
-            if (resultsStr) {
-                search.results = JSON.parse(resultsStr.replace(/<script[^>]*>|<\/script>/g, ''));
+            if (resultsStr && resultsStr.trim() !== '') {
+                search.results = JSON.parse(resultsStr);
+            } else {
+                console.warn('No search results data found');
+                search.results = [];
             }
         } catch (e) {
             console.error('Error parsing search results:', e);
+            console.error('Raw data:', resultsStr);
             search.results = [];
         }
 
@@ -734,30 +788,10 @@ function deleteSearch(searchId, button) {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            // Remove the row from the table
-            const row = button.closest('tr');
-            row.remove();
-            
-            // Remove the dropdown item
-            const dropdownItem = document.querySelector(`.dropdown-item[data-search-id="${searchId}"]`).closest('li');
-            dropdownItem.remove();
-            
-            // If this was the selected search, select the first available one
-            const firstSearch = document.querySelector('.dropdown-item');
-            if (firstSearch) {
-                selectSearch(firstSearch.getAttribute('data-search-id'), { target: firstSearch });
-            } else {
-                // If no searches left, show the empty state
-                document.querySelector('.card-body .row:first-child').innerHTML = `
-                    <div class="text-center py-4">
-                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">No hay historial de búsquedas disponible.</p>
-                        <a href="{% url 'schools:find_nearest' %}" class="btn btn-primary">
-                            <i class="fas fa-search me-2"></i> Buscar Centros
-                        </a>
-                    </div>
-                `;
-            }
+            // Simply refresh the page to show updated state
+            window.location.reload();
+        } else {
+            alert('Error al eliminar la búsqueda');
         }
     })
     .catch(error => {
@@ -766,32 +800,6 @@ function deleteSearch(searchId, button) {
     });
 }
 
-// Debug cookie information
-function debugCookies() {
-    console.log('Cookie Debug Information:');
-    console.log('All cookies:', document.cookie);
-    
-    // Check session cookie
-    const sessionCookie = getCookie('sessionid');
-    console.log('Session cookie exists:', !!sessionCookie);
-    if (sessionCookie) {
-        console.log('Session cookie value:', sessionCookie);
-    }
-    
-    // Check debug cookie
-    const debugCookie = getCookie('session_debug');
-    console.log('Debug cookie exists:', !!debugCookie);
-    
-    // Check if cookies are being sent with requests
-    fetch(window.location.href, {
-        credentials: 'same-origin'
-    }).then(response => {
-        console.log('Cookies sent with request:', response.headers.get('set-cookie'));
-    });
-}
-
-// Run debug on page load
-document.addEventListener('DOMContentLoaded', debugCookies);
 
 // Existing getCookie function
 function getCookie(name) {

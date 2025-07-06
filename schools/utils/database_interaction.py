@@ -7,14 +7,17 @@ from schools.models import School
 import logging
 
 
-def filter_schools(queryset, autonomous_communities, school_types):
+def filter_schools(queryset, autonomous_communities=None, ownership_types=None, education_levels=None, advanced_school_types=None):
     """
-    Filter schools by autonomous community and school types (ownership, education level).
+    Filter schools by autonomous community, ownership types, education levels, and advanced school types.
+    All filter groups use AND logic - schools must meet ALL selected criteria.
     
     Args:
         queryset: Base queryset of schools to filter
         autonomous_communities (list): List of autonomous communities to filter by
-        school_types (list): List of school types to filter by (ownership and education level)
+        ownership_types (list): List of ownership types to filter by (public, private, concertado)
+        education_levels (list): List of education levels to filter by (infantil, primaria, secundaria, bachillerato, fp)
+        advanced_school_types (list): List of specific center types to filter by
     
     Returns:
         QuerySet: Filtered queryset of schools
@@ -23,87 +26,102 @@ def filter_schools(queryset, autonomous_communities, school_types):
     logger.debug(f"Starting filter_schools with {len(queryset)} schools")
     
     # Clean and validate filters
-    autonomous_communities = [ac for ac in autonomous_communities if ac and ac.strip()]
-    school_types = [st for st in school_types if st and st.strip()]
+    autonomous_communities = [ac for ac in (autonomous_communities or []) if ac and ac.strip()]
+    ownership_types = [ot for ot in (ownership_types or []) if ot and ot.strip()]
+    education_levels = [el for el in (education_levels or []) if el and el.strip()]
+    advanced_school_types = [ast for ast in (advanced_school_types or []) if ast and ast.strip()]
     
     logger.debug(f"Cleaned autonomous communities filter: {autonomous_communities}")
-    logger.debug(f"Cleaned school types filter: {school_types}")
+    logger.debug(f"Cleaned ownership types filter: {ownership_types}")
+    logger.debug(f"Cleaned education levels filter: {education_levels}")
+    logger.debug(f"Cleaned advanced school types filter: {advanced_school_types}")
     
     initial_count = queryset.count()
     
+    # Apply filters with AND logic between groups
     if autonomous_communities:
         logger.debug(f"Filtering by autonomous communities: {autonomous_communities}")
         queryset = queryset.filter(autonomous_community__in=autonomous_communities)
         logger.debug(f"After autonomous communities filter: {queryset.count()} schools")
 
-    if school_types:
-        ownership_types = [t for t in school_types if t in ['public', 'private', 'concertado']]
-        education_levels = [t for t in school_types if t in ['infantil', 'primaria', 'secundaria', 'bachillerato', 'fp']]
+    if ownership_types:
+        logger.debug(f"Filtering by ownership types: {ownership_types}")
+        ownership_conditions = Q()
+        if 'public' in ownership_types:
+            ownership_conditions |= Q(nature__icontains='Público')
+        if 'private' in ownership_types:
+            # Private schools must be private in nature AND not concertado
+            ownership_conditions |= (Q(nature__icontains='Privado') & Q(is_concerted=False))
+        if 'concertado' in ownership_types:
+            # Concertado schools must be private in nature AND concertado
+            ownership_conditions |= (Q(nature__icontains='Privado') & Q(is_concerted=True))
+        queryset = queryset.filter(ownership_conditions)
+        logger.debug(f"After ownership filter: {queryset.count()} schools")
+
+    if education_levels:
+        logger.debug(f"Filtering by education levels: {education_levels}")
+        education_conditions = Q()
         
-        logger.debug(f"Ownership types to filter: {ownership_types}")
-        logger.debug(f"Education levels to filter: {education_levels}")
+        # Handle basic education levels only
+        if 'infantil' in education_levels:
+            education_conditions |= Q(studies__name__icontains='infantil')
+        if 'primaria' in education_levels:
+            education_conditions |= Q(studies__name__icontains='primaria')
+        if 'secundaria' in education_levels:
+            education_conditions |= (
+                Q(generic_name__icontains='secundaria') |
+                Q(generic_name__icontains='ESO') |
+                Q(generic_name__icontains='Educación Secundaria')
+            )
+        if 'bachillerato' in education_levels:
+            education_conditions |= (
+                Q(studies__name__icontains='bachillerato') |
+                Q(generic_name__icontains='bachillerato') |
+                Q(center_type__icontains='bachillerato')
+            )
+        if 'fp' in education_levels:
+            education_conditions |= (
+                Q(studies__name__icontains='formación profesional') | 
+                Q(studies__name__icontains='FP') |
+                Q(studies__degree__icontains='formación profesional') |
+                Q(studies__degree__icontains='FP') |
+                Q(studies__degree__icontains='grado') |
+                Q(generic_name__icontains='formación profesional') |
+                Q(generic_name__icontains='FP') |
+                Q(center_type__icontains='formación profesional') |
+                Q(center_type__icontains='FP') |
+                Q(center_type__icontains='ciclo')
+            )
+        
+        queryset = queryset.filter(education_conditions).distinct()
+        logger.debug(f"After education level filter: {queryset.count()} schools")
 
-        # Ownership
-        if ownership_types:
-            ownership_conditions = Q()
-            if 'public' in ownership_types:
-                ownership_conditions |= Q(nature__icontains='Público')
-            if 'private' in ownership_types:
-                ownership_conditions |= Q(nature__icontains='Privado')
-            if 'concertado' in ownership_types:
-                ownership_conditions |= Q(is_concerted=True)
-            queryset = queryset.filter(ownership_conditions)
-            logger.debug(f"After ownership filter: {queryset.count()} schools")
-
-        # Education level
-        if education_levels:
-            education_conditions = Q()
-            if 'infantil' in education_levels:
-                education_conditions |= Q(studies__name__icontains='infantil')
-            if 'primaria' in education_levels:
-                education_conditions |= Q(studies__name__icontains='primaria')
-            if 'secundaria' in education_levels:
-                education_conditions |= (
-                    Q(generic_name__icontains='secundaria') |
-                    Q(generic_name__icontains='ESO') |
-                    Q(generic_name__icontains='Educación Secundaria')
-                )
-            if 'bachillerato' in education_levels:
-                education_conditions |= (
-                    Q(studies__name__icontains='bachillerato') |
-                    Q(generic_name__icontains='bachillerato') |
-                    Q(center_type__icontains='bachillerato')
-                )
-            if 'fp' in education_levels:
-                education_conditions |= (
-                    Q(studies__name__icontains='formación profesional') | 
-                    Q(studies__name__icontains='FP') |
-                    Q(studies__degree__icontains='formación profesional') |
-                    Q(studies__degree__icontains='FP') |
-                    Q(studies__degree__icontains='grado') |
-                    Q(generic_name__icontains='formación profesional') |
-                    Q(generic_name__icontains='FP') |
-                    Q(center_type__icontains='formación profesional') |
-                    Q(center_type__icontains='FP') |
-                    Q(center_type__icontains='ciclo')
-                )
-            if education_conditions:
-                queryset = queryset.filter(education_conditions).distinct()
-                logger.debug(f"After education level filter: {queryset.count()} schools")
+    if advanced_school_types:
+        logger.debug(f"Filtering by advanced school types: {advanced_school_types}")
+        advanced_conditions = Q()
+        
+        # Advanced school types are specific center types
+        for advanced_type in advanced_school_types:
+            advanced_conditions |= Q(center_type__icontains=advanced_type)
+        
+        queryset = queryset.filter(advanced_conditions).distinct()
+        logger.debug(f"After advanced school types filter: {queryset.count()} schools")
     
     final_count = queryset.count()
     logger.debug(f"Filtering complete. Initial count: {initial_count}, Final count: {final_count}")
     return queryset
 
-def find_nearest_schools(user_lat, user_lon, autonomous_communities=None, school_types=None, limit=3):
+def find_nearest_schools(user_lat, user_lon, autonomous_communities=None, ownership_types=None, education_levels=None, advanced_school_types=None, limit=3):
     """
-    Find the nearest schools to a given location, optionally filtered by autonomous communities and school types.
+    Find the nearest schools to a given location, optionally filtered by autonomous communities, ownership types, education levels, and advanced school types.
     
     Args:
         user_lat (float): User's latitude
         user_lon (float): User's longitude
         autonomous_communities (list, optional): List of autonomous communities to filter by
-        school_types (list, optional): List of school types to filter by
+        ownership_types (list, optional): List of ownership types to filter by (public, private, concertado)
+        education_levels (list, optional): List of education levels to filter by (infantil, primaria, secundaria, bachillerato, fp)
+        advanced_school_types (list, optional): List of specific center types to filter by
         limit (int, optional): Maximum number of schools to return. Defaults to 3.
     
     Returns:
@@ -111,7 +129,7 @@ def find_nearest_schools(user_lat, user_lon, autonomous_communities=None, school
     """
     logger = logging.getLogger(__name__)
     logger.debug(f"Starting find_nearest_schools with coordinates: ({user_lat}, {user_lon})")
-    logger.debug(f"Filters - Autonomous communities: {autonomous_communities}, School types: {school_types}")
+    logger.debug(f"Filters - Autonomous communities: {autonomous_communities}, Ownership types: {ownership_types}, Education levels: {education_levels}, Advanced school types: {advanced_school_types}")
     logger.debug(f"Limit: {limit}")
     
     try:
@@ -119,7 +137,7 @@ def find_nearest_schools(user_lat, user_lon, autonomous_communities=None, school
         base_query = School.objects.exclude(latitude__isnull=True).exclude(longitude__isnull=True)
         logger.debug(f"Base query count (with valid coordinates): {base_query.count()}")
         
-        schools = filter_schools(base_query, autonomous_communities, school_types)
+        schools = filter_schools(base_query, autonomous_communities, ownership_types, education_levels, advanced_school_types)
         logger.debug(f"After filtering: {schools.count()} schools")
 
         # Calculate distances and sort in memory

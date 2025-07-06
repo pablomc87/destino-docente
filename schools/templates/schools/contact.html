@@ -6,45 +6,85 @@
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h2 class="mb-0">Contacta con nosotros</h2>
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient-primary text-white text-center py-4">
+                    <div class="mb-3">
+                        <i class="fas fa-envelope-open-text fa-3x mb-3"></i>
+                    </div>
+                    <h2 class="mb-0 fw-bold">Contacta con nosotros</h2>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <div class="alert alert-info border-0 bg-light">
+                            <i class="fas fa-info-circle text-primary me-2"></i>
+                            <strong>¿Necesitas ayuda?</strong>
+                            <p class="mb-0 mt-2 text-muted">
+                                Si has visto algún error en los datos, tienes alguna pregunta, sugerencia o comentario, por favor, rellena el formulario y nos pondremos en contacto contigo lo antes posible.
+                            </p>
+                        </div>
+                    </div>
+                    
                     {% if messages %}
                         {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }}">
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
                                 {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
                         {% endfor %}
                     {% endif %}
                     
-                    <form method="post" id="contactForm">
+                    <form method="post" id="contactForm" class="needs-validation" novalidate>
                         {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="name" class="form-label">Nombre</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label fw-semibold">
+                                    <i class="fas fa-user text-primary me-2"></i>Nombre completo
+                                </label>
+                                <input type="text" class="form-control form-control-lg" id="name" name="name" required>
+                                <div class="invalid-feedback">
+                                    Por favor, introduce tu nombre.
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label fw-semibold">
+                                    <i class="fas fa-envelope text-primary me-2"></i>Email
+                                </label>
+                                <input type="email" class="form-control form-control-lg" id="email" name="email" required>
+                                <div class="invalid-feedback">
+                                    Por favor, introduce un email válido.
+                                </div>
+                            </div>
                         </div>
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
+                            <label for="subject" class="form-label fw-semibold">
+                                <i class="fas fa-tag text-primary me-2"></i>Asunto
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="subject" name="subject" required>
+                            <div class="invalid-feedback">
+                                Por favor, introduce un asunto.
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="subject" class="form-label">Asunto</label>
-                            <input type="text" class="form-control" id="subject" name="subject" required>
+                        <div class="mb-4">
+                            <label for="message" class="form-label fw-semibold">
+                                <i class="fas fa-comment-alt text-primary me-2"></i>Mensaje
+                            </label>
+                            <textarea class="form-control" id="message" name="message" rows="6" required placeholder="Cuéntanos en qué podemos ayudarte..."></textarea>
+                            <div class="invalid-feedback">
+                                Por favor, escribe tu mensaje.
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="message" class="form-label">Mensaje</label>
-                            <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
-                        </div>
-                        <div class="mb-3">
+                        <div class="mb-4">
                             <div class="h-captcha" data-sitekey="{{ hcaptcha_site_key }}"></div>
                             <div class="invalid-feedback">
+                                <i class="fas fa-shield-alt me-1"></i>
                                 Por favor, verifica que no eres un robot.
                             </div>
                         </div>
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Enviar mensaje</button>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane me-2"></i>Enviar mensaje
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -52,6 +92,61 @@
         </div>
     </div>
 </div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+}
+
+.card.shadow-lg {
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.form-control-lg {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.form-control-lg:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.btn-lg {
+    border-radius: 10px;
+    padding: 12px 24px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-lg:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.alert-info {
+    border-radius: 10px;
+    border-left: 4px solid #0d6efd;
+}
+
+.form-label {
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+textarea.form-control {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    resize: vertical;
+}
+
+textarea.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}
@@ -63,6 +158,27 @@ document.getElementById('contactForm').addEventListener('submit', function(e) {
         e.preventDefault();
         document.querySelector('.h-captcha').classList.add('is-invalid');
     }
+    
+    // Bootstrap form validation
+    if (!this.checkValidity()) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    this.classList.add('was-validated');
+});
+
+// Add loading state to submit button
+document.getElementById('contactForm').addEventListener('submit', function() {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enviando...';
+    submitBtn.disabled = true;
+    
+    // Reset button after 5 seconds if form doesn't submit
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 5000);
 });
 </script>
 {% endblock %} 
