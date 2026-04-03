@@ -1,0 +1,17 @@
+{{- if and (default true .Values.web.enabled) (default false .Values.web.mediaPersistence.enabled) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-web-media
+  labels:
+    {{- include "destino-docente.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.web.mediaPersistence.size }}
+  {{- if .Values.web.mediaPersistence.storageClass }}
+  storageClassName: {{ .Values.web.mediaPersistence.storageClass }}
+  {{- end }}
+{{- end }}

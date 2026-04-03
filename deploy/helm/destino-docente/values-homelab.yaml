@@ -1,0 +1,22 @@
+# Homelab / edge node (ARM64-friendly). Merge via Argo valueFiles.
+
+web:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 768Mi
+
+ingress:
+  className: traefik
+  host: destino-docente.homelab.local
+
+postgresql:
+  primary:
+    persistence:
+      storageClass: local-path
+      size: 8Gi
+
+backup:
+  storageClass: local-path

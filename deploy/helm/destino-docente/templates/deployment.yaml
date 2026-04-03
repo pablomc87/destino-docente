@@ -1,0 +1,65 @@
+{{- if (default true .Values.web.enabled) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-web
+  labels:
+    {{- include "destino-docente.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  replicas: {{ .Values.web.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "destino-docente.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "destino-docente.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: web
+    spec:
+      containers:
+        - name: web
+          image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag }}"
+          imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: {{ .Values.web.existingAppSecret }}
+          env:
+            - name: ENVIRONMENT
+              value: "production"
+            - name: GUNICORN_WORKERS
+              value: {{ .Values.web.gunicornWorkers | quote }}
+            - name: GUNICORN_THREADS
+              value: {{ .Values.web.gunicornThreads | quote }}
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health/
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health/
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          {{- if (default false .Values.web.mediaPersistence.enabled) }}
+          volumeMounts:
+            - name: media
+              mountPath: /app/media
+          {{- end }}
+      {{- if (default false .Values.web.mediaPersistence.enabled) }}
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-web-media
+      {{- end }}
+{{- end }}

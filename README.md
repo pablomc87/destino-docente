@@ -1,6 +1,8 @@
 # Schools Backend
 
-A Django-based backend application for managing school information and studies. This application provides a RESTful API and admin interface for managing schools, studies, and their relationships.
+A Django-based backend application for managing school information and studies.
+
+**Production** runs on **Kubernetes** (Helm chart in `deploy/helm/destino-docente/`, GitOps via [kubernetes-homelab](https://github.com/pablomc87/kubernetes-homelab)). See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). CI builds the image with [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml) on `main`. This application provides a RESTful API and admin interface for managing schools, studies, and their relationships.
 
 ## Features
 
@@ -14,9 +16,11 @@ A Django-based backend application for managing school information and studies. 
 
 ## Prerequisites
 
-- Python 3.11+
+- **Python 3.12** (same as the production Docker image; use exactly this major.minor for local work)
 - Docker
 - ngrok (optional, for public access)
+
+If you use [pyenv](https://github.com/pyenv/pyenv) or [asdf](https://asdf-vm.com/), the repo includes [`.python-version`](.python-version) so the correct version is selected in this directory.
 
 ## Installation
 
@@ -26,14 +30,17 @@ git clone <repository-url>
 cd schools-backend
 ```
 
-2. Create and activate a virtual environment:
+2. Create and activate a virtual environment **with Python 3.12**:
 ```bash
-python -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
-3. Install dependencies:
+   If `python3.12` is not on your `PATH`, install 3.12 (e.g. `pyenv install 3.12` then `pyenv local` picks up `.python-version`), or use the full path to that interpreter.
+
+3. Upgrade pip (recommended) and install dependencies:
 ```bash
+pip install -U pip
 pip install -r requirements.txt
 ```
 

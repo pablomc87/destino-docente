@@ -33,12 +33,39 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY",)
 DEBUG = os.environ.get("ENVIRONMENT") == "development"
 
 IS_HEROKU_APP = "DYNO" in os.environ and "CI" not in os.environ
+IS_PRODUCTION = os.environ.get("ENVIRONMENT") == "production" or os.environ.get("DJANGO_ENV") == "production"
+TRUST_BEHIND_PROXY = os.environ.get("TRUST_BEHIND_PROXY", "").lower() in ("1", "true", "yes")
+
+
+def _database_url_configured():
+    url = (os.environ.get("DATABASE_URL") or "").strip()
+    return bool(url) and not url.startswith("sqlite:")
+
 
 if IS_HEROKU_APP:
     ALLOWED_HOSTS = ["*"]
     SECURE_SSL_REDIRECT = True
+elif IS_PRODUCTION or _database_url_configured():
+    ALLOWED_HOSTS = [
+        h.strip()
+        for h in os.environ.get("ALLOWED_HOSTS", "").split(",")
+        if h.strip()
+    ]
+    if not ALLOWED_HOSTS:
+        raise ValueError("ALLOWED_HOSTS must be set in production when using DATABASE_URL")
+    SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "false").lower() in ("1", "true", "yes")
+    CSRF_TRUSTED_ORIGINS = [
+        o.strip()
+        for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+        if o.strip()
+    ]
+    if TRUST_BEHIND_PROXY:
+        SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+        USE_X_FORWARDED_HOST = True
 else:
     ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0').split(',')
+    SECURE_SSL_REDIRECT = False
+    CSRF_TRUSTED_ORIGINS = []
 
 # Google Maps API Key
 GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
@@ -105,13 +132,22 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 if IS_HEROKU_APP:
-    import dj_database_url
     DATABASES = {
         "default": dj_database_url.config(
             env="DATABASE_URL",
             conn_max_age=600,
             conn_health_checks=True,
             ssl_require=True,
+        ),
+    }
+elif _database_url_configured():
+    ssl_require = os.environ.get("DATABASE_SSL_REQUIRE", "false").lower() in ("1", "true", "yes")
+    DATABASES = {
+        "default": dj_database_url.config(
+            env="DATABASE_URL",
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=ssl_require,
         ),
     }
 else:
@@ -231,7 +267,7 @@ LOGOUT_REDIRECT_URL = '/'
 
 # Session settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
@@ -258,3 +294,15 @@ SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
 # hCaptcha settings
 HCAPTCHA_SITE_KEY = os.environ.get('HCAPTCHA_SITE_KEY', '')  # Replace with your hCaptcha site key
 HCAPTCHA_SECRET_KEY = os.environ.get('HCAPTCHA_SECRET_KEY', '')  # Replace with your hCaptcha secret key
+
+_redis_url = (os.environ.get("REDIS_URL") or os.environ.get("VALKEY_URL") or "").strip()
+if _redis_url:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": _redis_url,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+        }
+    }

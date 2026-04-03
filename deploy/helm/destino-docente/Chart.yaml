@@ -1,0 +1,15 @@
+apiVersion: v2
+name: destino-docente
+description: Destino Docente Django application with PostgreSQL and Valkey
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+dependencies:
+  - name: postgresql
+    version: 18.5.15
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: valkey
+    version: 5.4.9
+    repository: https://charts.bitnami.com/bitnami
+    condition: valkey.enabled

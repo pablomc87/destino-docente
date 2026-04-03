@@ -3,8 +3,10 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from schools import views
+from config import views as config_views
 
 urlpatterns = [
+    path("health/", config_views.health, name="health"),
     # Admin URLs
     path('admin/', admin.site.urls),
     

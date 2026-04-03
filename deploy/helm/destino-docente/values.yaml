@@ -1,0 +1,77 @@
+# Default values; override in values-homelab.yaml or Argo valueFiles.
+
+nameOverride: ""
+fullnameOverride: ""
+
+web:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/pablomc87/destino-docente
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  existingAppSecret: destino-docente-app-env
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 768Mi
+  gunicornWorkers: "2"
+  gunicornThreads: "4"
+  mediaPersistence:
+    enabled: false
+    storageClass: ""
+    size: 2Gi
+
+ingress:
+  enabled: true
+  className: traefik
+  host: destino-docente.homelab.local
+  tls: false
+  tlsSecretName: ""
+
+backup:
+  enabled: true
+  schedule: "0 3 * * 0"
+  storageClass: local-path
+  size: 5Gi
+  retentionDays: 14
+
+postgresql:
+  enabled: true
+  auth:
+    existingSecret: destino-docente-credentials
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: password
+    username: destino_docente
+    database: destino_docente
+  primary:
+    persistence:
+      enabled: true
+      storageClass: ""
+      size: 8Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 512Mi
+
+valkey:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    existingSecret: destino-docente-credentials
+    existingSecretPasswordKey: valkey-password
+  primary:
+    persistence:
+      enabled: false
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
