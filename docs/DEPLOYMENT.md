@@ -33,6 +33,44 @@ Database copy: see [migration-from-heroku.md](migration-from-heroku.md).
 
 If the browser sends `Host: 127.0.0.1:8080`, that host must be allowed — already listed. For `Host: destino-docente.homelab.local`, that is also in the default Terraform list.
 
+### Web pod crashes on migrate: `DATABASE_URL` / `dj_database_url`
+
+The app needs a real Postgres URL in the container, e.g. `postgresql://destino_docente:…@destino-docente-postgresql…/destino_docente?sslmode=disable`.
+
+1. Confirm the Secret exists and the key is exactly `DATABASE_URL` (case-sensitive):
+
+   `kubectl get secret destino-docente-app-env -n destino-docente -o jsonpath='{.data.DATABASE_URL}' | base64 -d; echo`
+
+   You should see a string starting with `postgresql://` or `postgres://`.
+
+2. If that is empty or garbage, re-check **Terraform** applied to the same cluster/context as the workload, and that nothing else overwrote the Secret. If the decoded value still looks like base64 text, the Secret was **double-encoded**: `kubernetes_secret` `data` must hold **plain strings** (the provider encodes once); do not wrap values in Terraform `base64encode()`.
+
+3. Confirm the Deployment uses `envFrom.secretRef.name: destino-docente-app-env` (Helm value `web.existingAppSecret`).
+
+### `password authentication failed for user "destino_docente"`
+
+PostgreSQL stores passwords **when the data directory is first created**. Changing Secret `destino-docente-credentials` later (e.g. after fixing Terraform double-encoding or rotating `random_password`) does **not** update existing roles on disk.
+
+**If you have no data to keep:** delete the Postgres PVC and pod so Bitnami re-initializes from the current Secret (this wipes the DB). List PVCs first (`kubectl get pvc -n destino-docente`); the data volume is usually named like `data-destino-docente-postgresql-0`:
+
+```bash
+kubectl delete pvc -n destino-docente data-destino-docente-postgresql-0
+kubectl delete pod -n destino-docente destino-docente-postgresql-0
+# StatefulSet recreates the pod and a fresh PVC; Argo/Helm will keep the release in sync
+```
+
+**If you want to keep data:** run the one-shot Job in `kubernetes-homelab` that executes `ALTER USER destino_docente …` using the current Secret `password` (handles special characters safely):
+
+```bash
+# From kubernetes-homelab repo
+kubectl apply -f gitops/destino-docente/sync-db-password-job.yaml
+kubectl wait -n destino-docente --for=condition=complete job/destino-docente-sync-db-password --timeout=120s
+kubectl logs -n destino-docente job/destino-docente-sync-db-password
+kubectl delete job -n destino-docente destino-docente-sync-db-password
+```
+
+Then restart the web Deployment so it retries migrations.
+
 ## PostgreSQL backups
 
 The Helm chart installs a **weekly CronJob** that runs `pg_dump` into a PVC (`destino-docente-pg-backups`). Copy dumps off the node periodically so a disk loss does not take backups with it. To restore from a custom-format dump: use `pg_restore` against the in-cluster service (e.g. via `kubectl port-forward`) with the postgres password from Secret `destino-docente-credentials`.
@@ -57,3 +95,4 @@ Managed via Terraform-generated Secret `destino-docente-app-env` (names may matc
 - `ENVIRONMENT=production`
 - `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`
 - `TRUST_BEHIND_PROXY=true` when TLS terminates at Cloudflare / Traefik
+- Optional: `ALLOW_K8S_INTERNAL_HOST_REWRITE` (default on) — rewrites `Host` when the request targets the pod/cluster IP so Traefik/backends do not hit `DisallowedHost`. Override `K8S_INTERNAL_HOST_FALLBACK` (default `127.0.0.1`) if that host must not be in `ALLOWED_HOSTS`.

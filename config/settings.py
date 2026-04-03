@@ -11,9 +11,11 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 import os
-import secrets
 import dj_database_url
 from pathlib import Path
+from urllib.parse import urlparse
+
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -37,15 +39,27 @@ IS_PRODUCTION = os.environ.get("ENVIRONMENT") == "production" or os.environ.get(
 TRUST_BEHIND_PROXY = os.environ.get("TRUST_BEHIND_PROXY", "").lower() in ("1", "true", "yes")
 
 
-def _database_url_configured():
-    url = (os.environ.get("DATABASE_URL") or "").strip()
-    return bool(url) and not url.startswith("sqlite:")
+def _database_url_raw():
+    return (os.environ.get("DATABASE_URL") or "").strip().lstrip("\ufeff")
+
+
+def _is_postgres_database_url(url: str) -> bool:
+    if not url or url.lower().startswith("sqlite:"):
+        return False
+    scheme = urlparse(url).scheme.lower()
+    if not scheme:
+        return False
+    base = scheme.split("+", 1)[0]
+    return base in ("postgres", "postgresql", "pgsql", "postgis")
+
+
+_db_url = _database_url_raw()
 
 
 if IS_HEROKU_APP:
     ALLOWED_HOSTS = ["*"]
     SECURE_SSL_REDIRECT = True
-elif IS_PRODUCTION or _database_url_configured():
+elif IS_PRODUCTION or _is_postgres_database_url(_db_url):
     ALLOWED_HOSTS = [
         h.strip()
         for h in os.environ.get("ALLOWED_HOSTS", "").split(",")
@@ -95,6 +109,8 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    # Before CommonMiddleware: map pod / cluster IP Host headers to K8S_INTERNAL_HOST_FALLBACK (default 127.0.0.1).
+    'config.middleware.RewriteInternalKubernetesHostMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -132,19 +148,29 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 if IS_HEROKU_APP:
+    if not _is_postgres_database_url(_db_url):
+        raise ImproperlyConfigured(
+            "Heroku (DYNO set) requires DATABASE_URL as a postgres URL (postgresql://…)."
+        )
     DATABASES = {
-        "default": dj_database_url.config(
-            env="DATABASE_URL",
+        "default": dj_database_url.parse(
+            _db_url,
             conn_max_age=600,
             conn_health_checks=True,
             ssl_require=True,
         ),
     }
-elif _database_url_configured():
+elif IS_PRODUCTION and not _is_postgres_database_url(_db_url):
+    raise ImproperlyConfigured(
+        "ENVIRONMENT=production requires DATABASE_URL (postgresql://…). "
+        "Check the app Secret (e.g. destino-docente-app-env) and that the web Deployment "
+        "uses envFrom.secretRef with that Secret."
+    )
+elif _is_postgres_database_url(_db_url):
     ssl_require = os.environ.get("DATABASE_SSL_REQUIRE", "false").lower() in ("1", "true", "yes")
     DATABASES = {
-        "default": dj_database_url.config(
-            env="DATABASE_URL",
+        "default": dj_database_url.parse(
+            _db_url,
             conn_max_age=600,
             conn_health_checks=True,
             ssl_require=ssl_require,

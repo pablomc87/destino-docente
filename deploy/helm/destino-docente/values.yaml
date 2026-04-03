@@ -5,6 +5,8 @@ fullnameOverride: ""
 
 web:
   enabled: true
+  # Must match ALLOWED_HOSTS (Terraform includes 127.0.0.1) so probes do not get HTTP 400.
+  probeHostHeader: "127.0.0.1"
   replicaCount: 1
   image:
     repository: ghcr.io/pablomc87/destino-docente

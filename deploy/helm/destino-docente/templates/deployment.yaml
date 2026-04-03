@@ -43,12 +43,19 @@ spec:
             httpGet:
               path: /health/
               port: http
+              httpHeaders:
+                # Kubelet defaults Host to the pod IP; Django rejects it → 400 DisallowedHost.
+                - name: Host
+                  value: {{ .Values.web.probeHostHeader | quote }}
             initialDelaySeconds: 10
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /health/
               port: http
+              httpHeaders:
+                - name: Host
+                  value: {{ .Values.web.probeHostHeader | quote }}
             initialDelaySeconds: 30
             periodSeconds: 20
           {{- if (default false .Values.web.mediaPersistence.enabled) }}
