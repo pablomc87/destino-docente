@@ -73,7 +73,7 @@ Then restart the web Deployment so it retries migrations.
 
 ## PostgreSQL backups
 
-The Helm chart installs a **weekly CronJob** that runs `pg_dump` into a PVC (`destino-docente-pg-backups`). Copy dumps off the node periodically so a disk loss does not take backups with it. To restore from a custom-format dump: use `pg_restore` against the in-cluster service (e.g. via `kubectl port-forward`) with the postgres password from Secret `destino-docente-credentials`.
+The Helm chart does **not** schedule automated database backups. When you need a dump, run `pg_dump` yourself (e.g. `kubectl exec` into the PostgreSQL pod or port-forward to the service) using the `postgres` superuser password from Secret `destino-docente-credentials`.
 
 ## PostgreSQL inside the cluster
 
@@ -81,7 +81,7 @@ The **Bitnami PostgreSQL** subchart creates, on first startup:
 
 - Database **`destino_docente`** (`postgresql.auth.database` in the Helm values).
 - User **`destino_docente`** with password from Secret key `password`.
-- Superuser **`postgres`** with password from Secret key `postgres-password` (backups / restores / admin).
+- Superuser **`postgres`** with password from Secret key `postgres-password` (restores / admin).
 
 Terraform builds `DATABASE_URL` so Django uses **`destino_docente@…/destino_docente`**. If you rename the database in Helm, set Terraform variable **`destino_docente_database_name`** to the same name.
 
@@ -93,6 +93,12 @@ Managed via Terraform-generated Secret `destino-docente-app-env` (names may matc
 - `DJANGO_SECRET_KEY`
 - `REDIS_URL` — optional; when set, Django uses Valkey for cache
 - `ENVIRONMENT=production`
-- `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`
+- `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` — include every scheme+host used in the browser (Django 4+ checks `Origin` on POST).
+- Optional: `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE` — set via Terraform **`destino_docente_cookie_secure`** (`false` = HTTP homelab OK, `true` = HTTPS-only browsers); see homelab Cloudflare doc.
 - `TRUST_BEHIND_PROXY=true` when TLS terminates at Cloudflare / Traefik
 - Optional: `ALLOW_K8S_INTERNAL_HOST_REWRITE` (default on) — rewrites `Host` when the request targets the pod/cluster IP so Traefik/backends do not hit `DisallowedHost`. Override `K8S_INTERNAL_HOST_FALLBACK` (default `127.0.0.1`) if that host must not be in `ALLOWED_HOSTS`.
+
+## Next steps after the web pod is healthy
+
+1. **Copy production data from Heroku Postgres** into in-cluster Postgres: [migration-from-heroku.md](migration-from-heroku.md) (dump → port-forward → `pg_restore` → `REASSIGN OWNED`).
+2. **Public access via Cloudflare Tunnel**: in `kubernetes-homelab`, follow [docs/cloudflare-tunnel-destino-docente.md](https://github.com/pablomc87/kubernetes-homelab/blob/main/docs/cloudflare-tunnel-destino-docente.md) — install `cloudflared`, create the tunnel, point public hostnames at Traefik on the node (`http://…:80`), then set `ingress.host` / `ingress.extraHosts` in `gitops/destino-docente/helm-values.yaml` to match `destino-docente.org` (and `www`). Re-run **Terraform** if you change `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS`.

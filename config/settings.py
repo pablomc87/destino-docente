@@ -291,9 +291,19 @@ LOGIN_URL = '/usuarios/conectarse/'
 LOGIN_REDIRECT_URL = '/usuarios/panel/'
 LOGOUT_REDIRECT_URL = '/'
 
+
+def _env_bool(key: str, *, default: bool) -> bool:
+    value = os.environ.get(key)
+    if value is None or value == "":
+        return default
+    return value.lower() in ("1", "true", "yes", "on")
+
+
 # Session settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-SESSION_COOKIE_SECURE = not DEBUG
+# Over HTTP, browsers ignore Secure cookies unless these are false (homelab without TLS).
+SESSION_COOKIE_SECURE = _env_bool("SESSION_COOKIE_SECURE", default=not DEBUG)
+CSRF_COOKIE_SECURE = _env_bool("CSRF_COOKIE_SECURE", default=not DEBUG)
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds

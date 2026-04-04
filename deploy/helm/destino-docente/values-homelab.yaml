@@ -17,6 +17,3 @@ postgresql:
     persistence:
       storageClass: local-path
       size: 8Gi
-
-backup:
-  storageClass: local-path
