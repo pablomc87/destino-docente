@@ -47,14 +47,6 @@
                             </div>
                         </div>
 
-                        {% if messages %}
-                            {% for message in messages %}
-                                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} mb-3" role="alert" style="background-color: {% if message.tags == 'error' %}#dc3545{% else %}#198754{% endif %}; color: white; border: none;">
-                                    {{ message }}
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">Registrarse con correo electrónico</button>
                         </div>

@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
 from schools.models import SearchHistory
 import logging
+import smtplib
 from django.conf import settings as django_settings
 from django.http import HttpResponse
 from django.urls import reverse
@@ -265,6 +266,15 @@ class CustomPasswordResetView(PasswordResetView):
         self.success_url = reverse('users:password_reset_done')
         try:
             return super().form_valid(form)
+        except smtplib.SMTPException as e:
+            logger.exception("SMTP error sending password reset email: %s", e)
+            messages.error(
+                self.request,
+                'No se pudo enviar el correo: el servidor de correo rechazó el mensaje. '
+                'Si administras el sitio, revisa la verificación del dominio de envío y las '
+                'credenciales SMTP (p. ej. Mailtrap Email Sending, no el buzón de pruebas).',
+            )
+            return self.form_invalid(form)
         except Exception as e:
             logger.exception("Error sending password reset email: %s", e)
             messages.error(

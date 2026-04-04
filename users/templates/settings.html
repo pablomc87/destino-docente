@@ -5,15 +5,6 @@
 {% block user_content %}
 <div class="row">
     <div class="col-12">
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-
         <div class="card shadow mb-4">
             <div class="card-header">
                 <h4 class="mb-0">Actualizar correo electrónico</h4>
