@@ -28,8 +28,13 @@ class SchoolSuggestionSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = SchoolSuggestion
-        fields = '__all__'
-        read_only_fields = ('status', 'created_at', 'updated_at')
+        fields = [
+            'id', 'name', 'email', 'phone', 'website', 'address', 'postal_code',
+            'municipality', 'province', 'autonomous_community', 'latitude', 'longitude',
+            'nature', 'is_concerted', 'center_type', 'school', 'notes', 'studies',
+            'status', 'created_at', 'updated_at',
+        ]
+        read_only_fields = ('status', 'created_at', 'updated_at', 'id')
 
     def validate_latitude(self, value):
         if value is not None:
@@ -52,23 +57,18 @@ class SchoolSuggestionSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        print("Creating suggestion with data:", validated_data)  # Debug print
         studies = validated_data.pop('studies', [])
         instance = super().create(validated_data)
-        
-        # Add studies if provided
+
         if studies:
             for study_name in studies:
-                # Get the first study with this name
                 study = ImpartedStudy.objects.filter(name=study_name).first()
                 if study:
                     instance.studies.add(study)
                 else:
-                    # Create a new study if none exists
                     study = ImpartedStudy.objects.create(name=study_name)
                     instance.studies.add(study)
-        
-        print("Created instance:", instance.__dict__)  # Debug print
+
         return instance
 
 class SchoolEditSuggestionSerializer(serializers.ModelSerializer):
@@ -83,25 +83,21 @@ class SchoolEditSuggestionSerializer(serializers.ModelSerializer):
         read_only_fields = ('status', 'created_at', 'updated_at')
 
     def validate_latitude(self, value):
-        print(f"Validating latitude: {value} (type: {type(value)})")  # Debug print
         if value is not None:
             try:
                 value = float(value)
                 if not -90 <= value <= 90:
                     raise serializers.ValidationError("Latitude must be between -90 and 90 degrees")
-            except (TypeError, ValueError) as e:
-                print(f"Latitude validation error: {str(e)}")  # Debug print
+            except (TypeError, ValueError):
                 raise serializers.ValidationError("Invalid latitude value")
         return value
 
     def validate_longitude(self, value):
-        print(f"Validating longitude: {value} (type: {type(value)})")  # Debug print
         if value is not None:
             try:
                 value = float(value)
                 if not -180 <= value <= 180:
                     raise serializers.ValidationError("Longitude must be between -180 and 180 degrees")
-            except (TypeError, ValueError) as e:
-                print(f"Longitude validation error: {str(e)}")  # Debug print
+            except (TypeError, ValueError):
                 raise serializers.ValidationError("Invalid longitude value")
-        return value 
+        return value

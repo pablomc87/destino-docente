@@ -5,15 +5,32 @@ Production runs on **Kubernetes** (single-node k3s is fine) using the **Helm cha
 ## Source of truth
 
 - **`main` on your canonical Git host** (e.g. GitHub): triggers **CI** to build and push the **container image** (see `.github/workflows/docker-publish.yml`).
-- **Argo CD** syncs the Helm release from Git; the cluster state is declared there—not via `git push heroku`.
+- **Argo CD** syncs the Helm release from Git; the cluster state is declared in Git.
 
-## Leaving Heroku
+## Copy schools data from cluster into local SQLite
 
-1. Add a **GitHub (or GitLab) remote** and push `main` there; make that the default `upstream` for day-to-day work.
-2. In the **Heroku dashboard**, **disable automatic deploys** from GitHub and stop using `git push heroku` as your normal release path.
-3. After DNS and traffic point at the cluster, scale down or remove the Heroku app.
+Use this when you want **`db.sqlite3`** (development, no `DATABASE_URL`) to mirror **schools** rows from the cluster Postgres (or to refresh local data without merging `schools.db`).
 
-Database copy: see [migration-from-heroku.md](migration-from-heroku.md).
+1. **Dump from the running web pod** (reads the in-cluster `DATABASE_URL`):
+
+   ```bash
+   chmod +x scripts/dump_schools_from_cluster.sh
+   ./scripts/dump_schools_from_cluster.sh
+   ```
+
+   Default output: `fixtures/cluster_schools.json`. Override the path: `./scripts/dump_schools_from_cluster.sh /tmp/schools.json`. Override namespace or deployment: `KUBECTL_NAMESPACE=destino-docente KUBECTL_DEPLOY=destino-docente-web ./scripts/dump_schools_from_cluster.sh`.
+
+   The dump **excludes** `schools.searchhistory` (FK to `User`) and `schools.apicall` so you do not need to load `auth.user` or subscriptions for a schools-only fixture.
+
+2. **Load locally**: use `ENVIRONMENT=development` and **no** `DATABASE_URL` so Django uses SQLite (`db.sqlite3`). Apply migrations, then load the fixture.
+
+   **Simplest (empty local DB):** remove `db.sqlite3`, run `python manage.py migrate`, then:
+
+   ```bash
+   python manage.py loaddata fixtures/cluster_schools.json
+   ```
+
+   If `loaddata` fails on duplicate primary keys, you already have conflicting rows—use a fresh SQLite file as above, or delete only `schools` tables in dependency order before loading.
 
 ## Apply order (first time)
 
@@ -23,7 +40,7 @@ Database copy: see [migration-from-heroku.md](migration-from-heroku.md).
 4. **Build the app image**: push `main` on `destino-docente` so GitHub Actions (`.github/workflows/docker-publish.yml`) publishes to **GHCR** `ghcr.io/<owner>/destino-docente`. The cluster must be allowed to pull from GHCR (public image is simplest for a first try).
 5. **Terraform** (from your laptop, with kubeconfig): `cd kubernetes-homelab/terraform && terraform init && terraform apply` — creates namespace `destino-docente` and Secrets `destino-docente-credentials`, `destino-docente-app-env`. Do this **before** or right before the first successful Argo sync so the Helm chart finds the secrets.
 6. **Argo CD**: open the `destino-docente` Application and **Sync**. Wait until Postgres, Valkey, and the web Deployment are healthy.
-7. **Optional data**: load production data with [migration-from-heroku.md](migration-from-heroku.md) when you are ready.
+7. **Optional data**: load fixtures or restore Postgres backups as needed (see PostgreSQL backups below).
 8. **Public access later**: Cloudflare Tunnel or DNS — see `kubernetes-homelab/docs/cloudflare-tunnel-destino-docente.md`. Optional: `ansible/playbooks/optional-cloudflared.yml` on the node.
 
 ### Try the site only for you (no public DNS)
@@ -91,15 +108,20 @@ Managed via Terraform-generated Secret `destino-docente-app-env` (names may matc
 
 - `DATABASE_URL` — in-cluster PostgreSQL (app DB and app user above; not the `postgres` superuser)
 - `DJANGO_SECRET_KEY`
-- `GOOGLE_MAPS_API_KEY` — set Terraform variable **`destino_docente_google_maps_api_key`** (or `TF_VAR_destino_docente_google_maps_api_key`); without it, the browser shows “You must use an API key”. In [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials, restrict the key by **HTTP referrer** (e.g. `https://destino-docente.org/*`, `https://www.destino-docente.org/*`, and homelab origins if needed).
+- `GOOGLE_MAPS_API_KEY` — set Terraform variable **`destino_docente_google_maps_api_key`** (or `TF_VAR_destino_docente_google_maps_api_key`); without it, the browser shows “You must use an API key”. In [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services** → **Credentials** → your key → **Application restrictions** → **HTTP referrers**, add one line per origin (wildcards cover all paths such as `/buscar-cercanos/`):
+  - `https://destino-docente.org/*`
+  - `https://www.destino-docente.org/*`
+  - optional homelab: `http://destino-docente.homelab.local/*`  
+  If you see **RefererNotAllowedMapError**, the page’s URL is not matched by any listed referrer — add the missing scheme/host with `/*`. Note: **`*.destino-docente.org/*`** covers subdomains (e.g. `www`) but **not** the apex **`destino-docente.org`** — add **`https://destino-docente.org/*`** explicitly.
 - `REDIS_URL` — optional; when set, Django uses Valkey for cache
 - `ENVIRONMENT=production`
 - `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` — include every scheme+host used in the browser (Django 4+ checks `Origin` on POST).
 - Optional: `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE` — Terraform **`destino_docente_cookie_secure`** (default **`true`** for Cloudflare HTTPS; **`false`** for plain-HTTP homelab and extra CSRF origin); see homelab Cloudflare doc.
 - `TRUST_BEHIND_PROXY=true` when TLS terminates at Cloudflare / Traefik
+- `CONTACT_EMAIL` — optional in Terraform via `destino_docente_contact_email`; required for the contact form to deliver mail (see [SECURITY_AUDIT_REPORT.md](SECURITY_AUDIT_REPORT.md)).
 - Optional: `ALLOW_K8S_INTERNAL_HOST_REWRITE` (default on) — rewrites `Host` when the request targets the pod/cluster IP so Traefik/backends do not hit `DisallowedHost`. Override `K8S_INTERNAL_HOST_FALLBACK` (default `127.0.0.1`) if that host must not be in `ALLOWED_HOSTS`.
 
 ## Next steps after the web pod is healthy
 
-1. **Copy production data from Heroku Postgres** into in-cluster Postgres: [migration-from-heroku.md](migration-from-heroku.md) (dump → port-forward → `pg_restore` → `REASSIGN OWNED`).
-2. **Public access via Cloudflare Tunnel**: in `kubernetes-homelab`, follow [docs/cloudflare-tunnel-destino-docente.md](https://github.com/pablomc87/kubernetes-homelab/blob/main/docs/cloudflare-tunnel-destino-docente.md) — install `cloudflared`, create the tunnel, point public hostnames at Traefik on the node (`http://…:80`), then set `ingress.host` / `ingress.extraHosts` in `gitops/destino-docente/helm-values.yaml` to match `destino-docente.org` (and `www`). Re-run **Terraform** if you change `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS`.
+1. **Public access via Cloudflare Tunnel**: in `kubernetes-homelab`, follow [docs/cloudflare-tunnel-destino-docente.md](https://github.com/pablomc87/kubernetes-homelab/blob/main/docs/cloudflare-tunnel-destino-docente.md) — install `cloudflared`, create the tunnel, point public hostnames at Traefik on the node (`http://…:80`), then set `ingress.host` / `ingress.extraHosts` in `gitops/destino-docente/helm-values.yaml` to match `destino-docente.org` (and `www`). Re-run **Terraform** if you change `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS`.
+2. **Contact form**: set `CONTACT_EMAIL` in the app Secret (optional Terraform variable `destino_docente_contact_email`) so `/contacto/` can deliver mail.

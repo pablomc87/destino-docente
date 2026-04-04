@@ -176,7 +176,7 @@ def signin(request):
                 # Force session save
                 request.session.save()
                 
-                logger.debug(f"Session created successfully - key: {request.session.session_key}")
+                logger.debug("Session created successfully after login")
                 messages.success(request, '¡Conectado con éxito!')
                 return redirect('users:dashboard')
             except Exception as e:
@@ -257,34 +257,17 @@ class CustomPasswordResetView(PasswordResetView):
         return initial
 
     def form_valid(self, form):
-        logger.debug("Starting password reset process")
-        logger.debug(f"Email settings: HOST={django_settings.EMAIL_HOST}, PORT={django_settings.EMAIL_PORT}, USER={django_settings.EMAIL_HOST_USER}")
-        logger.debug(f"Form data: {form.cleaned_data}")
-        
+        self.reset_url_token = 'users:password_reset_confirm'
+        self.reset_url_name = 'users:password_reset_complete'
+        self.success_url = reverse('users:password_reset_done')
         try:
-            # Get the email from the form
-            email = form.cleaned_data['email']
-            logger.debug(f"Attempting to send password reset email to: {email}")
-            
-            # Check if user exists
-            if not User.objects.filter(email=email).exists():
-                logger.warning(f"No user found with email: {email}")
-                messages.error(self.request, 'No existe ningún usuario con ese correo electrónico.')
-                return self.form_invalid(form)
-            
-            # Override the default URL names with our namespaced versions
-            self.reset_url_token = 'users:password_reset_confirm'
-            self.reset_url_name = 'users:password_reset_complete'
-            
-            # Set the success URL to use the namespaced URL
-            self.success_url = reverse('users:password_reset_done')
-            
-            response = super().form_valid(form)
-            logger.debug("Password reset email sent successfully")
-            return response
+            return super().form_valid(form)
         except Exception as e:
-            logger.error(f"Error sending password reset email: {str(e)}", exc_info=True)
-            messages.error(self.request, 'Error al enviar el correo electrónico. Por favor, inténtelo de nuevo.')
+            logger.exception("Error sending password reset email: %s", e)
+            messages.error(
+                self.request,
+                'Error al enviar el correo electrónico. Por favor, inténtelo de nuevo.',
+            )
             return self.form_invalid(form)
 
 @login_required
@@ -382,25 +365,19 @@ def check_session(request):
     Returns 200 if valid, 401 if not.
     """
     try:
-        # Log session details
-        logger.debug(f"Session key: {request.session.session_key}")
-        logger.debug(f"Session data: {dict(request.session)}")
-        
-        # Check if user is authenticated and session exists
         if request.user.is_authenticated and request.session.session_key:
-            # Force session save to ensure it's persisted
             request.session.save()
-            logger.debug("Session saved successfully")
             return HttpResponse(status=200)
-            
-        logger.warning("Session validation failed - user authenticated: %s, session key exists: %s",
-                      request.user.is_authenticated,
-                      bool(request.session.session_key))
+
+        logger.warning(
+            "Session validation failed (authenticated=%s, has_key=%s)",
+            request.user.is_authenticated,
+            bool(request.session.session_key),
+        )
         return HttpResponse(status=401)
     except Exception as e:
-        logger.error(f"Error checking session: {str(e)}", exc_info=True)
-        # On error, assume session is valid to prevent unnecessary redirects
-        return HttpResponse(status=200)
+        logger.exception("Error checking session: %s", e)
+        return HttpResponse(status=503)
 
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     """
@@ -413,19 +390,10 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
         return reverse('users:password_reset_complete')
 
     def form_invalid(self, form):
-        """
-        Handle invalid form submission.
-        """
-        logger.debug("Password reset form validation failed")
-        logger.debug(f"Form errors: {form.errors}")
         return super().form_invalid(form)
 
     def form_valid(self, form):
-        """
-        Handle valid form submission.
-        """
-        logger.debug("Password reset form validation successful")
-        return super().form_valid(form) 
+        return super().form_valid(form)
     
 def verify_email(request, token):
     try:

@@ -16,7 +16,8 @@ def filter_schools(queryset, autonomous_communities=None, ownership_types=None, 
         queryset: Base queryset of schools to filter
         autonomous_communities (list): List of autonomous communities to filter by
         ownership_types (list): List of ownership types to filter by (public, private, concertado)
-        education_levels (list): List of education levels to filter by (infantil, primaria, secundaria, bachillerato, fp)
+        education_levels (list): List of education levels to filter by (infantil, primaria, secundaria, bachillerato, fp,
+            idiomas, musica_artes_escenicas, artes_plasticas_diseno)
         advanced_school_types (list): List of specific center types to filter by
     
     Returns:
@@ -91,6 +92,41 @@ def filter_schools(queryset, autonomous_communities=None, ownership_types=None, 
                 Q(center_type__icontains='formación profesional') |
                 Q(center_type__icontains='FP') |
                 Q(center_type__icontains='ciclo')
+            )
+        if 'idiomas' in education_levels:
+            education_conditions |= (
+                Q(studies__name__icontains='idioma') |
+                Q(studies__name__icontains='lengua extranjera') |
+                Q(studies__name__icontains='lenguas extranjeras') |
+                Q(studies__degree__icontains='idioma') |
+                Q(generic_name__icontains='idioma') |
+                Q(center_type__icontains='idioma')
+            )
+        if 'musica_artes_escenicas' in education_levels:
+            education_conditions |= (
+                Q(studies__name__icontains='música') |
+                Q(studies__name__icontains='musica') |
+                Q(studies__name__icontains='escénica') |
+                Q(studies__name__icontains='escenica') |
+                Q(studies__degree__icontains='música') |
+                Q(studies__degree__icontains='danza') |
+                Q(generic_name__icontains='música') |
+                Q(generic_name__icontains='artes escénicas') |
+                Q(center_type__icontains='conservatorio') |
+                Q(center_type__icontains='danza')
+            )
+        if 'artes_plasticas_diseno' in education_levels:
+            education_conditions |= (
+                Q(studies__name__icontains='artes plásticas') |
+                Q(studies__name__icontains='artes plasticas') |
+                Q(studies__name__icontains='diseño') |
+                Q(studies__name__icontains='diseno') |
+                Q(studies__degree__icontains='plástica') |
+                Q(studies__degree__icontains='diseño') |
+                Q(generic_name__icontains='artes plásticas') |
+                Q(generic_name__icontains='diseño') |
+                Q(center_type__icontains='diseño') |
+                Q(center_type__icontains='plástica')
             )
         
         queryset = queryset.filter(education_conditions).distinct()

@@ -1,18 +1,18 @@
 from rest_framework import generics
 from rest_framework.response import Response
 from django.db.models import Q
-from django.conf import settings
+from django.shortcuts import get_object_or_404
 from schools.models import School, SearchHistory
 from schools.utils.distances import get_travel_times
 from schools.utils.database_interaction import log_api_call, find_nearest_schools
 from schools.serializers import SchoolSerializer, SchoolSuggestionSerializer, SchoolEditSuggestionSerializer
+from schools.throttles import SuggestionRateThrottle
 from rest_framework.views import APIView
 from rest_framework import status
 from users.models import UserSubscription
 import logging
 
 logger = logging.getLogger(__name__)
-api_key = settings.GOOGLE_MAPS_API_KEY
 
 class SchoolListView(generics.ListAPIView):
     """List all schools"""
@@ -28,7 +28,7 @@ class SchoolDetailView(generics.RetrieveAPIView):
     serializer_class = SchoolSerializer
 
     def get_object(self):
-        return School.objects.get(id=self.kwargs['pk'])
+        return get_object_or_404(School, pk=self.kwargs['pk'])
 
 class SchoolSearchView(generics.ListAPIView):
     """Search schools by name, municipality, or province"""
@@ -260,47 +260,33 @@ class SchoolSearch(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
-            logger.error(f"Error in SchoolSearch: {str(e)}")
-            logger.error(f"Request data: {request.GET}")
+            logger.exception("Error in SchoolSearch: %s", e)
             return Response(
-                {'error': 'Ha ocurrido un error al procesar la búsqueda'}, 
+                {'error': 'Ha ocurrido un error al procesar la búsqueda'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 class SchoolSuggestionView(APIView):
+    throttle_classes = [SuggestionRateThrottle]
+
     def post(self, request):
         """Create a new school suggestion."""
-        print("Received data:", request.data)  # Debug print
-        print("Data types:", {k: type(v) for k, v in request.data.items()})  # Debug data types
         serializer = SchoolSuggestionSerializer(data=request.data)
         if serializer.is_valid():
-            print("Validated data:", serializer.validated_data)  # Debug validated data
-            instance = serializer.save()
-            print("Created instance:", instance.__dict__)  # Debug created instance
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        print("Validation errors:", serializer.errors)  # Debug validation errors
-        print("Error details:", {k: str(v) for k, v in serializer.errors.items()})  # Debug error details
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class SchoolEditSuggestionView(APIView):
-    """API endpoint for creating school edit suggestions"""
-    permission_classes = []  # Remove authentication requirement
+    """API endpoint for creating school edit suggestions."""
+    throttle_classes = [SuggestionRateThrottle]
 
     def post(self, request):
         """Create a new school edit suggestion."""
-        print("=== SchoolEditSuggestionView.post called ===")  # Debug print
-        print("Request method:", request.method)  # Debug print
-        print("Received data:", request.data)  # Debug print
-        print("Data types:", {k: type(v) for k, v in request.data.items()})  # Debug data types
-        
         serializer = SchoolEditSuggestionSerializer(data=request.data)
         if serializer.is_valid():
-            print("Validated data:", serializer.validated_data)  # Debug validated data
-            instance = serializer.save()
-            print("Created instance:", instance.__dict__)  # Debug created instance
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        print("Validation errors:", serializer.errors)  # Debug validation errors
-        print("Error details:", {k: str(v) for k, v in serializer.errors.items()})  # Debug error details
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

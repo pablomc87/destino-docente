@@ -8,7 +8,11 @@ from django.core.paginator import Paginator
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.contrib.auth.decorators import login_required
+import logging
 import requests
+
+logger = logging.getLogger(__name__)
+_GENERIC_HTML_ERROR = "Ha ocurrido un error inesperado. Por favor, inténtalo de nuevo más tarde."
 
 
 def index(request):
@@ -33,7 +37,8 @@ def school_detail(request, pk):
     except Exception as e:
         if settings.DEBUG:
             raise
-        return render(request, 'schools/error.html', {'error': str(e)})
+        logger.exception("school_detail failed: %s", e)
+        return render(request, 'schools/error.html', {'error': _GENERIC_HTML_ERROR})
     
 
 def find_nearest(request):
@@ -87,7 +92,8 @@ def edit_school(request, pk):
     except Exception as e:
         if settings.DEBUG:
             raise
-        return render(request, 'schools/error.html', {'error': str(e)})
+        logger.exception("edit_school failed: %s", e)
+        return render(request, 'schools/error.html', {'error': _GENERIC_HTML_ERROR})
     
 def search(request):
     """Search view for schools with filters."""
@@ -199,20 +205,25 @@ def contact(request):
         {message}
         """
         
-        try:
-            # Send email using Mailtrap
-            send_mail(
-                subject=email_subject,
-                message=email_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[settings.CONTACT_EMAIL],
-                fail_silently=False,
+        if not getattr(settings, "CONTACT_EMAIL", "").strip():
+            logger.error("CONTACT_EMAIL is not configured; contact form cannot deliver")
+            messages.error(
+                request,
+                "El formulario de contacto no está configurado en el servidor. Por favor, inténtalo más tarde.",
             )
-            messages.success(request, '¡Mensaje enviado con éxito! Te responderemos lo antes posible.')
-        except Exception as e:
-            messages.error(request, 'Ha ocurrido un error al enviar el mensaje. Por favor, inténtalo de nuevo más tarde.')
-            if settings.DEBUG:
-                print(f"Error sending email: {e}")
+        else:
+            try:
+                send_mail(
+                    subject=email_subject,
+                    message=email_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[settings.CONTACT_EMAIL.strip()],
+                    fail_silently=False,
+                )
+                messages.success(request, '¡Mensaje enviado con éxito! Te responderemos lo antes posible.')
+            except Exception as e:
+                logger.exception("contact send_mail failed: %s", e)
+                messages.error(request, 'Ha ocurrido un error al enviar el mensaje. Por favor, inténtalo de nuevo más tarde.')
         
         return redirect('schools:contact')
     

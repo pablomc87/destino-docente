@@ -1,12 +1,9 @@
 {% load static %}
 
 <div class="search-container">
-    <h1 class="text-center mb-4">Encuentra Tu Próximo Destino</h1>
+    <h1 class="text-center mb-4">Encuentra tu próximo destino</h1>
     <p class="text-center text-muted mb-4">
-        Introduce tu dirección y te mostraremos los centros educativos más cercanos, 
-        con información detallada sobre cada uno y los tiempos de desplazamiento. 
-        Podrás filtrar por tipo de centro, titularidad y otras características 
-        para encontrar el lugar perfecto para tu carrera docente.
+        Introduce tu dirección y te mostraremos los centros más cercanos y la <strong>mejor forma de llegar</strong> hasta ellos desde tu casa.
     </p>
     <!-- API Limit Message -->
     <div id="apiLimitMessage" class="alert alert-warning" style="display: none;">
@@ -21,13 +18,9 @@
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">Paso 1: Elige tu ubicación</h5>
             </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label for="address" class="form-label">Tu Dirección</label>
-                    <div id="placePickerContainer">
-                        <input type="text" id="address" class="form-control" placeholder="Introduce tu dirección completa" required>
-                    </div>
-                    <small class="form-text text-muted">Selecciona tu dirección actual para encontrar los centros más cercanos</small>
+            <div class="card-body py-4">
+                <div id="placePickerContainer">
+                    <input type="text" id="address" class="form-control form-control-lg" placeholder="Introduce una dirección completa" required aria-label="Dirección completa">
                 </div>
             </div>
         </div>
@@ -35,7 +28,7 @@
         <!-- Step 2: Search Options -->
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Paso 2: Define tus criterios de búsqueda</h5>
+                <h5 class="mb-0">Paso 2: Criterios de búsqueda</h5>
             </div>
             <div class="card-body">
                 <div class="mb-3">
@@ -69,17 +62,12 @@
                     <div class="btn-group-vertical w-100" role="group">
                         <input type="checkbox" class="btn-check" id="publicCheck" name="school_types" value="public">
                         <label class="btn btn-outline-primary text-start" for="publicCheck">Público</label>
-                        
-                        <input type="checkbox" class="btn-check" id="privateCheck" name="school_types" value="private">
-                        <label class="btn btn-outline-primary text-start" for="privateCheck">Privado (Sin Financiación Pública)</label>
-                        
                         <input type="checkbox" class="btn-check" id="concertadoCheck" name="school_types" value="concertado">
-                        <label class="btn btn-outline-primary text-start" for="concertadoCheck">Concertado (Con Financiación Pública)</label>
+                        <label class="btn btn-outline-primary text-start" for="concertadoCheck">Concertado</label>
+                        <input type="checkbox" class="btn-check" id="privateCheck" name="school_types" value="private">
+                        <label class="btn btn-outline-primary text-start" for="privateCheck">Privado</label>
                     </div>
-                    <small class="form-text text-muted">
-                        <i class="fas fa-info-circle me-1"></i>
-                        Puedes seleccionar múltiples tipos. Los centros concertados son privados que reciben financiación pública.
-                    </small>
+                    <small class="form-text text-muted">Puedes seleccionar varias opciones.</small>
                 </div>
 
                 <div class="mb-3">
@@ -99,13 +87,19 @@
                         
                         <input type="checkbox" class="btn-check" id="fpCheck" name="school_types" value="fp">
                         <label class="btn btn-outline-primary text-start" for="fpCheck">Formación Profesional</label>
+                        <input type="checkbox" class="btn-check" id="idiomasCheck" name="school_types" value="idiomas">
+                        <label class="btn btn-outline-primary text-start" for="idiomasCheck">Enseñanzas de idiomas</label>
+                        <input type="checkbox" class="btn-check" id="musicaArtesCheck" name="school_types" value="musica_artes_escenicas">
+                        <label class="btn btn-outline-primary text-start" for="musicaArtesCheck">Música y artes escénicas</label>
+                        <input type="checkbox" class="btn-check" id="artesPlasticasCheck" name="school_types" value="artes_plasticas_diseno">
+                        <label class="btn btn-outline-primary text-start" for="artesPlasticasCheck">Artes plásticas y diseño</label>
                     </div>
                 </div>
 
                 <!-- Advanced School Type Filter (Dashboard only) -->
                 {% if school_types %}
                 <div class="mb-3">
-                    <label class="form-label">Tipos de Centro Específicos</label>
+                    <label class="form-label">Tipos de centro específicos</label>
                     <div class="mb-2">
                         <select class="form-select" id="advanced_school_type" name="advanced_school_type">
                             <option value="">Selecciona un tipo de centro...</option>
@@ -127,12 +121,11 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="include_travel_times" name="include_travel_times">
                                 <label class="form-check-label fw-bold" for="include_travel_times">
-                                    <i class="fas fa-clock me-2 text-primary"></i>
-                                    Incluir tiempos de viaje en los resultados
+                                    <i class="fas fa-route me-2 text-primary"></i>
+                                    Incluir <strong>rutas y tiempos de viaje</strong> (cálculo con Google Maps)
                                 </label>
                                 <div class="form-text text-muted mt-1">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Calcula tiempos de viaje a pie, en coche, en bicicleta y en transporte público
+                                    Tiempos estimados a pie, en coche, en bici y en transporte público hasta cada centro.
                                 </div>
                             </div>
                         </div>

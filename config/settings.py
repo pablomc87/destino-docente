@@ -28,13 +28,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY",)
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("ENVIRONMENT") == "development"
 
-IS_HEROKU_APP = "DYNO" in os.environ and "CI" not in os.environ
+# SECURITY WARNING: keep the secret key used in production secret!
+_secret = (os.environ.get("DJANGO_SECRET_KEY") or "").strip()
+if _secret:
+    SECRET_KEY = _secret
+elif DEBUG:
+    SECRET_KEY = "django-insecure-local-development-only-not-for-production"
+else:
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY must be set when ENVIRONMENT is not 'development'."
+    )
+
 IS_PRODUCTION = os.environ.get("ENVIRONMENT") == "production" or os.environ.get("DJANGO_ENV") == "production"
 TRUST_BEHIND_PROXY = os.environ.get("TRUST_BEHIND_PROXY", "").lower() in ("1", "true", "yes")
 
@@ -56,10 +63,7 @@ def _is_postgres_database_url(url: str) -> bool:
 _db_url = _database_url_raw()
 
 
-if IS_HEROKU_APP:
-    ALLOWED_HOSTS = ["*"]
-    SECURE_SSL_REDIRECT = True
-elif IS_PRODUCTION or _is_postgres_database_url(_db_url):
+if IS_PRODUCTION or _is_postgres_database_url(_db_url):
     ALLOWED_HOSTS = [
         h.strip()
         for h in os.environ.get("ALLOWED_HOSTS", "").split(",")
@@ -76,6 +80,13 @@ elif IS_PRODUCTION or _is_postgres_database_url(_db_url):
     if TRUST_BEHIND_PROXY:
         SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
         USE_X_FORWARDED_HOST = True
+    if SECURE_SSL_REDIRECT:
+        SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "31536000"))
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get(
+            "SECURE_HSTS_INCLUDE_SUBDOMAINS", "true"
+        ).lower() in ("1", "true", "yes")
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "same-origin"
 else:
     ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0').split(',')
     SECURE_SSL_REDIRECT = False
@@ -83,6 +94,26 @@ else:
 
 # Google Maps API Key
 GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
+
+# django-cors-headers is installed but CorsMiddleware is intentionally omitted — the app is same-origin.
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "180/minute",
+        "user": "360/minute",
+        "suggestions": "15/minute",
+        "google_track": "60/minute",
+    },
+}
 
 
 # Application definition
@@ -147,20 +178,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-if IS_HEROKU_APP:
-    if not _is_postgres_database_url(_db_url):
-        raise ImproperlyConfigured(
-            "Heroku (DYNO set) requires DATABASE_URL as a postgres URL (postgresql://…)."
-        )
-    DATABASES = {
-        "default": dj_database_url.parse(
-            _db_url,
-            conn_max_age=600,
-            conn_health_checks=True,
-            ssl_require=True,
-        ),
-    }
-elif IS_PRODUCTION and not _is_postgres_database_url(_db_url):
+if IS_PRODUCTION and not _is_postgres_database_url(_db_url):
     raise ImproperlyConfigured(
         "ENVIRONMENT=production requires DATABASE_URL (postgresql://…). "
         "Check the app Secret (e.g. destino-docente-app-env) and that the web Deployment "
@@ -220,16 +238,22 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATIC_URL = 'static/'
-STORAGES = {
-    # Enable WhiteNoise's GZip and Brotli compression of static assets:
-    # https://whitenoise.readthedocs.io/en/latest/django.html#add-compression-and-caching-support
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
-
-WHITENOISE_KEEP_ONLY_HASHED_FILES = True
+STATIC_URL = "static/"
+# Manifest storage requires `collectstatic` + staticfiles.json; local `runserver` usually skips that → 500 on {% static %}.
+if DEBUG:
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+    WHITENOISE_KEEP_ONLY_HASHED_FILES = False
+else:
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+    WHITENOISE_KEEP_ONLY_HASHED_FILES = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -239,6 +263,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+
+_DETAIL_LOG_LEVEL = "DEBUG" if DEBUG else "INFO"
 
 LOGGING = {
     "version": 1,
@@ -266,22 +292,27 @@ LOGGING = {
         },
         "django.contrib.sessions": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": _DETAIL_LOG_LEVEL,
             "propagate": False,
         },
         "django.security": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": _DETAIL_LOG_LEVEL,
             "propagate": False,
         },
         "django.mail": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": _DETAIL_LOG_LEVEL,
             "propagate": False,
         },
         "schools": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": _DETAIL_LOG_LEVEL,
+            "propagate": False,
+        },
+        "users": {
+            "handlers": ["console"],
+            "level": _DETAIL_LOG_LEVEL,
             "propagate": False,
         },
     },
@@ -319,7 +350,7 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@destino-docente.org')
-CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'pablomc87@gmail.com')
+CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', '')
 
 # Add context processor for Google Maps API key
 def google_maps_api_key(request):

@@ -874,7 +874,7 @@ function initializeFindNearestMain() {
                 const value = this.value;
                 if (['public', 'private', 'concertado'].includes(value)) {
                     ownershipTypes.push(value);
-                } else if (['infantil', 'primaria', 'secundaria', 'bachillerato', 'fp'].includes(value)) {
+                } else if (['infantil', 'primaria', 'secundaria', 'bachillerato', 'fp', 'idiomas', 'musica_artes_escenicas', 'artes_plasticas_diseno'].includes(value)) {
                     educationLevels.push(value);
                 }
             });

@@ -54,3 +54,6 @@ venv.bak/
 
 # SQLite
 schools.db
+
+# Cluster dump fixtures (large / environment-specific)
+fixtures/cluster_*.json
