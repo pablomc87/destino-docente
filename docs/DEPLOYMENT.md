@@ -126,6 +126,18 @@ Managed via Terraform-generated Secret `destino-docente-app-env` (names may matc
 - `TRUST_BEHIND_PROXY=true` when TLS terminates at Cloudflare / Traefik
 - `CONTACT_EMAIL` — optional in Terraform via `destino_docente_contact_email`; required for the contact form to deliver mail (see [SECURITY_AUDIT_REPORT.md](SECURITY_AUDIT_REPORT.md)).
 - `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` — optional in Terraform via `destino_docente_email_*` variables. If omitted, Django uses defaults in `config/settings.py` (Mailtrap sandbox host; empty user/password), which is fine for local dev but not for real outbound mail in production.
+- `DEFAULT_FROM_EMAIL` — set automatically in Terraform when SMTP is configured: same value as `destino_docente_email_host_user`, unless you set optional `destino_docente_default_from_email` (e.g. a Gmail **Send mail as** verified alias).
+
+**Mailtrap** — two different products:
+
+- **Email Testing** (sandbox: `sandbox.smtp.mailtrap.io`, inbox-specific user/password): messages appear **only inside Mailtrap**, not in real mailboxes. Fine for debugging.
+- **Email Sending** ([SMTP docs](https://help.mailtrap.io/article/122-mailtrap-email-sending-smtp-integration)): host **`live.smtp.mailtrap.io`**, port **587**, username **`api`**, password your **API token**. You must **verify your domain** in Mailtrap, then set **`destino_docente_default_from_email`** to an address on that domain (e.g. `noreply@destino-docente.org`). Set **`destino_docente_contact_email`** to whoever should receive contact form mail. See `kubernetes-homelab/terraform/terraform.tfvars.example`.
+
+**Gmail (App Password)** — in `terraform.tfvars` (same example file): enable 2-Step Verification, create an [App Password](https://support.google.com/accounts/answer/185833), then `smtp.gmail.com`, `587`, full Gmail as user, app password. `DEFAULT_FROM_EMAIL` is inferred from the Gmail user when the SMTP username contains `@`.
+
+After changing SMTP vars: `terraform apply` and restart the web Deployment.
+
+**Mailtrap `550 5.7.1 Sending from domain … is not allowed`:** Mailtrap **Email Sending** only accepts `From:` addresses on a **verified** domain. In Mailtrap → Email Sending → **Domains**, add each hostname you will use in `From:` (often **two entries**: **`destino-docente.org`** and **`www.destino-docente.org`**), complete the DNS records Mailtrap shows for **each**, and wait until both are verified. Set **`destino_docente_default_from_email`** to an address whose **domain part** matches one of those verified entries (e.g. `noreply@destino-docente.org` — the apex domain, not the `www` host label). You do not need a separate `From:` on `www` unless you intentionally send as `something@www.destino-docente.org`. Until verification completes, either finish DNS or temporarily use **Gmail SMTP** with `From:` = your Gmail, or use **Email Testing** only (sandbox — no real inbox delivery).
 - Optional: `ALLOW_K8S_INTERNAL_HOST_REWRITE` (default on) — rewrites `Host` when the request targets the pod/cluster IP so Traefik/backends do not hit `DisallowedHost`. Override `K8S_INTERNAL_HOST_FALLBACK` (default `127.0.0.1`) if that host must not be in `ALLOWED_HOSTS`.
 
 ## Next steps after the web pod is healthy

@@ -22,6 +22,7 @@ from django.utils.html import strip_tags
 from django.template.loader import render_to_string
 from datetime import timedelta
 from .models import UserSubscription
+from .forms import StrictPasswordResetForm
 
 
 logger = logging.getLogger(__name__)
@@ -245,7 +246,9 @@ def dashboard(request):
 class CustomPasswordResetView(PasswordResetView):
     """
     Custom password reset view that pre-fills the email field.
+    Uses StrictPasswordResetForm so SMTP errors are not hidden (Django's default swallows them).
     """
+    form_class = StrictPasswordResetForm
     template_name = 'password_reset.html'
     email_template_name = 'password_reset_email.html'
     subject_template_name = 'password_reset_subject.txt'

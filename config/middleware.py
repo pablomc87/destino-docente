@@ -26,12 +26,15 @@ class RewriteInternalKubernetesHostMiddleware:
             return self.get_response(request)
 
         host_part = raw.split(":")[0]
+        parsed_ip = None
         try:
-            ip = ipaddress.ip_address(host_part)
+            parsed_ip = ipaddress.ip_address(host_part)
         except ValueError:
-            return self.get_response(request)
+            pass  # Normal hostname (e.g. destino-docente.org) — no rewrite
 
-        if ip.is_private or ip.is_loopback or ip.is_link_local:
+        if parsed_ip is not None and (
+            parsed_ip.is_private or parsed_ip.is_loopback or parsed_ip.is_link_local
+        ):
             request.META["HTTP_HOST"] = self.fallback_host
 
         return self.get_response(request)
