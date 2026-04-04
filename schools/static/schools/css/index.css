@@ -1,21 +1,86 @@
+/* Hero: banner completo en azul intenso (como antes). */
 .hero-section {
     background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
-    color: white;
-    padding: 1rem 0.5rem;
+    color: #fff;
+    padding: 1.75rem 1.35rem;
     margin-bottom: 60px;
     border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow:
+        0 4px 14px rgba(13, 110, 253, 0.35),
+        0 12px 36px rgba(8, 61, 140, 0.22);
 }
 
 .hero-title {
     font-size: 3.5rem;
     font-weight: 700;
     margin-bottom: 1.5rem;
+    color: #fff;
 }
 
 .hero-subtitle {
     font-size: 1.5rem;
     margin-bottom: 2rem;
-    opacity: 0.9;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.hero-subtitle strong {
+    color: #fff;
+    font-weight: 600;
+}
+
+.hero-illustration-col {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1.75rem;
+}
+
+@media (min-width: 992px) {
+    .hero-illustration-col {
+        margin-top: 0;
+        min-height: 14rem;
+    }
+}
+
+/* Fondo claro solo donde está el dibujo: ajustado al borde del arte, sin sombra interior (evita “capa” entre imagen y banner). */
+.hero-illustration-surface {
+    display: inline-block;
+    background: linear-gradient(145deg, #cfe8ff 0%, #d7e6fc 42%, #e2eefb 100%);
+    padding: 0.6rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    line-height: 0;
+    animation: hero-illustration-float 5.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-illustration-surface {
+        animation: none;
+    }
+}
+
+.hero-illustration-frame {
+    display: block;
+    padding: 0;
+    line-height: 0;
+}
+
+@keyframes hero-illustration-float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+/* School + map scene (slightly wider art than before) */
+.hero-school-illustration {
+    max-width: 300px;
+    width: 100%;
+    height: auto;
+    vertical-align: middle;
 }
 
 .feature-card {
