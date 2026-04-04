@@ -7,6 +7,12 @@ Production runs on **Kubernetes** (single-node k3s is fine) using the **Helm cha
 - **`main` on your canonical Git host** (e.g. GitHub): triggers **CI** to build and push the **container image** (see `.github/workflows/docker-publish.yml`).
 - **Argo CD** syncs the Helm release from Git; the cluster state is declared in Git.
 
+## Django `check --deploy`
+
+- **Day to day (local dev):** use `python manage.py check` without `--deploy`, or `check --deploy` if you want a clean run: with `ENVIRONMENT=development`, standard deploy warnings are **silenced** in settings because local HTTP + `DEBUG` are intentional. That does **not** mean the dev setup is production-safe.
+- **Production-style audit:** from the repo root run [`scripts/check_deploy.sh`](../scripts/check_deploy.sh). It sets `ENVIRONMENT=production`, a one-off `DJANGO_SECRET_KEY`, dummy `DATABASE_URL`, TLS-at-proxy flags (`TRUST_BEHIND_PROXY=true`, `SECURE_SSL_REDIRECT=false`), secure cookies, and HSTS. **W008** (app-level HTTPS redirect) and **W021** (HSTS preload) are silenced when appropriate — same assumptions as Cloudflare → origin HTTP.
+- **Real deployments** must still use a long random `DJANGO_SECRET_KEY` (e.g. Terraform `random_password` in the cluster Secret).
+
 ## Copy schools data from cluster into local SQLite
 
 Use this when you want **`db.sqlite3`** (development, no `DATABASE_URL`) to mirror **schools** rows from the cluster Postgres (or to refresh local data without merging `schools.db`).
@@ -119,6 +125,7 @@ Managed via Terraform-generated Secret `destino-docente-app-env` (names may matc
 - Optional: `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE` — Terraform **`destino_docente_cookie_secure`** (default **`true`** for Cloudflare HTTPS; **`false`** for plain-HTTP homelab and extra CSRF origin); see homelab Cloudflare doc.
 - `TRUST_BEHIND_PROXY=true` when TLS terminates at Cloudflare / Traefik
 - `CONTACT_EMAIL` — optional in Terraform via `destino_docente_contact_email`; required for the contact form to deliver mail (see [SECURITY_AUDIT_REPORT.md](SECURITY_AUDIT_REPORT.md)).
+- `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` — optional in Terraform via `destino_docente_email_*` variables. If omitted, Django uses defaults in `config/settings.py` (Mailtrap sandbox host; empty user/password), which is fine for local dev but not for real outbound mail in production.
 - Optional: `ALLOW_K8S_INTERNAL_HOST_REWRITE` (default on) — rewrites `Host` when the request targets the pod/cluster IP so Traefik/backends do not hit `DisallowedHost`. Override `K8S_INTERNAL_HOST_FALLBACK` (default `127.0.0.1`) if that host must not be in `ALLOWED_HOSTS`.
 
 ## Next steps after the web pod is healthy

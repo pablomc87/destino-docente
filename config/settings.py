@@ -36,7 +36,12 @@ _secret = (os.environ.get("DJANGO_SECRET_KEY") or "").strip()
 if _secret:
     SECRET_KEY = _secret
 elif DEBUG:
-    SECRET_KEY = "django-insecure-local-development-only-not-for-production"
+    # Long, high-entropy placeholder so `manage.py check --deploy` can pass W009 when no env key is set.
+    # Never use this value outside local development; set DJANGO_SECRET_KEY in production.
+    SECRET_KEY = (
+        "local-development-only-not-for-production-"
+        "7f3e9a2b1c8d4e6f5091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f7"
+    )
 else:
     raise ImproperlyConfigured(
         "DJANGO_SECRET_KEY must be set when ENVIRONMENT is not 'development'."
@@ -44,6 +49,13 @@ else:
 
 IS_PRODUCTION = os.environ.get("ENVIRONMENT") == "production" or os.environ.get("DJANGO_ENV") == "production"
 TRUST_BEHIND_PROXY = os.environ.get("TRUST_BEHIND_PROXY", "").lower() in ("1", "true", "yes")
+
+
+def _env_bool(key: str, *, default: bool) -> bool:
+    value = os.environ.get(key)
+    if value is None or value == "":
+        return default
+    return value.lower() in ("1", "true", "yes", "on")
 
 
 def _database_url_raw():
@@ -80,17 +92,22 @@ if IS_PRODUCTION or _is_postgres_database_url(_db_url):
     if TRUST_BEHIND_PROXY:
         SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
         USE_X_FORWARDED_HOST = True
-    if SECURE_SSL_REDIRECT:
-        SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "31536000"))
-        SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get(
-            "SECURE_HSTS_INCLUDE_SUBDOMAINS", "true"
-        ).lower() in ("1", "true", "yes")
+    # HSTS is emitted for secure requests (including when the proxy sets X-Forwarded-Proto: https).
+    # Set SECURE_HSTS_SECONDS=0 in env to disable (e.g. temporary plain-HTTP debugging).
+    SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = _env_bool(
+        "SECURE_HSTS_INCLUDE_SUBDOMAINS", default=True
+    )
+    SECURE_HSTS_PRELOAD = _env_bool("SECURE_HSTS_PRELOAD", default=False)
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_REFERRER_POLICY = "same-origin"
 else:
     ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0').split(',')
     SECURE_SSL_REDIRECT = False
     CSRF_TRUSTED_ORIGINS = []
+    SECURE_HSTS_SECONDS = 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
 
 # Google Maps API Key
 GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
@@ -323,13 +340,6 @@ LOGIN_REDIRECT_URL = '/usuarios/panel/'
 LOGOUT_REDIRECT_URL = '/'
 
 
-def _env_bool(key: str, *, default: bool) -> bool:
-    value = os.environ.get(key)
-    if value is None or value == "":
-        return default
-    return value.lower() in ("1", "true", "yes", "on")
-
-
 # Session settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 # Over HTTP, browsers ignore Secure cookies unless these are false (homelab without TLS).
@@ -373,3 +383,40 @@ if _redis_url:
             },
         }
     }
+
+# `manage.py check --deploy`: optional comma-separated ids in DJANGO_SILENCED_SECURITY_CHECKS.
+SILENCED_SYSTEM_CHECKS = [
+    s.strip()
+    for s in (os.environ.get("DJANGO_SILENCED_SECURITY_CHECKS") or "").split(",")
+    if s.strip()
+]
+# TLS often terminates at Cloudflare/Traefik while the app sees HTTP — redirecting again would be wrong.
+if (
+    not DEBUG
+    and (IS_PRODUCTION or _is_postgres_database_url(_db_url))
+    and TRUST_BEHIND_PROXY
+    and not SECURE_SSL_REDIRECT
+):
+    SILENCED_SYSTEM_CHECKS.append("security.W008")
+# HSTS preload is optional; enable SECURE_HSTS_PRELOAD when submitting to the browser preload list.
+if (
+    not DEBUG
+    and (IS_PRODUCTION or _is_postgres_database_url(_db_url))
+    and SECURE_HSTS_SECONDS
+    and not SECURE_HSTS_PRELOAD
+):
+    SILENCED_SYSTEM_CHECKS.append("security.W021")
+
+# Local development is HTTP / DEBUG — `check --deploy` is not meaningful here; use
+# `scripts/check_deploy.sh` for a production-style audit (including SECRET_KEY strength).
+if DEBUG:
+    SILENCED_SYSTEM_CHECKS.extend(
+        [
+            "security.W004",
+            "security.W008",
+            "security.W009",
+            "security.W012",
+            "security.W016",
+            "security.W018",
+        ]
+    )

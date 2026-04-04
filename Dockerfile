@@ -15,8 +15,12 @@ RUN pip install --user -r requirements.txt
 
 COPY . .
 ENV DJANGO_SETTINGS_MODULE=config.settings
-ENV ENVIRONMENT=development
-ENV DJANGO_SECRET_KEY=build-only-not-secret
+# Must match production STORAGES (Manifest + WhiteNoise). With ENVIRONMENT=development,
+# collectstatic uses plain StaticFilesStorage and no staticfiles.json → runtime 500 on {% static %}.
+ENV ENVIRONMENT=production
+ENV DJANGO_SECRET_KEY=docker-build-collectstatic-only-not-used-at-runtime-0123456789abcdef
+ENV DATABASE_URL=postgresql://collectstatic:collectstatic@127.0.0.1:5432/collectstatic
+ENV ALLOWED_HOSTS=localhost,127.0.0.1
 RUN python manage.py collectstatic --noinput
 
 FROM python:3.12-slim-bookworm

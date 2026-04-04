@@ -59,6 +59,12 @@ No SSRF-style probes returned internal banners in responses from tested paramete
 
 ---
 
+## Django `manage.py check --deploy`
+
+With `ENVIRONMENT=development`, deploy checks are **silenced** for local HTTP/`DEBUG` noise; use **`./scripts/check_deploy.sh`** for a production-style run (Cloudflare-terminated TLS, secure cookies, HSTS) with **no issues** (plus documented silences for **W008** / **W021**). See [DEPLOYMENT.md](DEPLOYMENT.md).
+
+---
+
 ## Residual recommendations
 
 1. **Deploy** the new container and confirm `429` under heavy `POST` to `/api/track-google-api/` and suggestion endpoints.
