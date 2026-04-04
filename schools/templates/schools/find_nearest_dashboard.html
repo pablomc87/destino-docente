@@ -34,7 +34,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places"></script>
+{% include 'schools/includes/google_maps_loader.html' %}
 <script type="module" src="{% static 'schools/js/find_nearest.js' %}"></script>
 
 <script>

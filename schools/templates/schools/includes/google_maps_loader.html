@@ -1,0 +1,15 @@
+{% comment %}
+Loads Maps JS with loading=async + callback (Google recommendation). Omit when no key.
+{% endcomment %}
+{% if google_maps_api_key %}
+<script>
+  window.destinoDocenteOnGoogleMapsReady = function () {
+    window.dispatchEvent(new CustomEvent('destino-docente:maps-ready'));
+  };
+</script>
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places&loading=async&v=weekly&callback=destinoDocenteOnGoogleMapsReady">
+</script>
+{% else %}
+<script>window.__destinoDocenteMapsKeyMissing = true;</script>
+{% endif %}

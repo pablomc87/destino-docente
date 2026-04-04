@@ -12,6 +12,7 @@ One-time logical copy from **Heroku Postgres** into the **Bitnami PostgreSQL** H
 6. **`REASSIGN OWNED BY postgres TO destino_docente;`** so the app user owns tables (Django uses `destino_docente`, not `postgres`).
 7. Restart web pods / let Argo roll; `migrate` should be mostly no-ops.
 8. Smoke-test admin, login, and a few pages **before** you point public DNS at the new site.
+9. After traffic is on the cluster and you are happy, decommission Heroku (§9).
 
 ## Prerequisites
 
@@ -243,6 +244,23 @@ Prefer fixing **ownership** (steps above) when you can; **`GRANT ALL`** is a rel
 
 - **Heroku**: URL uses TLS to managed Postgres.
 - **In-cluster Django**: uses the Terraform-built `DATABASE_URL` (Secret `destino-docente-app-env`) pointing at the **Kubernetes service** — typically **`sslmode=disable`**. Do **not** point Django at the Heroku URL after cutover.
+
+## 9. Decommission Heroku (after cutover)
+
+Do this only when **DNS / Cloudflare** already send real users to the cluster, you have a **recent cluster backup** (see `docs/DEPLOYMENT.md`), and you are satisfied with smoke tests on the new site.
+
+1. **Stop new deploys to Heroku** — remove or disable GitHub → Heroku auto-deploy, `git push heroku`, Review Apps, and any CI job that deploys there so you do not overwrite prod by mistake.
+2. **Optional last export** — if you want a final archive: `pg_dump` from Heroku one more time (§2) and store the file somewhere safe (not in git).
+3. **Heroku add-ons** — in the Heroku dashboard or CLI, remove **Postgres**, **Redis** (if any), **scheduler**, etc., or destroy the app (below) which tears down add-ons with it.
+4. **Destroy the app** — dashboard **Settings → Delete app**, or:
+   ```bash
+   heroku apps:destroy destino-docente --confirm destino-docente
+   ```
+   Replace `destino-docente` with your real app name if it differs.
+5. **Clean up local remotes** — `git remote remove heroku` (and drop Heroku-specific env files from your machine if you still have them).
+6. **Secrets** — cluster `DJANGO_SECRET_KEY` and DB passwords are already separate from Heroku; rotate anything you ever pasted into Heroku **and** still use elsewhere (email SMTP, API keys) if you want zero reuse.
+
+Heroku billing stops for that app once it is destroyed; confirm in the Heroku account **Billing** view.
 
 ## Optional: sync job instead of laptop
 

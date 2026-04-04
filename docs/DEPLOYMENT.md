@@ -91,6 +91,7 @@ Managed via Terraform-generated Secret `destino-docente-app-env` (names may matc
 
 - `DATABASE_URL` — in-cluster PostgreSQL (app DB and app user above; not the `postgres` superuser)
 - `DJANGO_SECRET_KEY`
+- `GOOGLE_MAPS_API_KEY` — set Terraform variable **`destino_docente_google_maps_api_key`** (or `TF_VAR_destino_docente_google_maps_api_key`); without it, the browser shows “You must use an API key”. In [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials, restrict the key by **HTTP referrer** (e.g. `https://destino-docente.org/*`, `https://www.destino-docente.org/*`, and homelab origins if needed).
 - `REDIS_URL` — optional; when set, Django uses Valkey for cache
 - `ENVIRONMENT=production`
 - `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` — include every scheme+host used in the browser (Django 4+ checks `Origin` on POST).

@@ -189,7 +189,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Add Google Maps API -->
-<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places"></script>
+{% include 'schools/includes/google_maps_loader.html' %}
 <script type="module" src="{% static 'schools/js/index.js' %}"></script>
 {% endblock %} 

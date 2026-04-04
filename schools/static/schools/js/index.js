@@ -228,8 +228,7 @@ function hideMessage() {
     messageContainer.classList.add('d-none');
 }
 
-// Initialize the page
-$(document).ready(function() {
+function initializeIndexMain() {
     // Reset tracking state on page load
     resetSession();
 
@@ -362,4 +361,17 @@ $(document).ready(function() {
             trackApiCalls('unload');
         }
     });
-}); 
+}
+
+$(document).ready(function () {
+    if (window.__destinoDocenteMapsKeyMissing) {
+        console.warn('GOOGLE_MAPS_API_KEY is not set; map features are disabled.');
+        return;
+    }
+    const start = () => initializeIndexMain();
+    if (window.google && window.google.maps && window.google.maps.places) {
+        start();
+    } else {
+        window.addEventListener('destino-docente:maps-ready', start, { once: true });
+    }
+});
