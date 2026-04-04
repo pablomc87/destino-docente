@@ -94,7 +94,7 @@ Managed via Terraform-generated Secret `destino-docente-app-env` (names may matc
 - `REDIS_URL` — optional; when set, Django uses Valkey for cache
 - `ENVIRONMENT=production`
 - `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` — include every scheme+host used in the browser (Django 4+ checks `Origin` on POST).
-- Optional: `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE` — set via Terraform **`destino_docente_cookie_secure`** (`false` = HTTP homelab OK, `true` = HTTPS-only browsers); see homelab Cloudflare doc.
+- Optional: `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE` — Terraform **`destino_docente_cookie_secure`** (default **`true`** for Cloudflare HTTPS; **`false`** for plain-HTTP homelab and extra CSRF origin); see homelab Cloudflare doc.
 - `TRUST_BEHIND_PROXY=true` when TLS terminates at Cloudflare / Traefik
 - Optional: `ALLOW_K8S_INTERNAL_HOST_REWRITE` (default on) — rewrites `Host` when the request targets the pod/cluster IP so Traefik/backends do not hit `DisallowedHost`. Override `K8S_INTERNAL_HOST_FALLBACK` (default `127.0.0.1`) if that host must not be in `ALLOWED_HOSTS`.
 
